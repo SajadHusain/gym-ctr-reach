@@ -25,6 +25,9 @@ def test_wilson_interval_contains_observed_rate():
 
 
 def test_evaluation_tolerance_override():
+    default_env = make_env(evaluation=True, seed=7)
     env = make_env(evaluation=True, seed=7, position_tolerance=0.0181)
     assert env.unwrapped.get_goal_tolerance() == 0.0181
+    assert env.observation_space == default_env.observation_space
     env.close()
+    default_env.close()

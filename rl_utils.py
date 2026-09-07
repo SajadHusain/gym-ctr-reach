@@ -25,14 +25,15 @@ def make_env(
         position_tolerance = float(position_tolerance)
         if not np.isfinite(position_tolerance) or position_tolerance <= 0.0:
             raise ValueError("position_tolerance must be finite and positive")
-        kwargs["goal_tolerance_parameters"].update(
-            {
-                "initial_tol": position_tolerance,
-                "final_tol": position_tolerance,
-                "function": "constant",
-                "set_tol": position_tolerance,
-            }
-        )
+        initial_tolerance = kwargs["goal_tolerance_parameters"]["initial_tol"]
+        if position_tolerance > initial_tolerance:
+            raise ValueError(
+                f"position_tolerance cannot exceed {initial_tolerance} m because "
+                "that would change the saved model's observation space"
+            )
+        # Preserve initial_tol because it defines the observation-space bound stored
+        # with every SB3 model. set_tol changes runtime behavior without changing space.
+        kwargs["goal_tolerance_parameters"]["set_tol"] = position_tolerance
     kwargs["render_mode"] = "human" if render else None
     env = CtrReachEnv(**kwargs)
     env.reset(seed=seed)
