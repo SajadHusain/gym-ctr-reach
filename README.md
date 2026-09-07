@@ -4,12 +4,19 @@ The `modern-ddpg-her` branch turns the original quasi-static CTR code into a Gym
 
 - DDPG with a `MultiInputPolicy`
 - hindsight experience replay (HER), using the `future` strategy and four relabelled goals
+- goal-dependent terminal flags recomputed alongside HER rewards
 - egocentric trigonometric joint observations
 - a linear goal-tolerance curriculum from 20 mm to 1 mm over 200,000 transitions
 - deterministic final evaluation over 1,000 independently seeded episodes
 - Cartesian path following by passing consecutive waypoints to the same reaching policy
 
 It deliberately uses the active simplified `Model`/`Segment`/`Tube` path. It does not import the broken experimental `CTR_Model.py`.
+
+The previous standard-HER baseline and the terminal-label correction are described
+in [docs/her_termination_fix.md](docs/her_termination_fix.md). That page includes
+fresh-run comparison commands and optional per-step trajectory diagnostics for
+existing checkpoints. The correction has not yet been evaluated for learning
+performance; it should not be assumed to remove all precision errors.
 
 ## Important design boundary
 

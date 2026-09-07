@@ -7,6 +7,7 @@ import argparse
 import csv
 import json
 import time
+from contextlib import ExitStack
 from pathlib import Path
 
 import numpy as np
@@ -22,6 +23,10 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=100_000)
     parser.add_argument("--output-dir", type=Path, default=Path("runs/evaluation"))
     parser.add_argument("--tolerance-m", type=float, default=1e-3)
+    parser.add_argument(
+        "--record-trajectories", action="store_true",
+        help="Write per-step tip positions, normalized commands and applied joint changes.",
+    )
     parser.add_argument(
         "--progress-every",
         type=int,
@@ -41,6 +46,28 @@ def wilson_interval(successes: int, total: int, z: float = 1.959963984540054):
     low = 0.0 if successes == 0 else max(0.0, centre - radius)
     high = 1.0 if successes == total else min(1.0, centre + radius)
     return float(low), float(high)
+
+
+def trajectory_row(episode, step, before, after, action, joints_before, joints_after, info):
+    """A transition's actual motion; delta joints include clipping and constraints."""
+    row = {
+        "episode": episode, "step": step,
+        "error_before_m": float(np.linalg.norm(before["desired_goal"] - before["achieved_goal"])),
+        "error_m": float(info["error"]),
+        "position_tolerance_m": float(info["position_tolerance"]),
+        "success": int(info["is_success"]), "solver_failure": int(info["solver_failure"]),
+    }
+    for index, axis in enumerate("xyz"):
+        row[f"tip_before_{axis}_m"] = float(before["achieved_goal"][index])
+        row[f"tip_after_{axis}_m"] = float(after["achieved_goal"][index])
+        row[f"goal_{axis}_m"] = float(after["desired_goal"][index])
+    for index in range(6):
+        joint = f"beta_{index}_m" if index < 3 else f"alpha_{index - 3}_rad"
+        row[f"action_{index}_normalized"] = float(action[index])
+        row[f"before_{joint}"] = float(joints_before[index])
+        row[f"after_{joint}"] = float(joints_after[index])
+        row[f"delta_{joint}"] = float(joints_after[index] - joints_before[index])
+    return row
 
 
 def main():
@@ -67,12 +94,19 @@ def main():
         seed=args.seed,
         position_tolerance=args.tolerance_m,
     )
-    model = DDPG.load(args.model, env=env)
     rows = []
     interrupted = False
     started = time.perf_counter()
     try:
-        with csv_path.open("w", newline="", encoding="utf-8") as handle:
+        model = DDPG.load(args.model, env=env)
+        with ExitStack() as stack:
+            handle = stack.enter_context(csv_path.open("w", newline="", encoding="utf-8"))
+            trace_handle = None
+            trace_writer = None
+            if args.record_trajectories:
+                trace_handle = stack.enter_context(
+                    (output_dir / "trajectories.csv").open("w", newline="", encoding="utf-8")
+                )
             writer = csv.DictWriter(handle, fieldnames=fieldnames)
             writer.writeheader()
             for episode in range(args.episodes):
@@ -81,7 +115,19 @@ def main():
                 final_info = None
                 for step in range(1, env.unwrapped.max_steps_per_episode + 1):
                     action, _ = model.predict(observation, deterministic=True)
+                    if trace_handle is not None:
+                        before = observation
+                        joints_before = env.unwrapped.trig_obj.joints.copy()
                     observation, reward, terminated, truncated, info = env.step(action)
+                    if trace_handle is not None:
+                        trace = trajectory_row(
+                            episode, step, before, observation, action, joints_before,
+                            env.unwrapped.trig_obj.joints.copy(), info,
+                        )
+                        if trace_writer is None:
+                            trace_writer = csv.DictWriter(trace_handle, fieldnames=trace.keys())
+                            trace_writer.writeheader()
+                        trace_writer.writerow(trace)
                     episode_return += float(reward)
                     final_info = info
                     if terminated or truncated:
@@ -97,6 +143,9 @@ def main():
                 }
                 rows.append(row)
                 writer.writerow(row)
+                handle.flush()
+                if trace_handle is not None:
+                    trace_handle.flush()
                 completed = episode + 1
                 if completed % progress_every == 0 or completed == args.episodes:
                     handle.flush()
@@ -125,6 +174,9 @@ def main():
     errors = np.array([row["final_error_m"] for row in rows])
     steps = np.array([row["steps"] for row in rows])
     summary = {
+        "checkpoint": str(args.model.resolve()),
+        "checkpoint_timesteps": int(model.num_timesteps),
+        "trajectories_recorded": bool(args.record_trajectories),
         "requested_episodes": args.episodes,
         "episodes": len(rows),
         "complete": not interrupted and len(rows) == args.episodes,

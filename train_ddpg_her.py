@@ -8,11 +8,12 @@ import json
 from pathlib import Path
 
 import numpy as np
-from stable_baselines3 import DDPG, HerReplayBuffer
+from stable_baselines3 import DDPG
 from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback, EvalCallback
 from stable_baselines3.common.noise import NormalActionNoise
 
 from rl_utils import make_env
+from ctr_reach_envs.her_replay_buffer import GoalTerminationHerReplayBuffer
 
 
 class GoalToleranceCurriculumCallback(BaseCallback):
@@ -77,7 +78,7 @@ def main():
     model = DDPG(
         policy="MultiInputPolicy",
         env=train_env,
-        replay_buffer_class=HerReplayBuffer,
+        replay_buffer_class=GoalTerminationHerReplayBuffer,
         replay_buffer_kwargs={
             "n_sampled_goal": 4,
             "goal_selection_strategy": "future",
@@ -119,6 +120,7 @@ def main():
     )
     run_config = vars(args).copy()
     run_config["output_dir"] = str(output_dir)
+    run_config["replay_buffer_class"] = "GoalTerminationHerReplayBuffer"
     (output_dir / "run_config.json").write_text(
         json.dumps(run_config, indent=2) + "\n", encoding="utf-8"
     )

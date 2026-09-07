@@ -1,10 +1,11 @@
 import numpy as np
 from gymnasium.utils.env_checker import check_env
-from stable_baselines3 import DDPG, HerReplayBuffer
+from stable_baselines3 import DDPG
 from stable_baselines3.common.env_checker import check_env as check_sb3_env
 
 from ctr_reach_envs.config import default_env_kwargs
 from ctr_reach_envs.envs import CtrReachEnv
+from ctr_reach_envs.her_replay_buffer import GoalTerminationHerReplayBuffer
 
 
 def make_env(**overrides):
@@ -39,22 +40,31 @@ def test_spaces_are_finite_and_actions_are_normalized():
     env.close()
 
 
-def test_ddpg_her_can_collect_transitions():
+def test_ddpg_her_can_update_save_and_load(tmp_path):
     env = make_env(max_steps_per_episode=3)
     model = DDPG(
         "MultiInputPolicy",
         env,
-        replay_buffer_class=HerReplayBuffer,
-        replay_buffer_kwargs={"n_sampled_goal": 4, "goal_selection_strategy": "future"},
+        replay_buffer_class=GoalTerminationHerReplayBuffer,
+        replay_buffer_kwargs={"n_sampled_goal": 4, "goal_selection_strategy": "future", "copy_info_dict": True},
         buffer_size=100,
-        learning_starts=100,
+        learning_starts=4,
         batch_size=16,
         policy_kwargs={"net_arch": [32, 32]},
         seed=9,
         verbose=0,
     )
-    model.learn(total_timesteps=3)
-    assert model.replay_buffer.size() == 3
+    before = [parameter.detach().clone() for parameter in model.actor.parameters()]
+    model.learn(total_timesteps=12)
+    assert model.replay_buffer.size() == 12
+    assert model._n_updates > 0
+    assert any(not old.equal(new.detach()) for old, new in zip(before, model.actor.parameters()))
+    observation, _ = env.reset(seed=11)
+    expected, _ = model.predict(observation, deterministic=True)
+    model.save(tmp_path / "model")
+    loaded = DDPG.load(tmp_path / "model", env=env, device="cpu")
+    actual, _ = loaded.predict(observation, deterministic=True)
+    np.testing.assert_allclose(actual, expected, atol=1e-7)
     env.close()
 
 
