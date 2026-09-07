@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 from stable_baselines3.common.monitor import Monitor
 
-from ctr_reach_envs.config import default_env_kwargs
+from ctr_reach_envs.paper_config import env_kwargs_for_profile
 from ctr_reach_envs.envs import CtrReachEnv
 
 
@@ -19,8 +19,9 @@ def make_env(
     render: bool = False,
     monitor_dir=None,
     position_tolerance: float | None = None,
+    profile: str = "current",
 ):
-    kwargs = default_env_kwargs(evaluation=evaluation)
+    kwargs = env_kwargs_for_profile(profile, evaluation=evaluation)
     if position_tolerance is not None:
         position_tolerance = float(position_tolerance)
         if not np.isfinite(position_tolerance) or position_tolerance <= 0.0:
@@ -43,3 +44,17 @@ def make_env(
         monitor_dir.mkdir(parents=True, exist_ok=True)
         filename = str(monitor_dir / ("eval" if evaluation else "train"))
     return Monitor(env, filename=filename, info_keywords=MONITOR_INFO)
+
+
+def load_policy(model_path, env, profile="current"):
+    """Load for inference and reject an accidentally mismatched environment profile."""
+    from stable_baselines3 import DDPG
+
+    model = DDPG.load(model_path, env=env)
+    saved_profile = getattr(model, "paper_profile", "current")
+    if saved_profile != profile:
+        raise ValueError(
+            f"Checkpoint profile is {saved_profile!r}, but environment profile is {profile!r}. "
+            f"Use --profile {saved_profile}."
+        )
+    return model

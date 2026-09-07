@@ -1,5 +1,13 @@
 # CTR reaching with DDPG and HER
 
+For the documented 2024 paper configuration, use
+[the paper reproduction instructions](docs/paper_reproduction.md) and
+`train_paper_ddpg_her.py`. That profile uses 3 million training steps, an
+egocentric decay curriculum over 1.5 million steps, and the saved system-0
+free-rotation settings. It includes the legacy critic structure and a
+HER-safe reconstruction of the paper's goal-error input. The instructions
+separate verified settings from remaining software-stack differences.
+
 The `modern-ddpg-her` branch turns the original quasi-static CTR code into a Gymnasium goal environment and adds:
 
 - DDPG with a `MultiInputPolicy`

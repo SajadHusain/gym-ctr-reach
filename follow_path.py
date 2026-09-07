@@ -8,15 +8,16 @@ import csv
 from pathlib import Path
 
 import numpy as np
-from stable_baselines3 import DDPG
 
-from ctr_reach_envs.config import default_env_kwargs
+from ctr_reach_envs.paper_config import env_kwargs_for_profile
 from ctr_reach_envs.envs import CtrReachEnv
+from rl_utils import load_policy
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("model", type=Path)
+    parser.add_argument("--profile", choices=["current", "paper-2024"], default="current")
     parser.add_argument("path", type=Path, help="CSV with x,y,z columns in metres")
     parser.add_argument("--seed", type=int, default=200_000)
     parser.add_argument("--render", action="store_true")
@@ -44,11 +45,13 @@ def load_waypoints(path: Path):
 def main():
     args = parse_args()
     waypoints = load_waypoints(args.path)
-    kwargs = default_env_kwargs(evaluation=True)
+    kwargs = env_kwargs_for_profile(args.profile, evaluation=True)
+    if args.profile == "paper-2024":
+        kwargs["max_steps_per_episode"] = 20
     kwargs["resample_joints"] = False
     kwargs["render_mode"] = "human" if args.render else None
     env = CtrReachEnv(**kwargs)
-    model = DDPG.load(args.model, env=env)
+    model = load_policy(args.model, env, args.profile)
     rows = []
     observation, current_info = env.reset(
         seed=args.seed,

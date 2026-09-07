@@ -11,14 +11,14 @@ from contextlib import ExitStack
 from pathlib import Path
 
 import numpy as np
-from stable_baselines3 import DDPG
 
-from rl_utils import make_env
+from rl_utils import make_env, load_policy
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("model", type=Path)
+    parser.add_argument("--profile", choices=["current", "paper-2024"], default="current")
     parser.add_argument("--episodes", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=100_000)
     parser.add_argument("--output-dir", type=Path, default=Path("runs/evaluation"))
@@ -93,12 +93,13 @@ def main():
         evaluation=True,
         seed=args.seed,
         position_tolerance=args.tolerance_m,
+        profile=args.profile,
     )
     rows = []
     interrupted = False
     started = time.perf_counter()
     try:
-        model = DDPG.load(args.model, env=env)
+        model = load_policy(args.model, env, args.profile)
         with ExitStack() as stack:
             handle = stack.enter_context(csv_path.open("w", newline="", encoding="utf-8"))
             trace_handle = None
@@ -175,6 +176,7 @@ def main():
     steps = np.array([row["steps"] for row in rows])
     summary = {
         "checkpoint": str(args.model.resolve()),
+        "profile": args.profile,
         "checkpoint_timesteps": int(model.num_timesteps),
         "trajectories_recorded": bool(args.record_trajectories),
         "requested_episodes": args.episodes,
