@@ -29,6 +29,16 @@ def test_gymnasium_contract():
     env.close()
 
 
+def test_spaces_are_finite_and_actions_are_normalized():
+    env = make_env()
+    np.testing.assert_array_equal(env.action_space.low, -np.ones(6, dtype=np.float32))
+    np.testing.assert_array_equal(env.action_space.high, np.ones(6, dtype=np.float32))
+    for goal_key in ("achieved_goal", "desired_goal"):
+        assert np.all(np.isfinite(env.observation_space[goal_key].low))
+        assert np.all(np.isfinite(env.observation_space[goal_key].high))
+    env.close()
+
+
 def test_ddpg_her_can_collect_transitions():
     env = make_env(max_steps_per_episode=3)
     model = DDPG(

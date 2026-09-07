@@ -74,12 +74,16 @@ class CtrReachEnv(gym.Env):
             constrain_alpha,
         )
         self.observation_space = self.trig_obj.observation_space(self.goal_tolerance.initial)
-        extension = np.full(NUM_TUBES, float(extension_action_limit), dtype=np.float32)
+        extension = np.full(NUM_TUBES, float(extension_action_limit), dtype=np.float64)
         rotation = np.full(
-            NUM_TUBES, np.deg2rad(float(rotation_action_limit)), dtype=np.float32
+            NUM_TUBES, np.deg2rad(float(rotation_action_limit)), dtype=np.float64
         )
-        high = np.concatenate((extension, rotation))
-        self.action_space = gym.spaces.Box(-high, high, dtype=np.float32)
+        self.action_scale = np.concatenate((extension, rotation))
+        if not np.all(np.isfinite(self.action_scale)) or np.any(self.action_scale <= 0.0):
+            raise ValueError("Action limits must be finite and positive")
+        # DDPG operates in a dimensionless, consistently scaled action space. Each
+        # normalized action is converted to metres/radians before it reaches the robot.
+        self.action_space = gym.spaces.Box(-1.0, 1.0, shape=(2 * NUM_TUBES,), dtype=np.float32)
 
         self.model = Model(self.ctr_system_parameters)
         self.visualization = None
@@ -156,14 +160,17 @@ class CtrReachEnv(gym.Env):
         )
 
     def step(self, action):
-        action = np.asarray(action, dtype=np.float32)
-        if action.shape != self.action_space.shape or not np.all(np.isfinite(action)):
+        normalized_action = np.asarray(action, dtype=np.float32)
+        if normalized_action.shape != self.action_space.shape or not np.all(np.isfinite(normalized_action)):
             raise ValueError("action must be a finite six-element vector")
-        action = np.clip(action, self.action_space.low, self.action_space.high)
+        normalized_action = np.clip(
+            normalized_action, self.action_space.low, self.action_space.high
+        )
+        physical_action = normalized_action.astype(np.float64) * self.action_scale
         previous_joints = self.trig_obj.joints.copy()
         previous_goal = self.achieved_goal.copy()
         for _ in range(self.n_substeps):
-            self.trig_obj.set_action(action, self.system)
+            self.trig_obj.set_action(physical_action, self.system)
 
         solver_failure = False
         try:

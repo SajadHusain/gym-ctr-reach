@@ -76,8 +76,11 @@ class Obs:
             extra_high.append(float(self.num_systems - 1))
         state_low = np.concatenate((rep_low, np.asarray(extra_low, dtype=np.float32)))
         state_high = np.concatenate((rep_high, np.asarray(extra_high, dtype=np.float32)))
-        goal_low = np.full(3, -np.inf, dtype=np.float32)
-        goal_high = np.full(3, np.inf, dtype=np.float32)
+        # The tip cannot be farther from the template than the longest tube's
+        # deployed arc length. A small margin covers integration and float32 error.
+        cartesian_limit = np.float32(1.01 * np.max(self.tube_lengths))
+        goal_low = np.full(3, -cartesian_limit, dtype=np.float32)
+        goal_high = np.full(3, cartesian_limit, dtype=np.float32)
         return gym.spaces.Dict(
             {
                 "observation": gym.spaces.Box(state_low, state_high, dtype=np.float32),
@@ -138,4 +141,3 @@ class Obs:
             if all(valid):
                 return sample
         raise RuntimeError("Unable to sample a feasible CTR joint configuration")
-
