@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gym-ctr-reach"
+version = "0.1.0"
+description = "Gymnasium CTR reaching environment with DDPG, HER, curriculum, evaluation, and waypoint following"
+requires-python = ">=3.10"
+dependencies = [
+  "gymnasium>=0.29,<2",
+  "numpy>=1.24,<3",
+  "scipy>=1.10,<2",
+]
+
+[project.optional-dependencies]
+train = [
+  "stable-baselines3>=2.3,<3",
+  "tensorboard>=2.14,<3",
+  "torch>=2.0",
+]
+render = ["matplotlib>=3.7,<4"]
+test = ["pytest>=7,<9"]
+
+[tool.setuptools.packages.find]
+include = ["ctr_reach_envs*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

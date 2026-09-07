@@ -1,0 +1,103 @@
+import numpy as np
+from gymnasium.utils.env_checker import check_env
+from stable_baselines3 import DDPG, HerReplayBuffer
+from stable_baselines3.common.env_checker import check_env as check_sb3_env
+
+from ctr_reach_envs.config import default_env_kwargs
+from ctr_reach_envs.envs import CtrReachEnv
+
+
+def make_env(**overrides):
+    kwargs = default_env_kwargs(evaluation=False)
+    kwargs.update(overrides)
+    return CtrReachEnv(**kwargs)
+
+
+def assert_dict_obs_equal(left, right):
+    assert left.keys() == right.keys()
+    for key in left:
+        np.testing.assert_array_equal(left[key], right[key])
+
+
+def test_gymnasium_contract():
+    env = make_env()
+    check_env(env, skip_render_check=True)
+    check_sb3_env(env, warn=True)
+    observation, _ = env.reset(seed=1)
+    assert env.observation_space.contains(observation)
+    assert all(value.dtype == np.float32 for value in observation.values())
+    env.close()
+
+
+def test_ddpg_her_can_collect_transitions():
+    env = make_env(max_steps_per_episode=3)
+    model = DDPG(
+        "MultiInputPolicy",
+        env,
+        replay_buffer_class=HerReplayBuffer,
+        replay_buffer_kwargs={"n_sampled_goal": 4, "goal_selection_strategy": "future"},
+        buffer_size=100,
+        learning_starts=100,
+        batch_size=16,
+        policy_kwargs={"net_arch": [32, 32]},
+        seed=9,
+        verbose=0,
+    )
+    model.learn(total_timesteps=3)
+    assert model.replay_buffer.size() == 3
+    env.close()
+
+
+def test_seeded_resets_are_reproducible():
+    first = make_env()
+    second = make_env()
+    obs_a, _ = first.reset(seed=42)
+    obs_b, _ = second.reset(seed=42)
+    assert_dict_obs_equal(obs_a, obs_b)
+    action = np.zeros(6, dtype=np.float32)
+    transition_a = first.step(action)
+    transition_b = second.step(action)
+    assert_dict_obs_equal(transition_a[0], transition_b[0])
+    assert transition_a[1:4] == transition_b[1:4]
+    first.close()
+    second.close()
+
+
+def test_goal_relabel_does_not_leave_old_goal_in_state_vector():
+    env = make_env()
+    observation, _ = env.reset(seed=3)
+    state_before = observation["observation"].copy()
+    new_goal = observation["desired_goal"] + np.array([0.01, 0.0, 0.0], dtype=np.float32)
+    relabelled = env.set_goal(new_goal)
+    np.testing.assert_array_equal(relabelled["observation"], state_before)
+    np.testing.assert_array_equal(relabelled["desired_goal"], new_goal)
+    env.close()
+
+
+def test_vectorized_reward_uses_per_transition_tolerance():
+    env = make_env()
+    achieved = np.zeros((2, 3), dtype=np.float32)
+    desired = np.array([[0.005, 0.0, 0.0], [0.005, 0.0, 0.0]], dtype=np.float32)
+    infos = [{"position_tolerance": 0.01}, {"position_tolerance": 0.001}]
+    np.testing.assert_array_equal(env.compute_reward(achieved, desired, infos), [0.0, -1.0])
+    env.close()
+
+
+def test_time_limit_is_truncation_not_task_termination():
+    env = make_env(max_steps_per_episode=1)
+    env.reset(seed=4, options={"goal": np.array([10.0, 10.0, 10.0])})
+    _, _, terminated, truncated, _ = env.step(np.zeros(6, dtype=np.float32))
+    assert not terminated
+    assert truncated
+    env.close()
+
+
+def test_active_model_regression_at_zero_joints():
+    env = make_env(resample_joints=False)
+    observation, _ = env.reset(
+        seed=5,
+        options={"goal": np.zeros(3), "initial_joints": np.zeros(6)},
+    )
+    expected = np.array([0.0, -0.137678908, 0.208828318], dtype=np.float32)
+    np.testing.assert_allclose(observation["achieved_goal"], expected, atol=2e-7)
+    env.close()
