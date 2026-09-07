@@ -21,6 +21,7 @@ def test_wilson_interval_contains_observed_rate():
     low, high = wilson_interval(750, 1000)
     assert low < 0.75 < high
     assert wilson_interval(0, 100)[0] == 0.0
+    assert wilson_interval(100, 100)[1] == 1.0
 
 
 def test_evaluation_tolerance_override():

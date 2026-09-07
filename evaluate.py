@@ -38,7 +38,9 @@ def wilson_interval(successes: int, total: int, z: float = 1.959963984540054):
     denominator = 1.0 + z * z / total
     centre = (p + z * z / (2.0 * total)) / denominator
     radius = z * np.sqrt(p * (1.0 - p) / total + z * z / (4.0 * total**2)) / denominator
-    return float(max(0.0, centre - radius)), float(min(1.0, centre + radius))
+    low = 0.0 if successes == 0 else max(0.0, centre - radius)
+    high = 1.0 if successes == total else min(1.0, centre + radius)
+    return float(low), float(high)
 
 
 def main():
