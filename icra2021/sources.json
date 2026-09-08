@@ -1,0 +1,807 @@
+[
+  {
+    "git_blob_sha1": "209b99f0340d1d981a4bf15f0c181a45b9ecb393",
+    "path": "stable-baselines/LICENSE",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "LICENSE"
+  },
+  {
+    "git_blob_sha1": "075540a01d25111900bcbddc98fd8ed0d92992d1",
+    "path": "stable-baselines/setup.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "setup.py"
+  },
+  {
+    "git_blob_sha1": "986979c7ab014cc72bd6e462850561c2daa45572",
+    "path": "stable-baselines/stable_baselines/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/__init__.py"
+  },
+  {
+    "git_blob_sha1": "d68abe7eb588b12f3d800e9c6efe04659b3a2bc5",
+    "path": "stable-baselines/stable_baselines/a2c/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/a2c/__init__.py"
+  },
+  {
+    "git_blob_sha1": "d0ac539db3bd2736734d361cd1d57e44be1f48a0",
+    "path": "stable-baselines/stable_baselines/a2c/a2c.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/a2c/a2c.py"
+  },
+  {
+    "git_blob_sha1": "f8f7817ea1022bf8f7d0d64a7ce742890c4726a2",
+    "path": "stable-baselines/stable_baselines/a2c/run_atari.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/a2c/run_atari.py"
+  },
+  {
+    "git_blob_sha1": "9a8a2173a0bd4f5134cdc00994230333e050e4b6",
+    "path": "stable-baselines/stable_baselines/a2c/utils.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/a2c/utils.py"
+  },
+  {
+    "git_blob_sha1": "a81d161a3ab8d302bcf74ce46ed923412ef2bc63",
+    "path": "stable-baselines/stable_baselines/acer/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/acer/__init__.py"
+  },
+  {
+    "git_blob_sha1": "f2c0213bedad18b3dc19c9384bdb4ee0a74842e6",
+    "path": "stable-baselines/stable_baselines/acer/acer_simple.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/acer/acer_simple.py"
+  },
+  {
+    "git_blob_sha1": "9d18ff15648906ca51f2643d337ae7e1333a15be",
+    "path": "stable-baselines/stable_baselines/acer/buffer.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/acer/buffer.py"
+  },
+  {
+    "git_blob_sha1": "c09788fe546a35bca79fb4c19d49f4a2e494e431",
+    "path": "stable-baselines/stable_baselines/acer/run_atari.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/acer/run_atari.py"
+  },
+  {
+    "git_blob_sha1": "fcae30ed49a679632b7a4e039ca659de3a9917f4",
+    "path": "stable-baselines/stable_baselines/acktr/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/acktr/__init__.py"
+  },
+  {
+    "git_blob_sha1": "f6aae962e47563263541def2b13a8879ef308a5f",
+    "path": "stable-baselines/stable_baselines/acktr/acktr.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/acktr/acktr.py"
+  },
+  {
+    "git_blob_sha1": "4ab208056e825898e48c924ee402a674dc1adafd",
+    "path": "stable-baselines/stable_baselines/acktr/kfac.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/acktr/kfac.py"
+  },
+  {
+    "git_blob_sha1": "512e21a239566740aa92c8039aaa487e43ec55be",
+    "path": "stable-baselines/stable_baselines/acktr/kfac_utils.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/acktr/kfac_utils.py"
+  },
+  {
+    "git_blob_sha1": "694eb811ddf063c93e6293e47e89990505a63496",
+    "path": "stable-baselines/stable_baselines/acktr/run_atari.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/acktr/run_atari.py"
+  },
+  {
+    "git_blob_sha1": "58a0727d9042c11cb842f2d8954ef7764bd67288",
+    "path": "stable-baselines/stable_baselines/bench/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/bench/__init__.py"
+  },
+  {
+    "git_blob_sha1": "fd9542b0ba573a6d4ea25ef490f7981e02e5e53f",
+    "path": "stable-baselines/stable_baselines/bench/monitor.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/bench/monitor.py"
+  },
+  {
+    "git_blob_sha1": "7087980e7d588f8f7fc384ad3995af24a6d41cd4",
+    "path": "stable-baselines/stable_baselines/common/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/__init__.py"
+  },
+  {
+    "git_blob_sha1": "ee8579b25eec1a0b2d0d4e90bf63ad22c02cc904",
+    "path": "stable-baselines/stable_baselines/common/atari_wrappers.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/atari_wrappers.py"
+  },
+  {
+    "git_blob_sha1": "4d1643e95a3c35db1a60ab0a38043755bdea1b59",
+    "path": "stable-baselines/stable_baselines/common/base_class.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/base_class.py"
+  },
+  {
+    "git_blob_sha1": "a6f021507298b7b6f4306698b65bfb419a06c9b3",
+    "path": "stable-baselines/stable_baselines/common/bit_flipping_env.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/bit_flipping_env.py"
+  },
+  {
+    "git_blob_sha1": "15c0f9524dd777d6ac148e39190ffd6c539ecb7b",
+    "path": "stable-baselines/stable_baselines/common/cg.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/cg.py"
+  },
+  {
+    "git_blob_sha1": "c5ff663391537ed352496da399d7f2bad562d384",
+    "path": "stable-baselines/stable_baselines/common/cmd_util.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/cmd_util.py"
+  },
+  {
+    "git_blob_sha1": "c8b4c94cb28816d37223d21bd837283d5ccfc959",
+    "path": "stable-baselines/stable_baselines/common/console_util.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/console_util.py"
+  },
+  {
+    "git_blob_sha1": "37159349055eff7695e53e9907ce6c8e74181ce0",
+    "path": "stable-baselines/stable_baselines/common/dataset.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/dataset.py"
+  },
+  {
+    "git_blob_sha1": "b64e0a5b5cb8678e6a71b0ec8d6459779867ae9d",
+    "path": "stable-baselines/stable_baselines/common/distributions.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/distributions.py"
+  },
+  {
+    "git_blob_sha1": "6c6dd0fcbdf1f8d3895e6a55c61bf10fb91cf97e",
+    "path": "stable-baselines/stable_baselines/common/env_checker.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/env_checker.py"
+  },
+  {
+    "git_blob_sha1": "67e10d06c58723ccd365bd8c1f94bf2869291872",
+    "path": "stable-baselines/stable_baselines/common/evaluation.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/evaluation.py"
+  },
+  {
+    "git_blob_sha1": "41fd9ef554d49eb7281265b0a8a763726aeabe38",
+    "path": "stable-baselines/stable_baselines/common/identity_env.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/identity_env.py"
+  },
+  {
+    "git_blob_sha1": "e8cfa3c8b427f207ed39bac0bff768a255445035",
+    "path": "stable-baselines/stable_baselines/common/input.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/input.py"
+  },
+  {
+    "git_blob_sha1": "05c4cd72a5511de92b49995708149e341463ba22",
+    "path": "stable-baselines/stable_baselines/common/math_util.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/math_util.py"
+  },
+  {
+    "git_blob_sha1": "726a483d83999d981be2e28db874a4431f028fcf",
+    "path": "stable-baselines/stable_baselines/common/misc_util.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/misc_util.py"
+  },
+  {
+    "git_blob_sha1": "02c3de8bb27a7144e131f525c99568efb620043b",
+    "path": "stable-baselines/stable_baselines/common/mpi_adam.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/mpi_adam.py"
+  },
+  {
+    "git_blob_sha1": "5e5ede1d1276eedb9882fa81fdc1105ef8bfa33e",
+    "path": "stable-baselines/stable_baselines/common/mpi_moments.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/mpi_moments.py"
+  },
+  {
+    "git_blob_sha1": "5e52129b7a9a3bb5c693d6cf7d457dc7ce5bc07e",
+    "path": "stable-baselines/stable_baselines/common/mpi_running_mean_std.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/mpi_running_mean_std.py"
+  },
+  {
+    "git_blob_sha1": "caecc55afb3f02c13dbff99b920e31f80b7482f2",
+    "path": "stable-baselines/stable_baselines/common/noise.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/noise.py"
+  },
+  {
+    "git_blob_sha1": "eced062f64c2513160cb43f099bbec325c0e4097",
+    "path": "stable-baselines/stable_baselines/common/policies.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/policies.py"
+  },
+  {
+    "git_blob_sha1": "7c9df3ce7d6fa3073a80dc1b44f103e729021c2c",
+    "path": "stable-baselines/stable_baselines/common/runners.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/runners.py"
+  },
+  {
+    "git_blob_sha1": "d6a03d6ebffb81a7196e81c758830bc04cfc11a3",
+    "path": "stable-baselines/stable_baselines/common/running_mean_std.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/running_mean_std.py"
+  },
+  {
+    "git_blob_sha1": "70a9fa5439b93fddf274795c9559dae0f2a066c8",
+    "path": "stable-baselines/stable_baselines/common/save_util.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/save_util.py"
+  },
+  {
+    "git_blob_sha1": "f20b7887a3da96230db0439ffb74a5c60556d637",
+    "path": "stable-baselines/stable_baselines/common/schedules.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/schedules.py"
+  },
+  {
+    "git_blob_sha1": "6b184fa4e5e0f8a254915532273e42cdfa173a08",
+    "path": "stable-baselines/stable_baselines/common/segment_tree.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/segment_tree.py"
+  },
+  {
+    "git_blob_sha1": "e737fa4a83dc67832428485ad2fff1dc935181ea",
+    "path": "stable-baselines/stable_baselines/common/tf_util.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/tf_util.py"
+  },
+  {
+    "git_blob_sha1": "14922a990ab3671e0065569178ef9962f91bd39c",
+    "path": "stable-baselines/stable_baselines/common/tile_images.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/tile_images.py"
+  },
+  {
+    "git_blob_sha1": "29638fa722376f69525cb5d4092da36dc7ee996b",
+    "path": "stable-baselines/stable_baselines/common/vec_env/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/vec_env/__init__.py"
+  },
+  {
+    "git_blob_sha1": "1062b5ab121ecfbfbb8c871a7fae11fcd798b8e7",
+    "path": "stable-baselines/stable_baselines/common/vec_env/base_vec_env.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/vec_env/base_vec_env.py"
+  },
+  {
+    "git_blob_sha1": "2fb9d7b962b6e3455b7aea0a9ec4668431b38d1f",
+    "path": "stable-baselines/stable_baselines/common/vec_env/dummy_vec_env.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/vec_env/dummy_vec_env.py"
+  },
+  {
+    "git_blob_sha1": "e725cd10c82fd195fc71533cdbbe9c0bf78284c2",
+    "path": "stable-baselines/stable_baselines/common/vec_env/subproc_vec_env.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/vec_env/subproc_vec_env.py"
+  },
+  {
+    "git_blob_sha1": "03ce286d354b504bc11dd8a13ac17505d99f8e1d",
+    "path": "stable-baselines/stable_baselines/common/vec_env/util.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/vec_env/util.py"
+  },
+  {
+    "git_blob_sha1": "6deda56c532c55469a217b507a18ef05113c1ef0",
+    "path": "stable-baselines/stable_baselines/common/vec_env/vec_check_nan.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/vec_env/vec_check_nan.py"
+  },
+  {
+    "git_blob_sha1": "044102ebdd766ead93b745a046f5d12bc875b86d",
+    "path": "stable-baselines/stable_baselines/common/vec_env/vec_frame_stack.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/vec_env/vec_frame_stack.py"
+  },
+  {
+    "git_blob_sha1": "6ab308b13fcf7e1303018cd17a6ee171ccede4fe",
+    "path": "stable-baselines/stable_baselines/common/vec_env/vec_normalize.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/vec_env/vec_normalize.py"
+  },
+  {
+    "git_blob_sha1": "23478246297b18f26155af7bfdb254e1024c9316",
+    "path": "stable-baselines/stable_baselines/common/vec_env/vec_video_recorder.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/common/vec_env/vec_video_recorder.py"
+  },
+  {
+    "git_blob_sha1": "1ce12c029af861a3d3debceb92a28c423d824b44",
+    "path": "stable-baselines/stable_baselines/ddpg/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ddpg/__init__.py"
+  },
+  {
+    "git_blob_sha1": "a6a24ffe2a0fee5c06a3a943f4e5e7ba0bb06e37",
+    "path": "stable-baselines/stable_baselines/ddpg/ddpg.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ddpg/ddpg.py"
+  },
+  {
+    "git_blob_sha1": "3e1232788ce37b0f85b46b82f8979bf9154f374d",
+    "path": "stable-baselines/stable_baselines/ddpg/main.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ddpg/main.py"
+  },
+  {
+    "git_blob_sha1": "181cad37a5ef5d35b1ac81d7ba6ca6fdfd0327e3",
+    "path": "stable-baselines/stable_baselines/ddpg/noise.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ddpg/noise.py"
+  },
+  {
+    "git_blob_sha1": "37e0e26e8b8830c577cba080835550a99205938f",
+    "path": "stable-baselines/stable_baselines/ddpg/policies.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ddpg/policies.py"
+  },
+  {
+    "git_blob_sha1": "b5a5c2c755d57079354dd5a3d3cede56e2d3d894",
+    "path": "stable-baselines/stable_baselines/deepq/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/deepq/__init__.py"
+  },
+  {
+    "git_blob_sha1": "51453ec6e512f36295d0d5aa63a396873dbe2f99",
+    "path": "stable-baselines/stable_baselines/deepq/build_graph.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/deepq/build_graph.py"
+  },
+  {
+    "git_blob_sha1": "ca4268ce2eef69d8fa6b408283c9c47865a58548",
+    "path": "stable-baselines/stable_baselines/deepq/dqn.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/deepq/dqn.py"
+  },
+  {
+    "git_blob_sha1": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+    "path": "stable-baselines/stable_baselines/deepq/experiments/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/deepq/experiments/__init__.py"
+  },
+  {
+    "git_blob_sha1": "3ff006a228eae2f7af7d391ee3ddf0547582af0e",
+    "path": "stable-baselines/stable_baselines/deepq/experiments/custom_cartpole.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/deepq/experiments/custom_cartpole.py"
+  },
+  {
+    "git_blob_sha1": "9099123405e764ca6e1bffc4763c26c9cf8e17f0",
+    "path": "stable-baselines/stable_baselines/deepq/experiments/enjoy_cartpole.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/deepq/experiments/enjoy_cartpole.py"
+  },
+  {
+    "git_blob_sha1": "dc0513f8e24484b8d2c37eaaee56c279d6a58d98",
+    "path": "stable-baselines/stable_baselines/deepq/experiments/enjoy_mountaincar.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/deepq/experiments/enjoy_mountaincar.py"
+  },
+  {
+    "git_blob_sha1": "7e3fb1652d4f9a3ba27cb7dd373d2133e90938fe",
+    "path": "stable-baselines/stable_baselines/deepq/experiments/run_atari.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/deepq/experiments/run_atari.py"
+  },
+  {
+    "git_blob_sha1": "acae9b9275425c14e56bbba4833bcc14adb84e7c",
+    "path": "stable-baselines/stable_baselines/deepq/experiments/train_cartpole.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/deepq/experiments/train_cartpole.py"
+  },
+  {
+    "git_blob_sha1": "ea0936c669cba61dd905a9c128e05df5872dc47e",
+    "path": "stable-baselines/stable_baselines/deepq/experiments/train_mountaincar.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/deepq/experiments/train_mountaincar.py"
+  },
+  {
+    "git_blob_sha1": "3a2dfec16dae7d9a2bcc4fc072bda26f91455146",
+    "path": "stable-baselines/stable_baselines/deepq/policies.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/deepq/policies.py"
+  },
+  {
+    "git_blob_sha1": "a7230989bde26878401722202d6542d12f743a23",
+    "path": "stable-baselines/stable_baselines/deepq/replay_buffer.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/deepq/replay_buffer.py"
+  },
+  {
+    "git_blob_sha1": "0a4c7ac4ea5f812a42268bcd791bb810362e8085",
+    "path": "stable-baselines/stable_baselines/gail/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/gail/__init__.py"
+  },
+  {
+    "git_blob_sha1": "7c6cb63c68ee4417481c69d83836fef742c3a5ed",
+    "path": "stable-baselines/stable_baselines/gail/adversary.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/gail/adversary.py"
+  },
+  {
+    "git_blob_sha1": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+    "path": "stable-baselines/stable_baselines/gail/dataset/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/gail/dataset/__init__.py"
+  },
+  {
+    "git_blob_sha1": "6b8aa035da139ed7410f889f299cfaf62adaa484",
+    "path": "stable-baselines/stable_baselines/gail/dataset/dataset.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/gail/dataset/dataset.py"
+  },
+  {
+    "git_blob_sha1": "2cf059f21f4f29f593f87582eed17abdc9b88a1f",
+    "path": "stable-baselines/stable_baselines/gail/dataset/record_expert.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/gail/dataset/record_expert.py"
+  },
+  {
+    "git_blob_sha1": "f5d620228481a2553b544024f8bc93de012bb1c0",
+    "path": "stable-baselines/stable_baselines/gail/model.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/gail/model.py"
+  },
+  {
+    "git_blob_sha1": "6b47d6e794053c0463436d9e2cfaf7d961488613",
+    "path": "stable-baselines/stable_baselines/her/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/her/__init__.py"
+  },
+  {
+    "git_blob_sha1": "6a9e89f43dcb44e68b5916d2b0559d9098a58db4",
+    "path": "stable-baselines/stable_baselines/her/her.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/her/her.py"
+  },
+  {
+    "git_blob_sha1": "b295890d1314635503be4250d62f5709e1a546b4",
+    "path": "stable-baselines/stable_baselines/her/replay_buffer.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/her/replay_buffer.py"
+  },
+  {
+    "git_blob_sha1": "72515cc3006105e617f34b39cd4ef44fa8938c8a",
+    "path": "stable-baselines/stable_baselines/her/utils.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/her/utils.py"
+  },
+  {
+    "git_blob_sha1": "24a6faa074b844574181d9081504796c07febcd3",
+    "path": "stable-baselines/stable_baselines/logger.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/logger.py"
+  },
+  {
+    "git_blob_sha1": "e04efd2a3dc88a59581159321f120af6b9b4bca8",
+    "path": "stable-baselines/stable_baselines/ppo1/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ppo1/__init__.py"
+  },
+  {
+    "git_blob_sha1": "e3d2fa301af449b39b087ab1fe8d28a4cbbf66af",
+    "path": "stable-baselines/stable_baselines/ppo1/experiments/train_cartpole.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ppo1/experiments/train_cartpole.py"
+  },
+  {
+    "git_blob_sha1": "903801bc05bb1867033773515730eeed13ae8ac6",
+    "path": "stable-baselines/stable_baselines/ppo1/pposgd_simple.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ppo1/pposgd_simple.py"
+  },
+  {
+    "git_blob_sha1": "692f9678742356dc5f7c5906dd2985e532e87a05",
+    "path": "stable-baselines/stable_baselines/ppo1/run_atari.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ppo1/run_atari.py"
+  },
+  {
+    "git_blob_sha1": "77bfd06583aa513823fa6df920d8671f57851524",
+    "path": "stable-baselines/stable_baselines/ppo1/run_mujoco.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ppo1/run_mujoco.py"
+  },
+  {
+    "git_blob_sha1": "aeab9aaa0f186e6b5531957d56a23600f752e007",
+    "path": "stable-baselines/stable_baselines/ppo1/run_robotics.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ppo1/run_robotics.py"
+  },
+  {
+    "git_blob_sha1": "6eb9f827f76b05b3b9533f6fa283d47fefc3ce87",
+    "path": "stable-baselines/stable_baselines/ppo2/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ppo2/__init__.py"
+  },
+  {
+    "git_blob_sha1": "642fd93f399c4dcf4debb0afaa9fa03f46d0ae70",
+    "path": "stable-baselines/stable_baselines/ppo2/ppo2.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ppo2/ppo2.py"
+  },
+  {
+    "git_blob_sha1": "5260532ccdcea4ff7e3320fbcbc086413000adaa",
+    "path": "stable-baselines/stable_baselines/ppo2/run_atari.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ppo2/run_atari.py"
+  },
+  {
+    "git_blob_sha1": "a99efbca92b54ab58aa08af9b45960d1b65e42cc",
+    "path": "stable-baselines/stable_baselines/ppo2/run_mujoco.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/ppo2/run_mujoco.py"
+  },
+  {
+    "git_blob_sha1": "5631f7a62e77eb3f6212ac9d1eb499e9968c57ab",
+    "path": "stable-baselines/stable_baselines/results_plotter.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/results_plotter.py"
+  },
+  {
+    "git_blob_sha1": "e727402fb6c278867f07c2dd36a0e1ab812e6fa7",
+    "path": "stable-baselines/stable_baselines/sac/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/sac/__init__.py"
+  },
+  {
+    "git_blob_sha1": "b9337e98a669e74673ad32b29a389acfe5d57563",
+    "path": "stable-baselines/stable_baselines/sac/policies.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/sac/policies.py"
+  },
+  {
+    "git_blob_sha1": "ab7bef628232d7be4b1954d58d164532ff652125",
+    "path": "stable-baselines/stable_baselines/sac/sac.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/sac/sac.py"
+  },
+  {
+    "git_blob_sha1": "e8b558387d32ec81e4e18469fa129269000de3cc",
+    "path": "stable-baselines/stable_baselines/td3/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/td3/__init__.py"
+  },
+  {
+    "git_blob_sha1": "d1b42ba142969ca27c420ea254da112d239c44b9",
+    "path": "stable-baselines/stable_baselines/td3/policies.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/td3/policies.py"
+  },
+  {
+    "git_blob_sha1": "456b9005769f09051bfc0ec62b2c5e2172fd6107",
+    "path": "stable-baselines/stable_baselines/td3/td3.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/td3/td3.py"
+  },
+  {
+    "git_blob_sha1": "601d7f88479df7b97623dc405a529b73c3fb19f9",
+    "path": "stable-baselines/stable_baselines/trpo_mpi/__init__.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/trpo_mpi/__init__.py"
+  },
+  {
+    "git_blob_sha1": "dab662b2bab0b293d02783891f3fc0e4cf3b2f7a",
+    "path": "stable-baselines/stable_baselines/trpo_mpi/run_atari.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/trpo_mpi/run_atari.py"
+  },
+  {
+    "git_blob_sha1": "de303dba14f589f25f23aee57c7d404c70a53d74",
+    "path": "stable-baselines/stable_baselines/trpo_mpi/run_mujoco.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/trpo_mpi/run_mujoco.py"
+  },
+  {
+    "git_blob_sha1": "22d0eb39cc3b9078ca34e76123f723c82e3ae1a0",
+    "path": "stable-baselines/stable_baselines/trpo_mpi/trpo_mpi.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/trpo_mpi/trpo_mpi.py"
+  },
+  {
+    "git_blob_sha1": "afc100e5351195f51dd98257a4e5c55366d7ddc9",
+    "path": "stable-baselines/stable_baselines/trpo_mpi/utils.py",
+    "ref": "2fea7ee093b46f4ed4e6d90729dd09bf9d115b38",
+    "repository": "keshaviyengar/stable-baselines",
+    "source_path": "stable_baselines/trpo_mpi/utils.py"
+  },
+  {
+    "git_blob_sha1": "fe7c4b2b68ca30ff9918ef68de833155db6ec48a",
+    "path": "gym-ctm-ros/ctm_envs/__init__.py",
+    "ref": "6ae2d59719e8c7a25bf51ba91ea1d1fed7c06d57",
+    "repository": "keshaviyengar/gym-ctm-ros",
+    "source_path": "ctm_envs/__init__.py"
+  },
+  {
+    "git_blob_sha1": "45d06fdaf6c8592351f71ecb65a74b124c12f0c6",
+    "path": "gym-ctm-ros/ctm_envs/envs/__init__.py",
+    "ref": "6ae2d59719e8c7a25bf51ba91ea1d1fed7c06d57",
+    "repository": "keshaviyengar/gym-ctm-ros",
+    "source_path": "ctm_envs/envs/__init__.py"
+  },
+  {
+    "git_blob_sha1": "1a840071de3cfd878a46a62fcf5b194a09020a11",
+    "path": "gym-ctm-ros/ctm_envs/envs/basic_obs.py",
+    "ref": "6ae2d59719e8c7a25bf51ba91ea1d1fed7c06d57",
+    "repository": "keshaviyengar/gym-ctm-ros",
+    "source_path": "ctm_envs/envs/basic_obs.py"
+  },
+  {
+    "git_blob_sha1": "b8ea8faac2376b134d82849832ac30bda3bcdcc5",
+    "path": "gym-ctm-ros/ctm_envs/envs/ctm_env.py",
+    "ref": "6ae2d59719e8c7a25bf51ba91ea1d1fed7c06d57",
+    "repository": "keshaviyengar/gym-ctm-ros",
+    "source_path": "ctm_envs/envs/ctm_env.py"
+  },
+  {
+    "git_blob_sha1": "98ca3ae7ddf5dde7eb56c6724d382da6d9e7ae3c",
+    "path": "gym-ctm-ros/ctm_envs/envs/ctm_render.py",
+    "ref": "6ae2d59719e8c7a25bf51ba91ea1d1fed7c06d57",
+    "repository": "keshaviyengar/gym-ctm-ros",
+    "source_path": "ctm_envs/envs/ctm_render.py"
+  },
+  {
+    "git_blob_sha1": "994bf833844c59c95d69e4c1ea6f902a15af62d3",
+    "path": "gym-ctm-ros/ctm_envs/envs/dominant_stiffness_model.py",
+    "ref": "6ae2d59719e8c7a25bf51ba91ea1d1fed7c06d57",
+    "repository": "keshaviyengar/gym-ctm-ros",
+    "source_path": "ctm_envs/envs/dominant_stiffness_model.py"
+  },
+  {
+    "git_blob_sha1": "5d458d2b1310b8a18ee4a1a58cac5e2506a4bfa8",
+    "path": "gym-ctm-ros/ctm_envs/envs/exact_model.py",
+    "ref": "6ae2d59719e8c7a25bf51ba91ea1d1fed7c06d57",
+    "repository": "keshaviyengar/gym-ctm-ros",
+    "source_path": "ctm_envs/envs/exact_model.py"
+  },
+  {
+    "git_blob_sha1": "21275b2b0ad61e2caaefa330251b4a1b0e88e33e",
+    "path": "gym-ctm-ros/ctm_envs/envs/model_base.py",
+    "ref": "6ae2d59719e8c7a25bf51ba91ea1d1fed7c06d57",
+    "repository": "keshaviyengar/gym-ctm-ros",
+    "source_path": "ctm_envs/envs/model_base.py"
+  },
+  {
+    "git_blob_sha1": "7e64bfaf5e53dafcc538f512a7086d43b9d5da7b",
+    "path": "gym-ctm-ros/ctm_envs/envs/obs_base.py",
+    "ref": "6ae2d59719e8c7a25bf51ba91ea1d1fed7c06d57",
+    "repository": "keshaviyengar/gym-ctm-ros",
+    "source_path": "ctm_envs/envs/obs_base.py"
+  },
+  {
+    "git_blob_sha1": "5b6638384ed3e829f2ede534bdf0c9d45b98b9e5",
+    "path": "gym-ctm-ros/ctm_envs/envs/polar_obs.py",
+    "ref": "6ae2d59719e8c7a25bf51ba91ea1d1fed7c06d57",
+    "repository": "keshaviyengar/gym-ctm-ros",
+    "source_path": "ctm_envs/envs/polar_obs.py"
+  },
+  {
+    "git_blob_sha1": "123b95af2b1a6423536c5039cbd65bd6c8008629",
+    "path": "gym-ctm-ros/ctm_envs/envs/trig_obs.py",
+    "ref": "6ae2d59719e8c7a25bf51ba91ea1d1fed7c06d57",
+    "repository": "keshaviyengar/gym-ctm-ros",
+    "source_path": "ctm_envs/envs/trig_obs.py"
+  }
+]

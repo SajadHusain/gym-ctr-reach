@@ -1,9 +1,10 @@
 # CTR reaching with DDPG and HER
 
-For the **ICRA 2021 goal-based curriculum paper**, first read the
-[source audit](docs/icra_2021_audit.md). Its archived experiment differs from
-the 2024 profile below, and the paper and released code disagree about the
-robot and policy inputs. An exact 2021 trainer has not yet been implemented.
+For the **ICRA 2021 author-archive reproduction**, use the separate
+[legacy TensorFlow/MPI implementation and Windows instructions](icra2021/README.md).
+It exposes Gymnasium while retaining the author's learner and archived robot.
+The [source audit](docs/icra_2021_audit.md) records conflicts with the printed paper;
+the user selected the archived implementation as the reference.
 
 For the documented 2024 paper configuration, use
 [the paper reproduction instructions](docs/paper_reproduction.md) and

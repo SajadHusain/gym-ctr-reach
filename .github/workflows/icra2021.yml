@@ -1,0 +1,31 @@
+name: Archived ICRA 2021 port
+on:
+  push:
+    branches: [modern-ddpg-her]
+    paths: ['icra2021/**', '.github/workflows/icra2021.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  archive-parity:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: icra2021
+          fetch-depth: 1
+      - name: Build pinned TensorFlow 1 runtime
+        run: docker build -f icra2021/Dockerfile -t ctr-icra2021 .
+      - name: Source, environment, HER and archived policy comparisons
+        run: docker run --rm ctr-icra2021 python -m icra2021.check --tensorflow
+      - name: Two-worker training and checkpoint evaluation
+        run: |
+          mkdir -p ci-runs
+          docker run --rm -v "$PWD/ci-runs:/runs" ctr-icra2021 python -m mpiexec -n 2 python -m icra2021.train --expected-workers 2 --total-timesteps 600 --progress-every 200 --output-dir /runs/smoke
+          docker run --rm -v "$PWD/ci-runs:/runs" ctr-icra2021 python -m icra2021.evaluate /runs/smoke/final_model.zip --episodes 3 --progress-every 1 --output-dir /runs/evaluation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: icra2021-smoke-results
+          path: ci-runs/

@@ -1,8 +1,10 @@
 # ICRA 2021 reproduction audit
 
-Status: source audit completed on 2026-09-08; an exact ICRA 2021 training
-implementation has **not** been delivered. The existing `paper-2024` profile
-targets a different publication and must not be presented as this experiment.
+Status: source audit completed on 2026-09-08. The user subsequently selected
+the author's archived implementation as the reference. See the separate
+[archive-based Gymnasium port](../icra2021/README.md) for implementation,
+validation and the newly discovered checkpoint/configuration mismatch.
+The existing `paper-2024` profile targets a different publication.
 
 The target is *Deep Reinforcement Learning for Concentric Tube Robot Control
 with a Goal-Based Curriculum*, Iyengar and Stoyanov, ICRA 2021,
@@ -120,8 +122,8 @@ There are two defensible targets, and they must be named separately:
    equation (5), filling unreported training details from the archive. This is
    an interpretation of the paper, not an unchanged rerun of released code.
 
-The source priority needs to be resolved before an implementation is advertised
-as exact. Author confirmation of the experiment geometry would resolve the most
+Source priority is now resolved in favor of the archived implementation.
+An exact historical-results claim remains unsupported. Author confirmation of the experiment geometry would resolve the most
 important discrepancy. No claim of reproducing Table II is currently justified.
 
 After that decision, the necessary checks are: compare fixed-configuration
@@ -137,7 +139,6 @@ rate 0.93. The 3.38 mm / 0.89 row is egocentric-linear. The adjacent column is
 labelled **variance**; it should not be rewritten as a standard deviation or
 confidence interval. Matching architecture alone does not guarantee either row.
 
-This audit changes documentation only. It does not supply a new runnable 2021
-trainer, change existing checkpoint compatibility, or establish learning
-performance. Existing tests of the modern implementation cannot validate the
-historical reproduction.
+This page records the initial source audit. The subsequent implementation and
+its validation status are documented in `icra2021/README.md`. Existing tests of
+the modern implementation cannot validate the historical reproduction.
