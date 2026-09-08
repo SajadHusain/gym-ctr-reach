@@ -1,0 +1,36 @@
+name: Equilibrium mechanics
+
+on:
+  push:
+    branches: [physics-equilibrium]
+    paths:
+      - 'ctr_reach_envs/mechanics/**'
+      - 'tests/test_mechanics.py'
+      - 'validate_mechanics.py'
+      - '.github/workflows/mechanics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mechanics:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e ".[test]"
+      - run: python -m pytest tests/test_mechanics.py -q
+      - run: python validate_mechanics.py --samples-per-system 8 --output-dir runs/mechanics_ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mechanics-${{ matrix.os }}
+          path: runs/mechanics_ci/
