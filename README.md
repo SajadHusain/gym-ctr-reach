@@ -1,5 +1,10 @@
 # CTR reaching with DDPG and HER
 
+For the **ICRA 2021 goal-based curriculum paper**, first read the
+[source audit](docs/icra_2021_audit.md). Its archived experiment differs from
+the 2024 profile below, and the paper and released code disagree about the
+robot and policy inputs. An exact 2021 trainer has not yet been implemented.
+
 For the documented 2024 paper configuration, use
 [the paper reproduction instructions](docs/paper_reproduction.md) and
 `train_paper_ddpg_her.py`. That profile uses 3 million training steps, an
