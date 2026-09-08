@@ -1,0 +1,3854 @@
+{
+  "source_base_commit": "5ce8a9c10f00a0af07a6923c0de95fda3afe7c1a",
+  "tested_source_sha256": {
+    "ctr_reach_envs/mechanics/solver.py": "f01b19c37c28de8402d529a7c3b524a728622afc726418ec2ece39a72bf20f81",
+    "ctr_reach_envs/mechanics/sensitivity.py": "6d4e3739c987a061a69abfec86120cad7f2b5811a1b7280145fc6d5ab5bf0587",
+    "ctr_reach_envs/mechanics/stability.py": "48f68689a6621f0720c2d995be5cc308442cba407d099ab91d78778f3b374b35",
+    "ctr_reach_envs/mechanics/__init__.py": "78985d9c24f6a9b98cebfd31c95fa5da65768cb3a434a0e2482fc6d2c915afa2",
+    "tests/test_mechanics_step2.py": "30f5082ece6fdb5de6ce2ab81192a170ced732ee78fc7f336583ac76684cf974",
+    "validate_mechanics_step2.py": "4232d417f871c93c3dec6aa53b16f7e6fae913a54303302625fc3ac4807bd8f0"
+  },
+  "tests": {
+    "command": "python -m pytest tests/test_mechanics.py tests/test_mechanics_step2.py -q",
+    "passed": 34
+  },
+  "summary": {
+    "complete": true,
+    "samples": 16,
+    "passed": 16,
+    "failed": 0,
+    "seed": 7002,
+    "stability_status_counts": {
+      "negative_second_variation": 5,
+      "positive_second_variation_on_tested_meshes": 11
+    },
+    "maximum_relative_jacobian_error": 1.2978479619627729e-09,
+    "maximum_column_relative_error": 1.2505090546039772e-07,
+    "relative_jacobian_tolerance": 0.001,
+    "mean_base_solve_seconds": 0.14083449881250942,
+    "mean_sensitivity_seconds": 0.037755197562503895,
+    "mean_stability_seconds": 0.09209002456250914,
+    "total_elapsed_seconds": 62.7267856750002,
+    "standard_solver": {
+      "rtol": 1e-08,
+      "atol": 1e-10,
+      "max_step": 0.01,
+      "boundary_tolerance": 1e-07,
+      "max_shooting_evaluations": 250,
+      "max_rhs_evaluations": 500000,
+      "samples_per_segment": 17
+    },
+    "reference_solver": {
+      "rtol": 1e-11,
+      "atol": 1e-13,
+      "max_step": 0.002,
+      "boundary_tolerance": 1e-07,
+      "max_shooting_evaluations": 250,
+      "max_rhs_evaluations": 500000,
+      "samples_per_segment": 17
+    },
+    "python": "3.12.13",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "git_commit": null,
+    "elastic_stability_certified": false,
+    "global_uniqueness_certified": false,
+    "controller_stability_certified": false,
+    "sampled_prediction_errors_are_rigorous_bounds": false,
+    "pass_definition": "Jacobian agrees with full BVP finite differences at two step sizes; stability diagnostic completed"
+  },
+  "cases": [
+    {
+      "system": "ctr_0",
+      "sample": 0,
+      "q": [
+        -0.19599808468096527,
+        -0.12600990538805137,
+        -0.003737862197937286,
+        2.2994960463889864,
+        -0.8594645906266152,
+        -1.4681794936637027
+      ],
+      "base_solver": {
+        "shooting_evaluations": 15,
+        "rhs_evaluations": 5655,
+        "ivp_integrations": 96,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "boundary_residual_scaled": 5.9215132797163505e-15,
+        "base_torque_sum_nm": 7.876483406410303e-17,
+        "max_quaternion_norm_error": 2.098321516541546e-14,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 477,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 4.025432764898085e-15,
+        "reintegration_tip_discrepancy_m": 2.082824332422744e-16,
+        "seconds": 0.13170624000008502,
+        "mesh_dofs": [
+          123,
+          243,
+          483
+        ],
+        "last_refinement_change": 0.00011193000687770294,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "equilibrium_base_torsion": [
+          -1.7630900789121977,
+          -0.8627720996343957,
+          0.4361516267965822
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          -2.4667432941898673,
+          -2.467190994401275,
+          -2.467302924408153
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 507,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 6.204907675851367e-15,
+        "reintegration_tip_discrepancy_m": 2.3551386880256624e-16,
+        "shooting_condition_number": 3.608101301853103,
+        "shooting_smallest_singular_value": 0.6184534720547232,
+        "implicit_equation_residual": 1.4432899320127035e-15,
+        "seconds": 0.05469583499984765,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.431,
+          0.431,
+          0.431,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "equilibrium_base_torsion": [
+          -1.7630900789121977,
+          -0.8627720996343957,
+          0.4361516267965822
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          -0.34684629162702785,
+          0.0531197221622364,
+          0.2937265694647907,
+          0.013552838761096747,
+          0.01300800113886387,
+          0.012394940836753899
+        ],
+        [
+          -0.6267029799044942,
+          0.5271075027769708,
+          0.0995954771275231,
+          -0.027823535553678905,
+          -0.018441884951394268,
+          -0.029190524253760376
+        ],
+        [
+          0.7389804861724352,
+          0.018880411515093953,
+          0.24213910231247193,
+          -0.004058422952516157,
+          0.004190872649239837,
+          -0.00013244969672365856
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 56304,
+          "shooting_evaluations": 24,
+          "steps": [
+            4.31e-06,
+            4.31e-06,
+            4.31e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 9.570122472268849e-17
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 56304,
+          "shooting_evaluations": 24,
+          "steps": [
+            2.155e-06,
+            2.155e-06,
+            2.155e-06,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 1.0699722200495746e-16
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          -0.3468462913857697,
+          0.05311972203943652,
+          0.2937265694847891,
+          0.013552838751262895,
+          0.01300800113734901,
+          0.012394940840376732
+        ],
+        [
+          -0.6267029800386048,
+          0.5271075032788737,
+          0.09959547707367176,
+          -0.027823535540816288,
+          -0.018441884931663655,
+          -0.029190524257483027
+        ],
+        [
+          0.7389804856206381,
+          0.018880412765563213,
+          0.24213910229168703,
+          -0.004058422931052519,
+          0.004190872660014833,
+          -0.0001324496984311807
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            0.00016648018163786847,
+            5.721234187988114e-05,
+            0.0003239154170492647,
+            -0.00039592779316842083,
+            0.0002402792633978147,
+            0.0002320936803038038
+          ],
+          "error_m": 5.852342144195433e-07,
+          "actual_displacement_m": 0.0002134034892629283,
+          "rhs_evaluations": 16404,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 2.3261521079531144e-05
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            8.324009081893424e-05,
+            2.860617093994057e-05,
+            0.00016195770852463234,
+            -0.00019796389658421041,
+            0.00012013963169890734,
+            0.0001160468401519019
+          ],
+          "error_m": 1.457623607586349e-07,
+          "actual_displacement_m": 0.0001066981824336221,
+          "rhs_evaluations": 16404,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 5.78855611957636e-06
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            4.162004540946712e-05,
+            1.4303085469970286e-05,
+            8.097885426231617e-05,
+            -9.898194829210521e-05,
+            6.006981584945367e-05,
+            5.802342007595095e-05
+          ],
+          "error_m": 3.6372816995294833e-08,
+          "actual_displacement_m": 5.334818516047562e-05,
+          "rhs_evaluations": 16404,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 1.4438117543773027e-06
+        }
+      ]
+    },
+    {
+      "system": "ctr_0",
+      "sample": 1,
+      "q": [
+        -0.17688884219478113,
+        -0.1469302420520866,
+        -0.07838178431397895,
+        -1.105418648579104,
+        -1.6008253849123653,
+        2.6366268064996277
+      ],
+      "base_solver": {
+        "shooting_evaluations": 15,
+        "rhs_evaluations": 6028,
+        "ivp_integrations": 80,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "boundary_residual_scaled": 3.2358976609359046e-15,
+        "base_torque_sum_nm": 3.3046322952273517e-16,
+        "max_quaternion_norm_error": 1.9095836023552692e-14,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 490,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 3.7981423561816997e-16,
+        "reintegration_tip_discrepancy_m": 1.7067422303575003e-16,
+        "seconds": 0.11966750700003104,
+        "mesh_dofs": [
+          91,
+          179,
+          355
+        ],
+        "last_refinement_change": 6.251440417992526e-05,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "equilibrium_base_torsion": [
+          -0.9218118730011676,
+          -0.9282675843359892,
+          0.37764148512192747
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          3.6693304745334556,
+          3.6690804077359758,
+          3.669017893331796
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 520,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 7.521518130548799e-16,
+        "reintegration_tip_discrepancy_m": 1.1364755910069911e-16,
+        "shooting_condition_number": 2.30828119554414,
+        "shooting_smallest_singular_value": 0.9116990029557812,
+        "implicit_equation_residual": 2.067790383364354e-15,
+        "seconds": 0.05385684600014429,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.431,
+          0.431,
+          0.431,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "equilibrium_base_torsion": [
+          -0.9218118730011676,
+          -0.9282675843359892,
+          0.37764148512192747
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          -0.4474450162144556,
+          0.23500283622310386,
+          0.294550461044042,
+          -0.003204153530089227,
+          -0.007724560135564948,
+          -0.00964514822014648
+        ],
+        [
+          -0.47134453172253454,
+          -0.578948775217377,
+          1.2098090873287697,
+          -0.030550473393196186,
+          -0.08912288076207121,
+          0.009301044730858207
+        ],
+        [
+          -0.662965187149509,
+          1.1791510765249904,
+          0.527016019291618,
+          0.011604355578835988,
+          0.0024914363618595003,
+          -0.014095791940695497
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 58968,
+          "shooting_evaluations": 24,
+          "steps": [
+            4.31e-06,
+            4.31e-06,
+            4.31e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 5.349861100247873e-17
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 58968,
+          "shooting_evaluations": 24,
+          "steps": [
+            2.155e-06,
+            2.155e-06,
+            2.155e-06,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 5.349861100247873e-17
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          -0.44744501606688525,
+          0.2350028363773198,
+          0.29455046112286803,
+          -0.003204153524449804,
+          -0.007724560135979885,
+          -0.009645148218995203
+        ],
+        [
+          -0.47134453143907007,
+          -0.578948775403739,
+          1.2098090873480842,
+          -0.03055047331154692,
+          -0.08912288070699047,
+          0.009301044742032749
+        ],
+        [
+          -0.6629651869375381,
+          1.1791510762004334,
+          0.5270160193206715,
+          0.011604355545924426,
+          0.0024914363433437003,
+          -0.01409579191979926
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            0.00023778378722754645,
+            0.00013835219061665167,
+            0.00023254370119466663,
+            -0.00011629982844314573,
+            6.522942481809452e-05,
+            -0.0005326281097855535
+          ],
+          "error_m": 1.1228623149172685e-07,
+          "actual_displacement_m": 0.00015740729244224808,
+          "rhs_evaluations": 17378,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 1.7060747078214226e-06
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            0.00011889189361377323,
+            6.917609530832584e-05,
+            0.00011627185059733332,
+            -5.8149914221572864e-05,
+            3.261471240904726e-05,
+            -0.00026631405489277676
+          ],
+          "error_m": 2.8039515412658625e-08,
+          "actual_displacement_m": 7.869814434490702e-05,
+          "rhs_evaluations": 17378,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 4.261409889307498e-07
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            5.944594680688661e-05,
+            3.458804765416292e-05,
+            5.813592529866666e-05,
+            -2.9074957110786432e-05,
+            1.630735620452363e-05,
+            -0.00013315702744638838
+          ],
+          "error_m": 7.00587957148354e-09,
+          "actual_displacement_m": 3.934770677265392e-05,
+          "rhs_evaluations": 17378,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 1.0648808991899386e-07
+        }
+      ]
+    },
+    {
+      "system": "ctr_0",
+      "sample": 2,
+      "q": [
+        -0.33958891147041625,
+        -0.307673998532621,
+        -0.15809367932138735,
+        2.2999243594142236,
+        1.2279537269046932,
+        2.3021722446584505
+      ],
+      "base_solver": {
+        "shooting_evaluations": 15,
+        "rhs_evaluations": 2244,
+        "ivp_integrations": 48,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "boundary_residual_scaled": 8.96519836844308e-16,
+        "base_torque_sum_nm": -9.789002822645234e-18,
+        "max_quaternion_norm_error": 2.0317081350640365e-14,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 216,
+        "ivp_integrations": 3,
+        "boundary_residual_scaled": 7.8953510396218e-16,
+        "reintegration_tip_discrepancy_m": 6.869154506741516e-17,
+        "seconds": 0.06233036000003267,
+        "mesh_dofs": [
+          51,
+          99,
+          195
+        ],
+        "last_refinement_change": 0.00025580285760185006,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "equilibrium_base_torsion": [
+          -0.7038102329296365,
+          0.8092679689362956,
+          -0.18759354756401503
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          7.511692904959352,
+          7.510669539455062,
+          7.51041373659746
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 246,
+        "ivp_integrations": 3,
+        "boundary_residual_scaled": 3.9476755198109e-16,
+        "reintegration_tip_discrepancy_m": 1.2874406620843793e-16,
+        "shooting_condition_number": 1.6468902111745847,
+        "shooting_smallest_singular_value": 0.9926282029392487,
+        "implicit_equation_residual": 1.8388068845354155e-15,
+        "seconds": 0.029702411000016582,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.431,
+          0.431,
+          0.431,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "equilibrium_base_torsion": [
+          -0.7038102329296365,
+          0.8092679689362956,
+          -0.18759354756401503
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          0.8763648401442629,
+          0.023770386352081875,
+          -0.295552357724532,
+          -0.012897649943311017,
+          -0.003764328440313182,
+          -0.0019139810087015399
+        ],
+        [
+          0.47537724176066637,
+          -0.8295955709101722,
+          0.39570145843859894,
+          0.026408642384818867,
+          0.017724757750448118,
+          0.0051142750099863795
+        ],
+        [
+          -0.08343557609686601,
+          0.39974063964083206,
+          0.15953428348757287,
+          0.003132395878834105,
+          -0.0030718246799633607,
+          -6.057119887071383e-05
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 21600,
+          "shooting_evaluations": 24,
+          "steps": [
+            4.31e-06,
+            4.31e-06,
+            4.31e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 4.7850612361344246e-17
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 21600,
+          "shooting_evaluations": 24,
+          "steps": [
+            2.155e-06,
+            2.155e-06,
+            2.155e-06,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 4.7850612361344246e-17
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          0.8763648398310093,
+          0.023770386344045605,
+          -0.2955523576890299,
+          -0.012897649943888199,
+          -0.003764328437849684,
+          -0.0019139810111812314
+        ],
+        [
+          0.4753772416064178,
+          -0.8295955705659047,
+          0.39570145844092525,
+          0.02640864238158402,
+          0.01772475774902693,
+          0.005114275012166325
+        ],
+        [
+          -0.08343557607189844,
+          0.3997406400316315,
+          0.15953428348606755,
+          0.0031323958794848834,
+          -0.0030718246793459687,
+          -6.0571195281688965e-05
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            -0.00025620318653734816,
+            -0.00011704619583061625,
+            0.0001625537560373518,
+            0.0004411078051315001,
+            -0.00021237915682776609,
+            -0.00043699640678641
+          ],
+          "error_m": 7.606779360718899e-07,
+          "actual_displacement_m": 0.00028297249291314567,
+          "rhs_evaluations": 6495,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 5.279427635000337e-06
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            -0.00012810159326867408,
+            -5.852309791530813e-05,
+            8.12768780186759e-05,
+            0.00022055390256575004,
+            -0.00010618957841388304,
+            -0.000218498203393205
+          ],
+          "error_m": 1.9018586710721746e-07,
+          "actual_displacement_m": 0.00014150894841201186,
+          "rhs_evaluations": 6360,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 1.3192472784497355e-06
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            -6.405079663433704e-05,
+            -2.9261548957654063e-05,
+            4.063843900933795e-05,
+            0.00011027695128287502,
+            -5.309478920694152e-05,
+            -0.0001092491016966025
+          ],
+          "error_m": 4.7548510853528096e-08,
+          "actual_displacement_m": 7.076014752284068e-05,
+          "rhs_evaluations": 6360,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 3.297361485263895e-07
+        }
+      ]
+    },
+    {
+      "system": "ctr_0",
+      "sample": 3,
+      "q": [
+        -0.3033897639282349,
+        -0.23567778544301848,
+        -0.09845546153206848,
+        -0.879401368391183,
+        -1.4165178091033894,
+        -0.1717836233034662
+      ],
+      "base_solver": {
+        "shooting_evaluations": 16,
+        "rhs_evaluations": 3631,
+        "ivp_integrations": 68,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "boundary_residual_scaled": 1.1722169038799676e-14,
+        "base_torque_sum_nm": 1.1778687835669586e-15,
+        "max_quaternion_norm_error": 1.84297022087776e-14,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 263,
+        "ivp_integrations": 4,
+        "boundary_residual_scaled": 1.1660455987071591e-14,
+        "reintegration_tip_discrepancy_m": 8.940139411221186e-17,
+        "seconds": 0.08524145399996996,
+        "mesh_dofs": [
+          75,
+          147,
+          291
+        ],
+        "last_refinement_change": 7.457116886477877e-05,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "equilibrium_base_torsion": [
+          0.1768720763081974,
+          2.1938735437307177,
+          -0.7044417005282453
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          8.176670351146353,
+          8.176372071645794,
+          8.17629750047693
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 308,
+        "ivp_integrations": 4,
+        "boundary_residual_scaled": 1.1604158486688815e-14,
+        "reintegration_tip_discrepancy_m": 4.046035655711836e-17,
+        "shooting_condition_number": 3.514909918376339,
+        "shooting_smallest_singular_value": 0.9852823863918603,
+        "implicit_equation_residual": 9.159339953157541e-16,
+        "seconds": 0.03353091100007077,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.431,
+          0.431,
+          0.431,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "equilibrium_base_torsion": [
+          0.1768720763081974,
+          2.1938735437307177,
+          -0.7044417005282453
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          -0.7091306775770225,
+          0.0038457503290267045,
+          0.2507791820796898,
+          0.005882932236711954,
+          0.021293289514450014,
+          0.02256833317986189
+        ],
+        [
+          -0.6674106955981842,
+          0.0897718952238,
+          -0.14215881348980614,
+          -0.006186205346834811,
+          -0.022980021761093924,
+          -0.020258835901025507
+        ],
+        [
+          -0.045937427614274204,
+          0.23964075914628663,
+          0.16575331764055343,
+          -0.0003126177144446349,
+          -0.00139394936087645,
+          0.001706567075321093
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 30852,
+          "shooting_evaluations": 24,
+          "steps": [
+            4.31e-06,
+            4.31e-06,
+            4.31e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 4.7850612361344246e-17
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 30852,
+          "shooting_evaluations": 24,
+          "steps": [
+            2.155e-06,
+            2.155e-06,
+            2.155e-06,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 4.7850612361344246e-17
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          -0.7091306773435921,
+          0.003845750339089521,
+          0.2507791820847103,
+          0.005882932233719495,
+          0.021293289516333132,
+          0.02256833317865192
+        ],
+        [
+          -0.6674106953597967,
+          0.08977189524426557,
+          -0.14215881349441037,
+          -0.006186205347286088,
+          -0.022980021760488075,
+          -0.020258835901204586
+        ],
+        [
+          -0.045937427601849025,
+          0.2396407591216795,
+          0.1657533176258851,
+          -0.00031261771366031255,
+          -0.0013939493642700638,
+          0.0017065670779303763
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            -5.9869709300165835e-05,
+            4.3097270958426395e-05,
+            -5.127875851067202e-05,
+            -0.00034842997688824384,
+            -0.000565646326738549,
+            -0.0007177680962989606
+          ],
+          "error_m": 6.64256189443071e-08,
+          "actual_displacement_m": 8.091273103344562e-05,
+          "rhs_evaluations": 8971,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 2.6501003700798857e-07
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            -2.9934854650082918e-05,
+            2.1548635479213198e-05,
+            -2.563937925533601e-05,
+            -0.00017421498844412192,
+            -0.0002828231633692745,
+            -0.0003588840481494803
+          ],
+          "error_m": 1.6604644457079325e-08,
+          "actual_displacement_m": 4.04594310847935e-05,
+          "rhs_evaluations": 8971,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 6.628954832557749e-08
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            -1.4967427325041459e-05,
+            1.0774317739606599e-05,
+            -1.2819689627668006e-05,
+            -8.710749422206096e-05,
+            -0.00014141158168463726,
+            -0.00017944202407474015
+          ],
+          "error_m": 4.319266203296833e-09,
+          "actual_displacement_m": 2.023024991104916e-05,
+          "rhs_evaluations": 2571,
+          "shooting_evaluations": 2,
+          "branch_predictor_distance": 0.0
+        }
+      ]
+    },
+    {
+      "system": "ctr_1",
+      "sample": 0,
+      "q": [
+        -0.16100884574324326,
+        -0.10534328407452676,
+        -0.03490923823267869,
+        -0.7540984570531166,
+        -1.5802475464775367,
+        1.6795892598221007
+      ],
+      "base_solver": {
+        "shooting_evaluations": 15,
+        "rhs_evaluations": 5373,
+        "ivp_integrations": 96,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "boundary_residual_scaled": 2.0120781767343525e-13,
+        "base_torque_sum_nm": -1.3892667056952428e-18,
+        "max_quaternion_norm_error": 4.218847493575595e-15,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 462,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 9.208319967258729e-13,
+        "reintegration_tip_discrepancy_m": 9.228974464797337e-17,
+        "seconds": 0.11906713799999125,
+        "mesh_dofs": [
+          115,
+          227,
+          451
+        ],
+        "last_refinement_change": 0.001997772963177269,
+        "refinement_converged": true,
+        "classification_margin": 0.003995545926354538,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "equilibrium_base_torsion": [
+          -1.8848601495945496,
+          0.6911113955046237,
+          -0.08515416638630242
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          -10.889150009864164,
+          -10.897137601667778,
+          -10.899135374630955
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 507,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 1.3580771124103108e-12,
+        "reintegration_tip_discrepancy_m": 1.0264142596804264e-16,
+        "shooting_condition_number": 41.22875499004675,
+        "shooting_smallest_singular_value": 0.7066655009144,
+        "implicit_equation_residual": 4.884981308350689e-15,
+        "seconds": 0.050400280000076236,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.37,
+          0.37,
+          0.37,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "equilibrium_base_torsion": [
+          -1.8848601495945496,
+          0.6911113955046237,
+          -0.08515416638630242
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          -0.3571275220240516,
+          0.179629127177378,
+          0.17749839484667373,
+          -2.0701274238364795e-05,
+          -0.0018523533771478374,
+          0.0014265556735880511
+        ],
+        [
+          -0.0748513597303632,
+          -0.021670728195721054,
+          0.0965220879260843,
+          0.000196558107888128,
+          0.01413560277527074,
+          0.0039836223610761785
+        ],
+        [
+          0.9233989675097432,
+          0.006477253993602622,
+          0.07012377849665567,
+          3.2773310957420125e-06,
+          0.000236265551393814,
+          -0.00023954288248955575
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 49824,
+          "shooting_evaluations": 24,
+          "steps": [
+            3.7e-06,
+            3.7e-06,
+            3.7e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 9.18537636701491e-17
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 49824,
+          "shooting_evaluations": 24,
+          "steps": [
+            1.85e-06,
+            1.85e-06,
+            1.85e-06,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 8.215650382226158e-17
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          -0.35712752197309,
+          0.17962912719208515,
+          0.17749839482132543,
+          -2.070127680386946e-05,
+          -0.0018523533741598983,
+          0.0014265556711606784
+        ],
+        [
+          -0.07485135975361255,
+          -0.02167072822088722,
+          0.09652208798789114,
+          0.0001965581282426746,
+          0.014135602765586763,
+          0.003983622360112385
+        ],
+        [
+          0.923398967379675,
+          0.006477253980922107,
+          0.07012377854063287,
+          3.2773173064271073e-06,
+          0.0002362655682208725,
+          -0.00023954288830285717
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            -0.00019283556153490257,
+            -0.00015376978341239368,
+            -0.00024417717182099205,
+            0.00020428177145157648,
+            0.00026802163750673595,
+            -8.106016030230694e-05
+          ],
+          "error_m": 1.577367381022682e-08,
+          "actual_displacement_m": 0.00019613401922424705,
+          "rhs_evaluations": 37848,
+          "shooting_evaluations": 28,
+          "branch_predictor_distance": 1.1141091901965753e-07
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            -9.641778076745128e-05,
+            -7.688489170619684e-05,
+            -0.00012208858591049602,
+            0.00010214088572578824,
+            0.00013401081875336797,
+            -4.053008015115347e-05
+          ],
+          "error_m": 3.94338860784498e-09,
+          "actual_displacement_m": 9.806639815013025e-05,
+          "rhs_evaluations": 15816,
+          "shooting_evaluations": 11,
+          "branch_predictor_distance": 2.7839954351514383e-08
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            -4.820889038372564e-05,
+            -3.844244585309842e-05,
+            -6.104429295524801e-05,
+            5.107044286289412e-05,
+            6.700540937668399e-05,
+            -2.0265040075576734e-05
+          ],
+          "error_m": 9.85843309655483e-10,
+          "actual_displacement_m": 4.903304633823378e-05,
+          "rhs_evaluations": 26184,
+          "shooting_evaluations": 19,
+          "branch_predictor_distance": 6.957907343337095e-09
+        }
+      ]
+    },
+    {
+      "system": "ctr_1",
+      "sample": 1,
+      "q": [
+        -0.22169799495045392,
+        -0.18714532439420878,
+        -0.10959499221931462,
+        1.5376490819265891,
+        1.6782587024614797,
+        -1.9666207582104145
+      ],
+      "base_solver": {
+        "shooting_evaluations": 15,
+        "rhs_evaluations": 4030,
+        "ivp_integrations": 80,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "boundary_residual_scaled": 9.875855463462837e-15,
+        "base_torque_sum_nm": -3.770800277268285e-18,
+        "max_quaternion_norm_error": 7.105427357601002e-15,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 340,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 8.162010303461891e-12,
+        "reintegration_tip_discrepancy_m": 1.6388464360663485e-15,
+        "seconds": 0.08837226800005737,
+        "mesh_dofs": [
+          91,
+          179,
+          355
+        ],
+        "last_refinement_change": 0.0029052390537884776,
+        "refinement_converged": true,
+        "classification_margin": 0.005810478107576955,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "equilibrium_base_torsion": [
+          -1.3388951032768117,
+          -2.8374514046586046,
+          0.40276036289113765
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          -18.337298978526675,
+          -18.348919090601697,
+          -18.351824329655486
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 385,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 8.230404010890364e-12,
+        "reintegration_tip_discrepancy_m": 1.7375037444423817e-15,
+        "shooting_condition_number": 12.794546688959695,
+        "shooting_smallest_singular_value": 0.7542193346502576,
+        "implicit_equation_residual": 3.858025010572419e-15,
+        "seconds": 0.0398794469999757,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.37,
+          0.37,
+          0.37,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "equilibrium_base_torsion": [
+          -1.3388951032768117,
+          -2.8374514046586046,
+          0.40276036289113765
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          0.6214801119236614,
+          -0.38550283478478553,
+          -0.7440201724282196,
+          0.00033104164495068294,
+          -0.006245943158647754,
+          0.017410802560804496
+        ],
+        [
+          -0.3355964709687579,
+          -0.08401047418630958,
+          0.606027167320641,
+          0.0006298192513952295,
+          -0.011890709984800456,
+          0.02215359921675769
+        ],
+        [
+          0.6956611237857628,
+          0.10972819867229842,
+          0.24875155520361078,
+          4.619471079514838e-05,
+          -0.0006145452054732844,
+          0.0005683504946781431
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 36036,
+          "shooting_evaluations": 24,
+          "steps": [
+            3.7e-06,
+            3.7e-06,
+            3.7e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 1.6431300764452317e-16
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 36036,
+          "shooting_evaluations": 24,
+          "steps": [
+            1.85e-06,
+            1.85e-06,
+            1.85e-06,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 1.6559172737853697e-16
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          0.6214801118209002,
+          -0.38550283480728187,
+          -0.7440201722052799,
+          0.0003310416453114473,
+          -0.006245943160072819,
+          0.01741080255836247
+        ],
+        [
+          -0.33559647096285533,
+          -0.08401047422241656,
+          0.6060271674786946,
+          0.000629819254041597,
+          -0.011890709986257795,
+          0.022153599213078908
+        ],
+        [
+          0.6956611236763309,
+          0.10972819867442188,
+          0.24875155527746115,
+          4.619471194455826e-05,
+          -0.0006145452119410422,
+          0.0005683504916698112
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            -0.00014684335582480253,
+            1.9171484234300434e-05,
+            -7.684169718493273e-05,
+            0.00019731759276297807,
+            0.0007447595987075143,
+            -0.00045063746005052734
+          ],
+          "error_m": 8.421132872188602e-08,
+          "actual_displacement_m": 0.0001326421750662222,
+          "rhs_evaluations": 10475,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 5.927704591943956e-06
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            -7.342167791240126e-05,
+            9.585742117150217e-06,
+            -3.8420848592466364e-05,
+            9.865879638148904e-05,
+            0.00037237979935375717,
+            -0.00022531873002526367
+          ],
+          "error_m": 2.1119675642793556e-08,
+          "actual_displacement_m": 6.631279306790052e-05,
+          "rhs_evaluations": 10475,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 1.482883949565886e-06
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            -3.671083895620063e-05,
+            4.792871058575108e-06,
+            -1.9210424296233182e-05,
+            4.932939819074452e-05,
+            0.00018618989967687859,
+            -0.00011265936501263183
+          ],
+          "error_m": 5.288357425001545e-09,
+          "actual_displacement_m": 3.315433970204295e-05,
+          "rhs_evaluations": 10475,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 3.708473611380262e-07
+        }
+      ]
+    },
+    {
+      "system": "ctr_1",
+      "sample": 2,
+      "q": [
+        -0.19328369668789785,
+        -0.18497339066751226,
+        -0.1534741591985329,
+        2.6145075786589462,
+        1.6218358697135669,
+        0.9309156244594474
+      ],
+      "base_solver": {
+        "shooting_evaluations": 2,
+        "rhs_evaluations": 1041,
+        "ivp_integrations": 15,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "Initial guess satisfies boundary tolerance",
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "boundary_residual_scaled": 2.5397075746794756e-15,
+        "base_torque_sum_nm": 0.0,
+        "max_quaternion_norm_error": 1.887379141862766e-15,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 400,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 5.903066534660079e-17,
+        "reintegration_tip_discrepancy_m": 5.0515910130503314e-17,
+        "seconds": 0.12354396399996403,
+        "mesh_dofs": [
+          75,
+          147,
+          291
+        ],
+        "last_refinement_change": 9.919661675894531e-05,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "equilibrium_base_torsion": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          3.0373026388034687,
+          3.036905785318357,
+          3.036806588701598
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 400,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 5.903066534660079e-17,
+        "reintegration_tip_discrepancy_m": 1.3878871967638603e-16,
+        "shooting_condition_number": 1.0,
+        "shooting_smallest_singular_value": 1.0,
+        "implicit_equation_residual": 0.0,
+        "seconds": 0.037495110000008935,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.37,
+          0.37,
+          0.37,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "equilibrium_base_torsion": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          0.8066788961673348,
+          -0.7561194343094729,
+          0.3480569588233321,
+          -0.00798172178366445,
+          -0.009231826406432699,
+          0.0045639658323054855
+        ],
+        [
+          0.01664146918699201,
+          -0.05427582977037517,
+          -0.2590791240764795,
+          0.007567072142903284,
+          0.07964900140290061,
+          0.006351235564058208
+        ],
+        [
+          0.5907556347437993,
+          0.4072560864900364,
+          -0.2556370947762233,
+          0.010685906233966043,
+          -0.006525004307371977,
+          -0.00416090192659407
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 43620,
+          "shooting_evaluations": 24,
+          "steps": [
+            3.7e-06,
+            3.7e-06,
+            3.7e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 0.0
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 43380,
+          "shooting_evaluations": 24,
+          "steps": [
+            1.85e-06,
+            1.85e-06,
+            1.85e-06,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 0.0
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          0.8066788961663535,
+          -0.7561194343089441,
+          0.3480569588286596,
+          -0.00798172177796097,
+          -0.009231826401945309,
+          0.004563965834425421
+        ],
+        [
+          0.016641469187095,
+          -0.05427582977042432,
+          -0.2590791240747984,
+          0.0075670721419798795,
+          0.07964900140353809,
+          0.006351235563861745
+        ],
+        [
+          0.5907556347409774,
+          0.4072560864894177,
+          -0.2556370947658881,
+          0.010685906243201869,
+          -0.006525004295210301,
+          -0.004160901931338223
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            0.00014348731887081683,
+            5.9074267272734364e-05,
+            -0.0002601901090415671,
+            0.0002460490607166279,
+            -0.00039798404800486353,
+            0.0003326741915295994
+          ],
+          "error_m": 2.7269888783545156e-07,
+          "actual_displacement_m": 0.00018415968847373973,
+          "rhs_evaluations": 3807,
+          "shooting_evaluations": 2,
+          "branch_predictor_distance": 0.0
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            7.174365943540841e-05,
+            2.9537133636367182e-05,
+            -0.00013009505452078355,
+            0.00012302453035831394,
+            -0.00019899202400243176,
+            0.0001663370957647997
+          ],
+          "error_m": 6.817109511583649e-08,
+          "actual_displacement_m": 9.205647877248994e-05,
+          "rhs_evaluations": 3615,
+          "shooting_evaluations": 2,
+          "branch_predictor_distance": 0.0
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            3.5871829717704207e-05,
+            1.4768566818183591e-05,
+            -6.504752726039178e-05,
+            6.151226517915697e-05,
+            -9.949601200121588e-05,
+            8.316854788239985e-05
+          ],
+          "error_m": 1.704232034701933e-08,
+          "actual_displacement_m": 4.6022400010385466e-05,
+          "rhs_evaluations": 3711,
+          "shooting_evaluations": 2,
+          "branch_predictor_distance": 0.0
+        }
+      ]
+    },
+    {
+      "system": "ctr_1",
+      "sample": 3,
+      "q": [
+        -0.08925963865429792,
+        -0.04535308032861529,
+        -0.03504410517798334,
+        1.370295121171698,
+        -1.85347933934204,
+        -1.1762628791600045
+      ],
+      "base_solver": {
+        "shooting_evaluations": 12,
+        "rhs_evaluations": 6108,
+        "ivp_integrations": 78,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "boundary_residual_scaled": 6.325993716005541e-14,
+        "base_torque_sum_nm": -8.374184640901901e-18,
+        "max_quaternion_norm_error": 1.7763568394002505e-15,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 552,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 6.223061963578176e-14,
+        "reintegration_tip_discrepancy_m": 8.928350581400965e-17,
+        "seconds": 0.11022538299994267,
+        "mesh_dofs": [
+          107,
+          211,
+          419
+        ],
+        "last_refinement_change": 0.022729431550942536,
+        "refinement_converged": true,
+        "classification_margin": 0.04545886310188507,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "equilibrium_base_torsion": [
+          -0.2581892610805709,
+          0.01086132708872461,
+          -1.0547118733938995e-15
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          -61.784228328658855,
+          -61.874974701632766,
+          -61.89770413318371
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 597,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 6.951916473041386e-14,
+        "reintegration_tip_discrepancy_m": 8.617927446923233e-17,
+        "shooting_condition_number": 17.667568613965322,
+        "shooting_smallest_singular_value": 0.7501018335255412,
+        "implicit_equation_residual": 4.440892098500626e-16,
+        "seconds": 0.06507353899996815,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.37,
+          0.37,
+          0.37,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "equilibrium_base_torsion": [
+          -0.2581892610805709,
+          0.01086132708872461,
+          -1.0547118733938995e-15
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          -0.7764893499882088,
+          0.43265278134517027,
+          0.34383656864303874,
+          -0.0005038685548452409,
+          -0.012422715709224109,
+          0.02210759201647061
+        ],
+        [
+          0.03569546126175952,
+          -0.17885673084046264,
+          0.14316126957870307,
+          -0.002024472349563858,
+          -0.05002997112782668,
+          -0.059539170559374674
+        ],
+        [
+          0.6205606652065405,
+          0.30749173900153753,
+          0.07194759579192209,
+          -0.0005013124122711433,
+          -0.01231780484783714,
+          0.01281911726010832
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 65340,
+          "shooting_evaluations": 24,
+          "steps": [
+            3.7e-06,
+            3.7e-06,
+            3.7e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 6.418476861114186e-19
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 65340,
+          "shooting_evaluations": 24,
+          "steps": [
+            1.85e-06,
+            1.85e-06,
+            1.85e-06,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 0.0
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          -0.7764893499130733,
+          0.4326527812666388,
+          0.34383656864268375,
+          -0.0005038685413349953,
+          -0.012422715724158538,
+          0.022107592015374596
+        ],
+        [
+          0.03569546121053598,
+          -0.17885673079880635,
+          0.14316126957842465,
+          -0.0020244722917159286,
+          -0.050029971183744575,
+          -0.059539170560451986
+        ],
+        [
+          0.6205606650916556,
+          0.30749173912808664,
+          0.07194759579401036,
+          -0.0005013123943742315,
+          -0.012317804876094128,
+          0.012819117248263899
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            -6.580431974085094e-05,
+            5.86604368655132e-05,
+            0.00011491770468848581,
+            -0.0003396610095761691,
+            0.0007601480927014984,
+            0.00039188544307439154
+          ],
+          "error_m": 1.2714362955339457e-07,
+          "actual_displacement_m": 0.00013013105309681575,
+          "rhs_evaluations": 19272,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 9.983247815316405e-07
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            -3.290215987042547e-05,
+            2.93302184327566e-05,
+            5.7458852344242906e-05,
+            -0.00016983050478808456,
+            0.0003800740463507492,
+            0.00019594272153719577
+          ],
+          "error_m": 3.178010166079174e-08,
+          "actual_displacement_m": 6.505068994462591e-05,
+          "rhs_evaluations": 19269,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 2.5016204592288704e-07
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            -1.6451079935212735e-05,
+            1.46651092163783e-05,
+            2.8729426172121453e-05,
+            -8.491525239404228e-05,
+            0.0001900370231753746,
+            9.797136076859789e-05
+          ],
+          "error_m": 7.944297626883609e-09,
+          "actual_displacement_m": 3.252163389938488e-05,
+          "rhs_evaluations": 19269,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 6.26132016544527e-08
+        }
+      ]
+    },
+    {
+      "system": "ctr_2",
+      "sample": 0,
+      "q": [
+        -0.20621533928186023,
+        -0.2012987582558699,
+        -0.1526195102759111,
+        1.7514001008164977,
+        -1.078254281629671,
+        0.9072604521452661
+      ],
+      "base_solver": {
+        "shooting_evaluations": 16,
+        "rhs_evaluations": 2754,
+        "ivp_integrations": 51,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "boundary_residual_scaled": 3.6729173868987885e-13,
+        "base_torque_sum_nm": 5.096956669483158e-17,
+        "max_quaternion_norm_error": 4.6629367034256575e-15,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 216,
+        "ivp_integrations": 3,
+        "boundary_residual_scaled": 3.7009785340547106e-13,
+        "reintegration_tip_discrepancy_m": 5.3072333128159466e-17,
+        "seconds": 0.05095697299998392,
+        "mesh_dofs": [
+          51,
+          99,
+          195
+        ],
+        "last_refinement_change": 0.00038129342246673303,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "equilibrium_base_torsion": [
+          5.171216027197794,
+          1.3449902320225076,
+          -0.7136718523388067
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          -6.986940128281092,
+          -6.988464867406382,
+          -6.988846160828849
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 246,
+        "ivp_integrations": 3,
+        "boundary_residual_scaled": 3.6896415089859855e-13,
+        "reintegration_tip_discrepancy_m": 6.49305861584907e-17,
+        "shooting_condition_number": 3.658582851889803,
+        "shooting_smallest_singular_value": 0.6152604037930042,
+        "implicit_equation_residual": 3.989863994746656e-15,
+        "seconds": 0.02612685999997666,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.309,
+          0.309,
+          0.309,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "equilibrium_base_torsion": [
+          5.171216027197794,
+          1.3449902320225076,
+          -0.7136718523388067
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          -0.34305548070415903,
+          0.11894924783272474,
+          0.3938277881116608,
+          0.01043472278739938,
+          0.0028520380638784454,
+          0.006592808228326345
+        ],
+        [
+          0.05913380643433248,
+          -0.5646918295508344,
+          -0.604202122639035,
+          -0.0065177843931049344,
+          -0.019864522956726388,
+          0.012679152221408033
+        ],
+        [
+          0.9508292782315919,
+          -0.08519568445684908,
+          -0.12158223102485473,
+          0.0011860374049650238,
+          -0.004701552177730419,
+          0.0035155147727653994
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 24660,
+          "shooting_evaluations": 24,
+          "steps": [
+            3.09e-06,
+            3.09e-06,
+            3.09e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 0.0
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 24660,
+          "shooting_evaluations": 24,
+          "steps": [
+            1.545e-06,
+            1.545e-06,
+            1.545e-06,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 0.0
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          -0.3430554806948599,
+          0.11894924813533085,
+          0.39382778963772375,
+          0.010434722787222572,
+          0.0028520380628352378,
+          0.00659280822903202
+        ],
+        [
+          0.05913380643206779,
+          -0.5646918292719121,
+          -0.6042021218711227,
+          -0.006517784395879133,
+          -0.019864522957796504,
+          0.012679152220154697
+        ],
+        [
+          0.9508292781315228,
+          -0.08519568421828197,
+          -0.12158223078084389,
+          0.0011860374016237074,
+          -0.004701552180907953,
+          0.003515514766794236
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            0.0001769470526912205,
+            -5.866015893817861e-05,
+            -0.0001537771172059,
+            0.0004809917422973371,
+            -0.0003775300766988927,
+            -0.00012038207911092677
+          ],
+          "error_m": 7.366996283138951e-07,
+          "actual_displacement_m": 0.0002693288514379449,
+          "rhs_evaluations": 7191,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 8.934727205114912e-06
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            8.847352634561025e-05,
+            -2.9330079469089304e-05,
+            -7.688855860295e-05,
+            0.00024049587114866855,
+            -0.00018876503834944634,
+            -6.0191039555463384e-05
+          ],
+          "error_m": 1.8439984883852346e-07,
+          "actual_displacement_m": 0.0001347151390148287,
+          "rhs_evaluations": 7191,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 2.2472058935609234e-06
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            4.4236763172805125e-05,
+            -1.4665039734544652e-05,
+            -3.8444279301475e-05,
+            0.00012024793557433427,
+            -9.438251917472317e-05,
+            -3.0095519777731692e-05
+          ],
+          "error_m": 4.6128049673371804e-08,
+          "actual_displacement_m": 6.737010289492342e-05,
+          "rhs_evaluations": 7191,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 5.635153833918139e-07
+        }
+      ]
+    },
+    {
+      "system": "ctr_2",
+      "sample": 1,
+      "q": [
+        -0.22221287956410063,
+        -0.19936467763055243,
+        -0.13494191217239176,
+        1.6837921726879594,
+        0.02227332188829534,
+        0.06034367122082562
+      ],
+      "base_solver": {
+        "shooting_evaluations": 105,
+        "rhs_evaluations": 13965,
+        "ivp_integrations": 318,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "boundary_residual_scaled": 7.053541191150921e-14,
+        "base_torque_sum_nm": 5.942708426838862e-17,
+        "max_quaternion_norm_error": 9.992007221626409e-16,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": true,
+        "continuation_stages": 4
+      },
+      "stability": {
+        "rhs_evaluations": 201,
+        "ivp_integrations": 3,
+        "boundary_residual_scaled": 7.38262784238941e-14,
+        "reintegration_tip_discrepancy_m": 1.0671369693049744e-16,
+        "seconds": 0.04711800000018229,
+        "mesh_dofs": [
+          51,
+          99,
+          195
+        ],
+        "last_refinement_change": 0.0002905199543512538,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "equilibrium_base_torsion": [
+          -5.094550865473044,
+          0.39252247489096037,
+          0.16920133781743496
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          8.982758940658147,
+          8.981596700543829,
+          8.981306180589478
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 231,
+        "ivp_integrations": 3,
+        "boundary_residual_scaled": 6.89376888907134e-14,
+        "reintegration_tip_discrepancy_m": 2.943923360032078e-17,
+        "shooting_condition_number": 7.116442977516042,
+        "shooting_smallest_singular_value": 0.925003456314441,
+        "implicit_equation_residual": 1.4432899320127035e-15,
+        "seconds": 0.02125167200006217,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.309,
+          0.309,
+          0.309,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "equilibrium_base_torsion": [
+          -5.094550865473044,
+          0.39252247489096037,
+          0.16920133781743496
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          0.16686585565441758,
+          -0.041330529407136406,
+          -0.05783636766767231,
+          0.0020141743648432564,
+          0.010968488089061281,
+          0.02595478017251132
+        ],
+        [
+          -0.8324062736399457,
+          -0.0010632162942894431,
+          0.020397516434850094,
+          0.0004914087706744091,
+          0.0015787147112563285,
+          0.003208409206038043
+        ],
+        [
+          0.5285344695913188,
+          0.008756253785585012,
+          0.024515730397470167,
+          0.00017618647658821708,
+          3.4958404417099174e-05,
+          -0.00021114488100531956
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 21096,
+          "shooting_evaluations": 24,
+          "steps": [
+            3.09e-06,
+            3.09e-06,
+            3.09e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 0.0
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 21096,
+          "shooting_evaluations": 24,
+          "steps": [
+            1.545e-06,
+            1.545e-06,
+            1.545e-06,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 0.0
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          0.1668658556695826,
+          -0.04133052945139029,
+          -0.05783636766931739,
+          0.0020141743653154243,
+          0.010968488088885368,
+          0.025954780172223604
+        ],
+        [
+          -0.8324062735731791,
+          -0.0010632163052703477,
+          0.020397516431656097,
+          0.0004914087699259273,
+          0.0015787147138179856,
+          0.003208409206367779
+        ],
+        [
+          0.5285344695570685,
+          0.008756253790184033,
+          0.024515730388758317,
+          0.00017618647235595472,
+          3.495840700251662e-05,
+          -0.0002111448821340289
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            4.837011727917718e-05,
+            0.00023454634475951225,
+            9.115141581828315e-06,
+            -0.0003220746558303609,
+            0.00015464794844123145,
+            0.0005204049788497558
+          ],
+          "error_m": 9.107775429308867e-08,
+          "actual_displacement_m": 4.9081318914810745e-05,
+          "rhs_evaluations": 6126,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 2.4810769484947956e-06
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            2.418505863958859e-05,
+            0.00011727317237975613,
+            4.557570790914157e-06,
+            -0.00016103732791518044,
+            7.732397422061572e-05,
+            0.0002602024894248779
+          ],
+          "error_m": 2.279856450465976e-08,
+          "actual_displacement_m": 2.4537889851964818e-05,
+          "rhs_evaluations": 6126,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 6.212439434241503e-07
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            1.2092529319794295e-05,
+            5.863658618987806e-05,
+            2.2787853954570786e-06,
+            -8.051866395759022e-05,
+            3.866198711030786e-05,
+            0.00013010124471243896
+          ],
+          "error_m": 5.7032892203726464e-09,
+          "actual_displacement_m": 1.2268253976694148e-05,
+          "rhs_evaluations": 6126,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 1.5543307998048863e-07
+        }
+      ]
+    },
+    {
+      "system": "ctr_2",
+      "sample": 2,
+      "q": [
+        -0.1530699594828115,
+        -0.144608995401028,
+        -0.11858116756044815,
+        -0.4485674922252989,
+        -1.429489873169969,
+        2.7532227788363626
+      ],
+      "base_solver": {
+        "shooting_evaluations": 20,
+        "rhs_evaluations": 5112,
+        "ivp_integrations": 105,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "boundary_residual_scaled": 2.70158895254724e-16,
+        "base_torque_sum_nm": -4.2840656174960977e-17,
+        "max_quaternion_norm_error": 1.2434497875801753e-14,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 370,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 3.26286950452287e-14,
+        "reintegration_tip_discrepancy_m": 1.3256738189514616e-16,
+        "seconds": 0.10555637199990997,
+        "mesh_dofs": [
+          99,
+          195,
+          387
+        ],
+        "last_refinement_change": 0.00024045205883194143,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "equilibrium_base_torsion": [
+          -8.513951105778204,
+          -4.309492726532072,
+          1.8262336691046719
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          4.796683566205149,
+          4.795721591315468,
+          4.795481139256636
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 430,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 6.253695259473242e-14,
+        "reintegration_tip_discrepancy_m": 3.4812230860800465e-16,
+        "shooting_condition_number": 10.246985195997635,
+        "shooting_smallest_singular_value": 0.9175434602924502,
+        "implicit_equation_residual": 5.6066262743570405e-15,
+        "seconds": 0.04718841699991572,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.309,
+          0.309,
+          0.309,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "equilibrium_base_torsion": [
+          -8.513951105778204,
+          -4.309492726532072,
+          1.8262336691046719
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          -0.8633401672137426,
+          -0.12933019827891204,
+          1.133364188910675,
+          -0.004789751329705807,
+          -0.024965007281700556,
+          -0.0459412775615575
+        ],
+        [
+          0.3882173831471799,
+          -0.7319755985051557,
+          1.154562495425424,
+          -0.006036688035559606,
+          -0.029339619503640023,
+          -0.01381772876225543
+        ],
+        [
+          0.14859626083232474,
+          0.6349822951395528,
+          -0.30597958442531464,
+          0.0029235443532395385,
+          0.012689795149497961,
+          -0.01561333950273754
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 36936,
+          "shooting_evaluations": 24,
+          "steps": [
+            3.09e-06,
+            3.09e-06,
+            3.09e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 6.861178292183467e-17
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 36936,
+          "shooting_evaluations": 24,
+          "steps": [
+            1.545e-06,
+            1.545e-06,
+            1.545e-06,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 6.861178292183467e-17
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          -0.8633401671625911,
+          -0.12933019835086948,
+          1.1333641889358201,
+          -0.004789751333056369,
+          -0.024965007281579906,
+          -0.0459412775592749
+        ],
+        [
+          0.388217383047231,
+          -0.7319755983420833,
+          1.1545624951956674,
+          -0.00603668803694779,
+          -0.029339619501966837,
+          -0.013817728759801804
+        ],
+        [
+          0.1485962608534154,
+          0.6349822949854497,
+          -0.30597958406468595,
+          0.0029235443510522425,
+          0.01268979514801316,
+          -0.015613339507392075
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            -5.731455416677755e-05,
+            -0.0001872925800119512,
+            7.557131559864413e-05,
+            -0.0005095870751994739,
+            0.0003908388707484072,
+            -0.00035491004915037935
+          ],
+          "error_m": 1.073241093493448e-06,
+          "actual_displacement_m": 0.00029549820910241696,
+          "rhs_evaluations": 10838,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 2.8860782898705864e-05
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            -2.8657277083388775e-05,
+            -9.36462900059756e-05,
+            3.7785657799322064e-05,
+            -0.00025479353759973693,
+            0.0001954194353742036,
+            -0.00017745502457518968
+          ],
+          "error_m": 2.6876295952176824e-07,
+          "actual_displacement_m": 0.00014796148196316879,
+          "rhs_evaluations": 10838,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 7.2268448284009045e-06
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            -1.4328638541694388e-05,
+            -4.68231450029878e-05,
+            1.8892828899661032e-05,
+            -0.00012739676879986846,
+            9.77097176871018e-05,
+            -8.872751228759484e-05
+          ],
+          "error_m": 6.724741267130056e-08,
+          "actual_displacement_m": 7.403394887392036e-05,
+          "rhs_evaluations": 10838,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 1.8081689811900373e-06
+        }
+      ]
+    },
+    {
+      "system": "ctr_2",
+      "sample": 3,
+      "q": [
+        -0.2258093629792721,
+        -0.20758741259446423,
+        -0.15094436594668825,
+        -2.5536384721008862,
+        -0.3963869433693983,
+        2.9964134543222727
+      ],
+      "base_solver": {
+        "shooting_evaluations": 20,
+        "rhs_evaluations": 2760,
+        "ivp_integrations": 63,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "boundary_residual_scaled": 1.491071121317291e-14,
+        "base_torque_sum_nm": -4.1877527259272566e-17,
+        "max_quaternion_norm_error": 2.4424906541753444e-14,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 201,
+        "ivp_integrations": 3,
+        "boundary_residual_scaled": 1.955435813272288e-15,
+        "reintegration_tip_discrepancy_m": 1.2076279689557387e-16,
+        "seconds": 0.051415679000001546,
+        "mesh_dofs": [
+          51,
+          99,
+          195
+        ],
+        "last_refinement_change": 0.000129482775051315,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "equilibrium_base_torsion": [
+          -7.2537894942985215,
+          3.7439810010260164,
+          -0.7491399039497255
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          3.018526067592755,
+          3.0180081270562846,
+          3.0178786442812333
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 231,
+        "ivp_integrations": 3,
+        "boundary_residual_scaled": 6.2863025860457305e-15,
+        "reintegration_tip_discrepancy_m": 9.476497603065182e-17,
+        "shooting_condition_number": 5.6370974584210085,
+        "shooting_smallest_singular_value": 0.41792971641334303,
+        "implicit_equation_residual": 4.107825191113079e-15,
+        "seconds": 0.023007182999890574,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.309,
+          0.309,
+          0.309,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "equilibrium_base_torsion": [
+          -7.2537894942985215,
+          3.7439810010260164,
+          -0.7491399039497255
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          0.5494163757656042,
+          0.001370504729747882,
+          0.6520425463837999,
+          0.0008003693531339925,
+          0.039089643052832496,
+          -0.034257218156645355
+        ],
+        [
+          -0.1935156895962265,
+          -0.26887606794698016,
+          1.3564545487716666,
+          0.003512780642834188,
+          0.02017094270814354,
+          -0.005733844769451084
+        ],
+        [
+          0.8131585462276096,
+          -0.050208674340357085,
+          -0.021475911878684965,
+          0.00039902576218693564,
+          -0.00974145591943331,
+          0.009342430157246371
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 20124,
+          "shooting_evaluations": 24,
+          "steps": [
+            3.09e-06,
+            3.09e-06,
+            3.09e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 3.068412213413629e-16
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 20124,
+          "shooting_evaluations": 24,
+          "steps": [
+            1.545e-06,
+            1.545e-06,
+            1.545e-06,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 3.068412213413629e-16
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          0.5494163757172502,
+          0.0013705048928249579,
+          0.6520425464462625,
+          0.0008003693523911392,
+          0.039089643052298007,
+          -0.034257218156294456
+        ],
+        [
+          -0.1935156895175668,
+          -0.26887606821602117,
+          1.35645454783274,
+          0.003512780641715118,
+          0.020170942706225492,
+          -0.005733844768256168
+        ],
+        [
+          0.8131585461927987,
+          -0.05020867425524026,
+          -0.021475911560604452,
+          0.00039902576243200366,
+          -0.009741455922473996,
+          0.009342430157266435
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            8.836100111513071e-05,
+            -0.00021385042508478575,
+            -0.00014973138609418918,
+            -0.00027999888140279596,
+            0.0003443788994157761,
+            -8.638091675903774e-05
+          ],
+          "error_m": 4.686879839673075e-07,
+          "actual_displacement_m": 0.0001788776533416099,
+          "rhs_evaluations": 5853,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 3.157937740335917e-05
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            4.4180500557565355e-05,
+            -0.00010692521254239288,
+            -7.486569304709459e-05,
+            -0.00013999944070139798,
+            0.00017218944970788806,
+            -4.319045837951887e-05
+          ],
+          "error_m": 1.1628209370390255e-07,
+          "actual_displacement_m": 8.955394034485267e-05,
+          "rhs_evaluations": 5718,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 7.844399911022393e-06
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            2.2090250278782677e-05,
+            -5.346260627119644e-05,
+            -3.7432846523547295e-05,
+            -6.999972035069899e-05,
+            8.609472485394403e-05,
+            -2.1595229189759435e-05
+          ],
+          "error_m": 2.8959656533704887e-08,
+          "actual_displacement_m": 4.480542520965651e-05,
+          "rhs_evaluations": 5853,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 1.9547833586309344e-06
+        }
+      ]
+    },
+    {
+      "system": "ctr_3",
+      "sample": 0,
+      "q": [
+        -0.03500703800869874,
+        -0.0345464571156031,
+        -0.009648376129353847,
+        0.8788350654991577,
+        -0.7839358449378251,
+        -1.8836528031356141
+      ],
+      "base_solver": {
+        "shooting_evaluations": 14,
+        "rhs_evaluations": 3261,
+        "ivp_integrations": 90,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "boundary_residual_scaled": 1.0031127788783142e-14,
+        "base_torque_sum_nm": -3.2031030471513983e-16,
+        "max_quaternion_norm_error": 1.887379141862766e-15,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 342,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 1.0390773980680629e-14,
+        "reintegration_tip_discrepancy_m": 1.9797899796144628e-17,
+        "seconds": 0.10781960400004209,
+        "mesh_dofs": [
+          123,
+          243,
+          483
+        ],
+        "last_refinement_change": 8.722512010139738e-05,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "equilibrium_base_torsion": [
+          -2.9003960900565975,
+          -1.0270803476531154,
+          0.4717063820640032
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          2.170622036542473,
+          2.1702730865309423,
+          2.170185861410841
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 357,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 9.952720342631658e-15,
+        "reintegration_tip_discrepancy_m": 1.7433755170605403e-17,
+        "shooting_condition_number": 1.3429886997802847,
+        "shooting_smallest_singular_value": 0.8279390956232731,
+        "implicit_equation_residual": 1.3877787807814457e-16,
+        "seconds": 0.03618399500010128,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.15,
+          0.15,
+          0.15,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "equilibrium_base_torsion": [
+          -2.9003960900565975,
+          -1.0270803476531154,
+          0.4717063820640032
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          0.2977926200349386,
+          -0.7964820020137289,
+          0.4986893819787904,
+          0.020605642346277375,
+          0.002932044613715367,
+          -0.004847930251886946
+        ],
+        [
+          -0.5219098198557508,
+          0.08935287677909722,
+          0.4325569430766535,
+          0.01482688589455283,
+          -0.003162984452571724,
+          -0.009348500179038698
+        ],
+        [
+          0.7526313468017927,
+          0.09039347679516668,
+          0.15697517640304068,
+          0.00419108263121211,
+          -0.0012402397390906305,
+          -0.0029508428921214747
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 28224,
+          "shooting_evaluations": 24,
+          "steps": [
+            1.5e-06,
+            1.5e-06,
+            1.5e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 8.326672684688674e-18
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 28224,
+          "shooting_evaluations": 24,
+          "steps": [
+            7.5e-07,
+            7.5e-07,
+            7.5e-07,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 8.326672684688674e-18
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          0.2977926200267017,
+          -0.7964820019900712,
+          0.49868938195585244,
+          0.02060564234418645,
+          0.0029320446107497507,
+          -0.004847930254415697
+        ],
+        [
+          -0.5219098198593527,
+          0.089352876782763,
+          0.43255694307658965,
+          0.014826885893354234,
+          -0.0031629844545605352,
+          -0.009348500177447372
+        ],
+        [
+          0.7526313467639174,
+          0.09039347687034294,
+          0.15697517639449524,
+          0.0041910826337199225,
+          -0.0012402397442379254,
+          -0.0029508428894819967
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            -3.692447519031229e-05,
+            -5.357029220727977e-06,
+            5.4232913423769136e-05,
+            0.0002475822031814885,
+            -0.000838601532597561,
+            0.00020702262042338767
+          ],
+          "error_m": 4.451104730336387e-08,
+          "actual_displacement_m": 5.468659014113507e-05,
+          "rhs_evaluations": 8208,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 8.975483599037083e-07
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            -1.8462237595156146e-05,
+            -2.6785146103639884e-06,
+            2.7116456711884568e-05,
+            0.00012379110159074425,
+            -0.0004193007662987805,
+            0.00010351131021169384
+          ],
+          "error_m": 1.1128662092166591e-08,
+          "actual_displacement_m": 2.7346384063950827e-05,
+          "rhs_evaluations": 8256,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 2.245275867878752e-07
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            -9.231118797578073e-06,
+            -1.3392573051819942e-06,
+            1.3558228355942284e-05,
+            6.189555079537212e-05,
+            -0.00020965038314939025,
+            5.175565510584692e-05
+          ],
+          "error_m": 3.2062150364188154e-09,
+          "actual_displacement_m": 1.3673291984586031e-05,
+          "rhs_evaluations": 2352,
+          "shooting_evaluations": 2,
+          "branch_predictor_distance": 8.326672684688674e-18
+        }
+      ]
+    },
+    {
+      "system": "ctr_3",
+      "sample": 1,
+      "q": [
+        -0.08622803463283069,
+        -0.05385078067231354,
+        -0.05300687033563219,
+        2.7634217349693966,
+        0.08104912143237453,
+        -1.9951056164164152
+      ],
+      "base_solver": {
+        "shooting_evaluations": 16,
+        "rhs_evaluations": 2492,
+        "ivp_integrations": 85,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "boundary_residual_scaled": 3.70536934468646e-16,
+        "base_torque_sum_nm": -1.1887579761203838e-15,
+        "max_quaternion_norm_error": 2.6645352591003757e-15,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 250,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 9.159339953157541e-17,
+        "reintegration_tip_discrepancy_m": 9.784286378217223e-18,
+        "seconds": 0.07873383900005138,
+        "mesh_dofs": [
+          91,
+          179,
+          355
+        ],
+        "last_refinement_change": 7.184704247853446e-05,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "equilibrium_base_torsion": [
+          0.7346705848688699,
+          0.3829739996050187,
+          -0.15241837914033257
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          2.0105616808543116,
+          2.0102742944772953,
+          2.010202447434817
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 250,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 3.4219526681361507e-16,
+        "reintegration_tip_discrepancy_m": 4.687767228864097e-17,
+        "shooting_condition_number": 1.8373774998203662,
+        "shooting_smallest_singular_value": 0.5600263780431384,
+        "implicit_equation_residual": 3.63207727782644e-17,
+        "seconds": 0.023678336000102718,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.15,
+          0.15,
+          0.15,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "equilibrium_base_torsion": [
+          0.7346705848688699,
+          0.3829739996050187,
+          -0.15241837914033257
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          0.037753081539824374,
+          -0.08563451702060704,
+          0.06362617085078115,
+          -0.009856498551815782,
+          0.010014674500145072,
+          -0.003108038162325595
+        ],
+        [
+          0.2131104415557572,
+          -0.01040132534787382,
+          -0.1543608069972353,
+          0.003056216635178315,
+          -0.0004982758808418448,
+          -0.006011665790652982
+        ],
+        [
+          0.9764703221673243,
+          0.01075686816299557,
+          0.011381994452782693,
+          -0.0005600418920827625,
+          0.00042305972443818884,
+          0.0001369821676445741
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 16272,
+          "shooting_evaluations": 24,
+          "steps": [
+            1.5e-06,
+            1.5e-06,
+            1.5e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 0.0
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 16272,
+          "shooting_evaluations": 24,
+          "steps": [
+            7.5e-07,
+            7.5e-07,
+            7.5e-07,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 0.0
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          0.03775308153973247,
+          -0.08563451701423576,
+          0.06362617084905663,
+          -0.009856498550545392,
+          0.010014674499923826,
+          -0.0031080381616890164
+        ],
+        [
+          0.21311044154775452,
+          -0.010401325355411753,
+          -0.15436080699673255,
+          0.0030562166347582877,
+          -0.0004982758807555582,
+          -0.0060116657918645585
+        ],
+        [
+          0.9764703221467237,
+          0.010756868173977807,
+          0.011381994458048439,
+          -0.0005600418906404059,
+          0.00042305972475231707,
+          0.00013698216727586754
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            -0.0001107430465769245,
+            6.587643394007276e-05,
+            -1.9988696267770912e-05,
+            -0.0002720810885556985,
+            -0.00020332750372382207,
+            0.00035906643000427476
+          ],
+          "error_m": 2.193780682937765e-07,
+          "actual_displacement_m": 0.00011080532597186668,
+          "rhs_evaluations": 1356,
+          "shooting_evaluations": 2,
+          "branch_predictor_distance": 0.0
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            -5.537152328846225e-05,
+            3.293821697003638e-05,
+            -9.994348133885456e-06,
+            -0.00013604054427784925,
+            -0.00010166375186191103,
+            0.00017953321500213738
+          ],
+          "error_m": 5.484470237566291e-08,
+          "actual_displacement_m": 5.5404000719732095e-05,
+          "rhs_evaluations": 1356,
+          "shooting_evaluations": 2,
+          "branch_predictor_distance": 0.0
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            -2.7685761644231123e-05,
+            1.646910848501819e-05,
+            -4.997174066942728e-06,
+            -6.802027213892462e-05,
+            -5.083187593095552e-05,
+            8.976660750106869e-05
+          ],
+          "error_m": 1.3711198248052594e-08,
+          "actual_displacement_m": 2.7702335989678147e-05,
+          "rhs_evaluations": 1356,
+          "shooting_evaluations": 2,
+          "branch_predictor_distance": 0.0
+        }
+      ]
+    },
+    {
+      "system": "ctr_3",
+      "sample": 2,
+      "q": [
+        -0.08040466534486601,
+        -0.052705716101664773,
+        -0.04786821341555039,
+        2.9218699706982054,
+        -0.8843388450201854,
+        -1.0278304901243125
+      ],
+      "base_solver": {
+        "shooting_evaluations": 15,
+        "rhs_evaluations": 2584,
+        "ivp_integrations": 80,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "boundary_residual_scaled": 1.3446618818413468e-12,
+        "base_torque_sum_nm": 3.200501031844477e-15,
+        "max_quaternion_norm_error": 1.2656542480726785e-14,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 265,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 1.344482077753062e-12,
+        "reintegration_tip_discrepancy_m": 2.289310281098036e-17,
+        "seconds": 0.08313081000005695,
+        "mesh_dofs": [
+          91,
+          179,
+          355
+        ],
+        "last_refinement_change": 3.950044714073897e-05,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "equilibrium_base_torsion": [
+          5.631747040504082,
+          -0.8601729023967274,
+          -0.15043735418061832
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          2.685368654418866,
+          2.6852106440239805,
+          2.6851711435768397
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 265,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 1.3446660451776892e-12,
+        "reintegration_tip_discrepancy_m": 8.888700770467949e-17,
+        "shooting_condition_number": 1.1868590378381947,
+        "shooting_smallest_singular_value": 0.8465257664942568,
+        "implicit_equation_residual": 6.938893903907228e-18,
+        "seconds": 0.02600035199998274,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.15,
+          0.15,
+          0.15,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "equilibrium_base_torsion": [
+          5.631747040504082,
+          -0.8601729023967274,
+          -0.15043735418061832
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          -0.3772963903335338,
+          0.23228712456781914,
+          0.13257296421968054,
+          -0.007912204533185257,
+          0.0043068695158963045,
+          0.0036752418732949204
+        ],
+        [
+          0.25083368571063186,
+          -0.15342725910816415,
+          -0.04502353886761715,
+          -0.0030046582839604583,
+          -0.00529667025761895,
+          -0.005594202490573845
+        ],
+        [
+          0.8910978799666002,
+          0.09328328356208274,
+          0.013101005087213005,
+          -0.0026862583749286927,
+          0.0016570918041735171,
+          0.0010291665707551731
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 17676,
+          "shooting_evaluations": 24,
+          "steps": [
+            1.5e-06,
+            1.5e-06,
+            1.5e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 1.6653345369377347e-17
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 17676,
+          "shooting_evaluations": 24,
+          "steps": [
+            7.5e-07,
+            7.5e-07,
+            7.5e-07,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 1.6653345369377347e-17
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          -0.37729639030398276,
+          0.23228712455145942,
+          0.1325729642072393,
+          -0.007912204532181666,
+          0.00430686951467113,
+          0.003675241873335455
+        ],
+        [
+          0.25083368570712683,
+          -0.15342725910485588,
+          -0.04502353886784402,
+          -0.0030046582840027474,
+          -0.005296670257627026,
+          -0.005594202490561685
+        ],
+        [
+          0.8910978799755072,
+          0.09328328356983384,
+          0.013101005095587462,
+          -0.0026862583740738795,
+          0.0016570918026648227,
+          0.0010291665727968358
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            6.248124227251198e-05,
+            7.461126774558809e-05,
+            3.676497623330701e-05,
+            0.0005369307319006256,
+            -3.7794907810872824e-06,
+            -0.00048030728429580816
+          ],
+          "error_m": 3.872103213199232e-09,
+          "actual_displacement_m": 6.173053876280155e-05,
+          "rhs_evaluations": 5105,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 3.0456453863425723e-07
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            3.124062113625599e-05,
+            3.7305633872794046e-05,
+            1.8382488116653506e-05,
+            0.0002684653659503128,
+            -1.8897453905436412e-06,
+            -0.00024015364214790408
+          ],
+          "error_m": 9.322131927170834e-10,
+          "actual_displacement_m": 3.086507800899906e-05,
+          "rhs_evaluations": 1473,
+          "shooting_evaluations": 2,
+          "branch_predictor_distance": 0.0
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            1.5620310568127994e-05,
+            1.8652816936397023e-05,
+            9.191244058326753e-06,
+            0.0001342326829751564,
+            -9.448726952718206e-07,
+            -0.00012007682107395204
+          ],
+          "error_m": 2.3305462092557767e-10,
+          "actual_displacement_m": 1.5432542747718083e-05,
+          "rhs_evaluations": 1473,
+          "shooting_evaluations": 2,
+          "branch_predictor_distance": 1.6653345369377347e-17
+        }
+      ]
+    },
+    {
+      "system": "ctr_3",
+      "sample": 3,
+      "q": [
+        -0.08485507073134153,
+        -0.0355873043828117,
+        -0.020413584297407382,
+        -3.01588668186963,
+        -2.6704932304238564,
+        1.0984853408203836
+      ],
+      "base_solver": {
+        "shooting_evaluations": 14,
+        "rhs_evaluations": 2487,
+        "ivp_integrations": 75,
+        "options": {
+          "rtol": 1e-08,
+          "atol": 1e-10,
+          "max_step": 0.01,
+          "boundary_tolerance": 1e-07,
+          "max_shooting_evaluations": 250,
+          "max_rhs_evaluations": 500000,
+          "samples_per_segment": 17
+        },
+        "root_message": "The solution converged.",
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "boundary_residual_scaled": 2.706168622523819e-16,
+        "base_torque_sum_nm": -5.168681441659882e-16,
+        "max_quaternion_norm_error": 1.1102230246251565e-15,
+        "elastic_stability": "not_certified",
+        "uniqueness": "not_certified",
+        "initial_guess": "zero",
+        "used_curvature_continuation": false,
+        "continuation_stages": 0
+      },
+      "stability": {
+        "rhs_evaluations": 250,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 3.6845526629747384e-16,
+        "reintegration_tip_discrepancy_m": 9.69739903612216e-19,
+        "seconds": 0.10855480199984413,
+        "mesh_dofs": [
+          99,
+          195,
+          387
+        ],
+        "last_refinement_change": 0.00014454247687556432,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "equilibrium_base_torsion": [
+          -1.0590060477335097,
+          -1.133563201419991,
+          0.3756519458463114
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0,
+        "eigenvalues": [
+          3.69026865256019,
+          3.689690382258319,
+          3.6895458397814433
+        ],
+        "mesh_elements_per_segment": [
+          8,
+          16,
+          32
+        ]
+      },
+      "sensitivity": {
+        "rhs_evaluations": 295,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 6.078471059822732e-16,
+        "reintegration_tip_discrepancy_m": 1.5130739564414845e-17,
+        "shooting_condition_number": 1.4882119163677425,
+        "shooting_smallest_singular_value": 0.8766451784300524,
+        "implicit_equation_residual": 4.874572967494828e-16,
+        "seconds": 0.03601196699992215,
+        "method": "analytic_variational_ode_implicit_shooting",
+        "q_order": "beta_m_then_alpha_rad",
+        "q_normalization": [
+          0.15,
+          0.15,
+          0.15,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "equilibrium_base_torsion": [
+          -1.0590060477335097,
+          -1.133563201419991,
+          0.3756519458463114
+        ],
+        "local_branch_only": true,
+        "elastic_stability_certified": false,
+        "joint_projection_differentiated": false,
+        "event_clearance_m": 1e-09,
+        "additional_equilibrium_solves": 0
+      },
+      "tip_jacobian": [
+        [
+          0.05816279636419577,
+          -0.013925893703151278,
+          -0.04610291049565601,
+          -0.0017984710248424088,
+          -0.001876762181679093,
+          0.0014900636463212689
+        ],
+        [
+          0.18495430183880207,
+          -0.06347611753525483,
+          -0.06944125154049278,
+          -5.4195883849269874e-05,
+          -0.0005976423163288445,
+          0.0024636747058602716
+        ],
+        [
+          0.9810012337535007,
+          0.005515228719478051,
+          0.011785466547890155,
+          9.666588954607844e-05,
+          0.0002014447832610561,
+          -0.00029811067280713436
+        ]
+      ],
+      "finite_difference": [
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 17064,
+          "shooting_evaluations": 24,
+          "steps": [
+            1.5e-06,
+            1.5e-06,
+            1.5e-06,
+            1e-05,
+            1e-05,
+            1e-05
+          ],
+          "maximum_branch_predictor_distance": 0.0
+        },
+        {
+          "equilibrium_solves": 12,
+          "rhs_evaluations": 17064,
+          "shooting_evaluations": 24,
+          "steps": [
+            7.5e-07,
+            7.5e-07,
+            7.5e-07,
+            5e-06,
+            5e-06,
+            5e-06
+          ],
+          "maximum_branch_predictor_distance": 0.0
+        }
+      ],
+      "finite_difference_jacobian": [
+        [
+          0.05816279635825414,
+          -0.01392589371480383,
+          -0.046102910470728155,
+          -0.0017984710237554933,
+          -0.001876762182662951,
+          0.0014900636465366502
+        ],
+        [
+          0.18495430183576578,
+          -0.06347611751818481,
+          -0.06944125152877113,
+          -5.419588354482751e-05,
+          -0.0005976423160178324,
+          0.00246367470538994
+        ],
+        [
+          0.981001233737085,
+          0.005515228727418868,
+          0.011785466547120649,
+          9.66658891821126e-05,
+          0.00020144478307670963,
+          -0.00029811067364660104
+        ]
+      ],
+      "local_prediction": [
+        {
+          "fraction": 1.0,
+          "applied_dq": [
+            -2.364606622060855e-05,
+            -3.766611831046103e-05,
+            -2.50380967407883e-05,
+            0.0007037130865489822,
+            7.749430886279672e-05,
+            -0.0006188817005379758
+          ],
+          "error_m": 4.905276748458121e-10,
+          "actual_displacement_m": 2.35922305731665e-05,
+          "rhs_evaluations": 4958,
+          "shooting_evaluations": 10,
+          "branch_predictor_distance": 3.7519925472444035e-07
+        },
+        {
+          "fraction": 0.5,
+          "applied_dq": [
+            -1.1823033110304275e-05,
+            -1.8833059155230516e-05,
+            -1.251904837039415e-05,
+            0.0003518565432744911,
+            3.874715443139836e-05,
+            -0.0003094408502689879
+          ],
+          "error_m": 1.81041049780071e-10,
+          "actual_displacement_m": 1.1796089249836929e-05,
+          "rhs_evaluations": 1422,
+          "shooting_evaluations": 2,
+          "branch_predictor_distance": 0.0
+        },
+        {
+          "fraction": 0.25,
+          "applied_dq": [
+            -5.911516555152137e-06,
+            -9.416529577615258e-06,
+            -6.259524185197075e-06,
+            0.00017592827163724555,
+            1.937357721569918e-05,
+            -0.00015472042513449394
+          ],
+          "error_m": 4.5263061361180863e-11,
+          "actual_displacement_m": 5.898039898097413e-06,
+          "rhs_evaluations": 1422,
+          "shooting_evaluations": 2,
+          "branch_predictor_distance": 0.0
+        }
+      ]
+    }
+  ]
+}

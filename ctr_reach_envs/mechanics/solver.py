@@ -4,6 +4,8 @@ The solver returns an equilibrium, not a certificate of uniqueness, elastic
 stability, or real-world accuracy. No hidden warm-start state is retained.
 """
 from dataclasses import dataclass, asdict
+import hashlib
+import json
 
 import numpy as np
 from scipy.integrate import solve_ivp
@@ -84,6 +86,12 @@ class EquilibriumSolver:
         self.gj = np.array([t.GJ for t in self.tubes])
         self.scale = float(self.lengths.max())
         self.options = SolverOptions() if options is None else options
+
+    @property
+    def model_fingerprint(self):
+        """Identify constitutive geometry; integration settings may be refined."""
+        payload = json.dumps([asdict(t) for t in self.tubes], sort_keys=True)
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
     def solve(self, joints, initial_torsion=None):
         q = self.constraints._array(joints).copy()
@@ -216,6 +224,7 @@ class EquilibriumSolver:
         intrinsic_squared = np.array([t.x_curvature**2+t.y_curvature**2 for t in self.tubes])
         guide_energy = 0.5*np.sum(self.gj*(-beta)*eta**2 + self.ei*guide_curved*intrinsic_squared)
         diag = {**counters, "options": asdict(opt), "root_message": root_message,
+                "model_fingerprint": self.model_fingerprint,
                 "boundary_residual_scaled": float(np.max(np.abs(final_shape_residual))),
                 "base_torque_sum_nm": float(self.gj @ eta),
                 "max_quaternion_norm_error": float(np.max(abs(np.linalg.norm(states[:, 2*n+3:2*n+7], axis=1)-1))),
