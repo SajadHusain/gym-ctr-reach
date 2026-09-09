@@ -1,0 +1,101 @@
+{
+  "runtime_versions": {
+    "python": "3.12.14",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "torch": "2.7.1+cpu",
+    "gymnasium": "1.3.0",
+    "stable-baselines3": "2.9.0"
+  },
+  "source_hashes": {
+    "ctr_reach_envs/config.py": "88dd2d091de4c70877805d80e28cc81ec6954b142f59799475e69915e2324cae",
+    "ctr_reach_envs/her_replay_buffer.py": "95131b19df3c71bfc671f7a9eb280dfe3f8972c82861d640250250292e5dd029",
+    "ctr_reach_envs/mechanics/__init__.py": "45fc0ea46bea7570a640a4861aadb4e1d5c738a0cd807679495812446cb1746c",
+    "ctr_reach_envs/mechanics/control.py": "1fd7ea0ade268752324ec3df5b80386d0835cc0060d426b23a8f8ed9c9a14834",
+    "ctr_reach_envs/mechanics/env.py": "224e270b9f302099cb9b5b67c80c3cd9098ee80d7fe5519c764e6964f51807f8",
+    "ctr_reach_envs/mechanics/geometry.py": "43e9daece02bdb3c32bdfd147cdfdf99530ffff25d24309fa68b42049969f0de",
+    "ctr_reach_envs/mechanics/integration.py": "34f7417574ef3bc31c303a4deb696a1428aa89546c1f72a5bdebc71ec8027e9e",
+    "ctr_reach_envs/mechanics/rl_env.py": "ec11061990ec3756911ab8f7f918adb7cd4f161cdaa98b29c193f37978614f2f",
+    "ctr_reach_envs/mechanics/rl_jacobian.py": "02b05fbda533101a86d66af88dda921ebff7932a1d44da770bca55b9451b14a1",
+    "ctr_reach_envs/mechanics/rl_metrics.py": "6c592ef734e86ded17c1ae54f8229fd98f7ec0887f6a89ee1a9298cc5fbd0911",
+    "ctr_reach_envs/mechanics/rl_policy.py": "fe6a09608c65fbae88c1aa5b4478ceae2f4abe96d8e08094dea11193e8ca92f3",
+    "ctr_reach_envs/mechanics/rl_replay.py": "dcfe84d3f16740ff5b6124ca5e6b12cd50fcaba4f8b75d7948cbd4c25a8c341c",
+    "ctr_reach_envs/mechanics/sensitivity.py": "4dcfecf545ea4e787c96bd91e1c7c57405509de753ec94ba54cf0c6810a63eb1",
+    "ctr_reach_envs/mechanics/solver.py": "b7e05f0edf7775290e95b402a7bd76ff05bd21c7ec052b7e515108fc7bdf466a",
+    "ctr_reach_envs/mechanics/stability.py": "48f68689a6621f0720c2d995be5cc308442cba407d099ab91d78778f3b374b35",
+    "ctr_reach_envs/mechanics/tracking.py": "9a9b172940e76fae1c8b87af9bfefb9a5e3d7c61aa52a1ef8e503b8ba501938c",
+    "ctr_reach_envs/paper_policy.py": "3d85f64255023a69daeeefef0d5ac019ff27d9223d4a8e29e3d689ed09281805",
+    "evaluate_physics_ddpg_her.py": "8786bf2fc1f01f4b0ef7700df63d04bd691d45d0afc204df6cad32508df3b428",
+    "run_physics_study.py": "9ec2917e3dea0951411c0178913eb3b7a6ccfa85ade776ee5fc25997bfa9a653",
+    "train_physics_ddpg_her.py": "6e187f8a49fe52468c323e854dd285a797bd8da448ccdd71df145283d169de08"
+  },
+  "tests": {
+    "mechanics_rl_jacobian_study": 37,
+    "mechanics_core": 64,
+    "total_distinct": 101,
+    "runtime_warnings_as_errors": true
+  },
+  "training": [
+    {
+      "complete": true,
+      "timesteps": 6,
+      "gradient_updates": 4,
+      "all_parameters_finite": true,
+      "maximum_executed_action_replay_error": 0.0,
+      "physics_actor_updates": 0,
+      "arm": "ddpg",
+      "seed": 7200
+    },
+    {
+      "complete": true,
+      "timesteps": 6,
+      "gradient_updates": 4,
+      "all_parameters_finite": true,
+      "maximum_executed_action_replay_error": 0.0,
+      "physics_actor_updates": 0,
+      "arm": "ddpg",
+      "seed": 7201
+    },
+    {
+      "complete": true,
+      "timesteps": 6,
+      "gradient_updates": 4,
+      "all_parameters_finite": true,
+      "maximum_executed_action_replay_error": 0.0,
+      "physics_actor_updates": 4,
+      "arm": "jacobian",
+      "seed": 7200
+    },
+    {
+      "complete": true,
+      "timesteps": 6,
+      "gradient_updates": 4,
+      "all_parameters_finite": true,
+      "maximum_executed_action_replay_error": 0.0,
+      "physics_actor_updates": 4,
+      "arm": "jacobian",
+      "seed": 7201
+    }
+  ],
+  "checkpoint_steps": [
+    0,
+    3,
+    6
+  ],
+  "checkpoint_update_counts": [
+    0,
+    1,
+    4
+  ],
+  "verified_identical_initial_policy_parameters_within_seed": true,
+  "trajectory_motion_metric_reconstruction_checks": 12,
+  "development_report_complete": true,
+  "development_evaluation_failures": 0,
+  "heldout_final_stage_smoke": {
+    "complete": true,
+    "episodes_per_mode": 1,
+    "max_steps": 2,
+    "evaluation_failures": 0
+  },
+  "scope": "Executable checks only. Does not demonstrate convergence, smoothness improvement, sample efficiency, or stability guarantees."
+}

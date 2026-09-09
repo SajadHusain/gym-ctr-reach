@@ -134,10 +134,11 @@ git pull --ff-only
 python -m pytest tests/test_mechanics_rl.py tests/test_mechanics_jacobian.py -q
 ```
 
-This runs 24 tests. The observation Box warnings should be gone. A SciPy
-RuntimeWarning can still occur during a rejected numerical trial; it is a
-different issue and is not suppressed. The test suite verifies the accepted
-results and the audit records failed-call costs.
+This runs 24 tests. The observation Box warnings should be gone. The DOP853
+underflow warning formerly observed in this suite is corrected in
+[Step 7](MECHANICS_STEP7.md) using a scale-safe error norm, without suppressing
+warnings or relaxing tolerances. The test suite verifies the accepted results
+and the audit records failed-call costs.
 
 Start with matching short runs using the same seed, network, episode budget and
 collection safeguard. These are integration checks, not success-rate evidence:

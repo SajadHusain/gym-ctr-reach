@@ -12,6 +12,7 @@ from scipy.integrate import solve_ivp
 
 from .geometry import segment_tubes
 from .solver import EquilibriumError, quaternion_matrix
+from .integration import ScaleSafeDOP853
 
 
 class SensitivityError(EquilibriumError):
@@ -134,7 +135,7 @@ def _trajectory(solver, equilibrium, variational=False, event_clearance_m=1e-9):
             field, a = _field(solver, interval, y[:m], derivatives=True)
             jac = y[m:].reshape(m, p)
             return np.r_[length*field, (length*(a@jac)+np.outer(field, dlength)).ravel()]
-        sol = solve_ivp(rhs, (0., 1.), state, method="DOP853", dense_output=True,
+        sol = solve_ivp(rhs, (0., 1.), state, method=ScaleSafeDOP853, dense_output=True,
                         rtol=opt.rtol, atol=opt.atol, max_step=min(1., opt.max_step/length))
         counters["ivp_integrations"] += 1
         if not sol.success or not np.all(np.isfinite(sol.y)):

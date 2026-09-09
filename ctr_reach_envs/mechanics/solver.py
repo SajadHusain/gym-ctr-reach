@@ -12,6 +12,7 @@ from scipy.integrate import solve_ivp
 from scipy.optimize import root
 
 from .geometry import JointConstraints, TubeParameters, segment_tubes
+from .integration import ScaleSafeDOP853
 
 
 class EquilibriumError(RuntimeError):
@@ -144,7 +145,7 @@ class EquilibriumSolver:
                     return out
 
                 samples = np.linspace(interval.start, interval.end, opt.samples_per_segment) if shape else None
-                sol = solve_ivp(rhs, (interval.start, interval.end), y, method="DOP853",
+                sol = solve_ivp(rhs, (interval.start, interval.end), y, method=ScaleSafeDOP853,
                                 rtol=opt.rtol, atol=opt.atol, max_step=opt.max_step, t_eval=samples)
                 counters["ivp_integrations"] += 1
                 if not sol.success or not np.all(np.isfinite(sol.y)):
@@ -223,7 +224,7 @@ class EquilibriumSolver:
         guide_curved = np.maximum(0, np.array([t.length_curved for t in self.tubes]) - ends)
         intrinsic_squared = np.array([t.x_curvature**2+t.y_curvature**2 for t in self.tubes])
         guide_energy = 0.5*np.sum(self.gj*(-beta)*eta**2 + self.ei*guide_curved*intrinsic_squared)
-        diag = {**counters, "options": asdict(opt), "root_message": root_message,
+        diag = {**counters, "options": asdict(opt), "integrator": "scale_safe_dop853_v1", "root_message": root_message,
                 "model_fingerprint": self.model_fingerprint,
                 "boundary_residual_scaled": float(np.max(np.abs(final_shape_residual))),
                 "base_torque_sum_nm": float(self.gj @ eta),

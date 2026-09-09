@@ -24,10 +24,12 @@ from ctr_reach_envs.mechanics.rl_env import EquilibriumReachEnv, GuidedRolloutWr
 from ctr_reach_envs.mechanics.rl_policy import EquilibriumStateExtractor
 from ctr_reach_envs.mechanics.rl_replay import ExecutedActionHerReplayBuffer
 from ctr_reach_envs.mechanics.rl_jacobian import JacobianDDPG, JacobianHerReplayBuffer
+from ctr_reach_envs.mechanics.rl_metrics import EpisodeMotion
 
 
 class AuditCallback(BaseCallback):
-    def __init__(self, plant, stream, progress_every, update_stream=None):
+    def __init__(self, plant, stream, progress_every, update_stream=None,
+                 checkpoint_freq=0, output_dir=None, config=None):
         super().__init__()
         self.plant, self.stream, self.progress_every = plant, stream, progress_every
         self.rows = []
@@ -35,6 +37,32 @@ class AuditCallback(BaseCallback):
         self.writer = None
         self.started = time.perf_counter()
         self.update_stream,self.update_writer,self.last_logged_update = update_stream,None,-1
+        self.motion=EpisodeMotion(plant.n)
+        self.checkpoint_freq,self.output_dir,self.config=checkpoint_freq,output_dir,config
+        self.saved_steps=set()
+
+    def save_checkpoint(self, force=False):
+        step=self.model.num_timesteps
+        if not self.checkpoint_freq or step in self.saved_steps:
+            return
+        if not force and step % self.checkpoint_freq:
+            return
+        folder=self.output_dir/"checkpoints"/f"step_{step:09d}"
+        folder.mkdir(parents=True,exist_ok=False)
+        self.model.save(folder/"model.zip")
+        (folder/"config.json").write_text(json.dumps(self.config,indent=2)+"\n",encoding="utf-8")
+        budget={"timesteps":step,"gradient_updates":self.model._n_updates,
+                "training_seconds":time.perf_counter()-self.started,
+                "physics_costs_including_resets_and_witnesses":dict(self.plant.costs),
+                "replaced_actions":self.replaced,"jacobian_fallbacks":self.fallbacks,
+                "all_parameters_finite":all(bool(torch.isfinite(p).all()) for p in self.model.policy.parameters())}
+        (folder/"budget.json").write_text(json.dumps(budget,indent=2,allow_nan=False)+"\n",encoding="utf-8")
+        self.saved_steps.add(step)
+
+    def _on_rollout_start(self):
+        # SB3 has finished the previous optimizer update here. The final step
+        # is saved after learn(), so all arms include identical update counts.
+        self.save_checkpoint()
 
     def record_update(self):
         if not hasattr(self,"model"):return
@@ -56,6 +84,9 @@ class AuditCallback(BaseCallback):
     def _on_step(self):
         self.record_update()
         info = self.locals["infos"][0]
+        # Only actions are used here; terminal-observation resets cannot leak
+        # into action-difference statistics.
+        self.motion.add(info)
         self.replaced += int(info["action_replaced"])
         self.decrease_verified += int(info["numerical_decrease_verified"])
         self.fallbacks += int(info["action_source"].startswith("jacobian"))
@@ -64,6 +95,8 @@ class AuditCallback(BaseCallback):
                    "success": info["is_success"], "error_m": info["error"],
                    "truncated": info.get("TimeLimit.truncated",False),
                    "cumulative_equilibrium_calls": self.plant.costs["equilibrium_calls"]}
+            row.update(self.motion.summary())
+            self.motion=EpisodeMotion(self.plant.n)
             self.rows.append(row)
             if self.writer is None:
                 self.writer = csv.DictWriter(self.stream, fieldnames=list(row)); self.writer.writeheader()
@@ -95,11 +128,13 @@ def arguments():
     p.add_argument("--physics-weight",type=float,default=0.)
     p.add_argument("--physics-final-weight",type=float,default=None)
     p.add_argument("--physics-anneal-steps",type=int,default=100000)
+    p.add_argument("--checkpoint-freq",type=int,default=0)
     p.add_argument("--output-dir",type=Path,default=Path("runs/step5_smoke"))
     a=p.parse_args()
     for name in ("total_timesteps","learning_starts","episode_steps","buffer_size","batch_size","hidden_width","layers","progress_every"):
         if getattr(a,name)<1:p.error(f"{name} must be positive")
     if a.layers<2:p.error("Late-action critic requires at least two hidden layers")
+    if a.checkpoint_freq<0:p.error("checkpoint-freq cannot be negative")
     if a.learning_starts<a.episode_steps:p.error("learning-starts must cover one complete episode")
     if a.total_timesteps<=a.learning_starts:p.error("Run beyond learning-starts to test actual updates")
     if a.buffer_size<=2*a.episode_steps:p.error("buffer-size must exceed two episode lengths")
@@ -126,6 +161,7 @@ def main():
         "action_semantics":"executed delta_q divided by fixed joint caps",
         "observation_semantics":"normalized egocentric joints, branch torsion, tolerance; reconstructed goal error",
         "tracking_options":asdict(plant.tracking_options),
+        "solver_options":asdict(plant.solver.options),"integrator":"scale_safe_dop853_v1",
         "observation_bounds_version":plant.observation_bounds_version,
         "torsion_observation_bound":plant.torsion_observation_bound.tolist(),
         "model_fingerprint":plant.solver.model_fingerprint,
@@ -155,13 +191,14 @@ def main():
     critic=[p.detach().clone() for p in model.critic.parameters()]
     started=time.perf_counter(); failure=None; complete=False
     with (a.output_dir/"episodes.csv").open("w",newline="",encoding="utf-8") as f, (a.output_dir/"updates.csv").open("w",newline="",encoding="utf-8") as updates:
-        callback=AuditCallback(plant,f,a.progress_every,updates)
+        callback=AuditCallback(plant,f,a.progress_every,updates,a.checkpoint_freq,a.output_dir,config)
         try:
             model.learn(a.total_timesteps,callback=callback)
             complete=True
         except (KeyboardInterrupt,Exception) as exc:
             failure=f"{type(exc).__name__}: {exc}"
         callback.record_update()
+        if complete:callback.save_checkpoint(force=True)
         model.save(a.output_dir/("final_model.zip" if complete else "interrupted_model.zip"))
         buffer=model.replay_buffer
         indices=range(buffer.buffer_size if buffer.full else buffer.pos)
