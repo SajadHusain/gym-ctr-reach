@@ -1,0 +1,2418 @@
+{
+  "source_base_commit": "8272fc63ae9c5f74aed8d81c4d102475a291112c",
+  "tested_source_sha256": {
+    "ctr_reach_envs/mechanics/tracking.py": "90bc2d1847d54b9dd7204e960dbe699f3d790efd157cd3d43d976caea86032b3",
+    "ctr_reach_envs/mechanics/__init__.py": "edcafebab1b83b1997681b37df3883a88363d549c70a53e28be55be2958c9ca2",
+    "tests/test_mechanics_tracking.py": "cca34a1d8cd2a7e6611cb4307c54563d95b74eb7c9c1f7aaf629fa7d402dc669",
+    "validate_mechanics_step3.py": "1daba7ac1837cbb06f1a0b7ebde2274c1ecb9a2bffa94680dac0d2a95c728040"
+  },
+  "tests": {
+    "command": "python -m pytest tests/test_mechanics.py tests/test_mechanics_step2.py tests/test_mechanics_tracking.py -q",
+    "passed": 51
+  },
+  "summary": {
+    "complete": true,
+    "cases": 13,
+    "contract_passed": 13,
+    "contract_failed": 0,
+    "negative_roots_rejected": 5,
+    "negative_targets_reached": 5,
+    "negative_targets_tested": 5,
+    "path_status_counts": {
+      "target_reached": 5,
+      "partial_command_accepted": 8
+    },
+    "accepted_moves": 207,
+    "rejected_trials": 12,
+    "tracking_equilibrium_calls": 649,
+    "tracking_sensitivity_calls": 443,
+    "tracking_stability_calls": 443,
+    "external_equilibrium_calls": 31,
+    "external_sensitivity_calls": 0,
+    "external_stability_calls": 18,
+    "total_equilibrium_calls": 680,
+    "failed_calls_without_rhs_counts": 4,
+    "seed": 7003,
+    "samples_per_system": 2,
+    "max_steps": 100,
+    "tracking_options": {
+      "max_translation_step_m": 0.001,
+      "max_rotation_step_rad": 0.05,
+      "max_backtracks": 8,
+      "tip_absolute_tolerance_m": 2e-06,
+      "tip_relative_tolerance": 0.05,
+      "twist_absolute_tolerance": 0.001,
+      "twist_relative_tolerance": 0.05,
+      "max_twist_change": 0.25,
+      "minimum_elastic_eigenvalue": 0.05,
+      "shooting_condition_limit": 100000.0,
+      "event_clearance_m": 1e-08,
+      "reverse_tip_tolerance_m": 2e-06,
+      "reverse_twist_tolerance": 0.001
+    },
+    "solver_options": {
+      "rtol": 1e-08,
+      "atol": 1e-10,
+      "max_step": 0.01,
+      "boundary_tolerance": 1e-07,
+      "max_shooting_evaluations": 250,
+      "max_rhs_evaluations": 500000,
+      "samples_per_segment": 17
+    },
+    "refined_options": {
+      "rtol": 1e-11,
+      "atol": 1e-13,
+      "max_step": 0.002,
+      "boundary_tolerance": 1e-07,
+      "max_shooting_evaluations": 250,
+      "max_rhs_evaluations": 500000,
+      "samples_per_segment": 17
+    },
+    "total_elapsed_seconds": 203.81080684500003,
+    "python": "3.12.14",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0",
+    "git_commit": null,
+    "elastic_stability_certified": false,
+    "continuous_path_certified": false,
+    "controller_stability_certified": false,
+    "global_uniqueness_certified": false,
+    "contract_pass_definition": "accepted samples satisfy numerical checks; rejected moves preserve state; known negative roots refused; refined final equilibrium agrees",
+    "target_completion_required_for_contract_pass": false
+  },
+  "rejection_reasons": {
+    "branch_predictor_error": 8,
+    "Rod integration failed: Required step size is less than spacing between numbers.": 3,
+    "Non-finite shooting iterate": 1
+  },
+  "cases": [
+    {
+      "case": "0",
+      "kind": "negative_regression",
+      "system": "ctr_0",
+      "source_sample": "0",
+      "contract_passed": "True",
+      "failure": "",
+      "negative_root_rejected": "True",
+      "target_reached": "True",
+      "path_status": "target_reached",
+      "stop_reason": "",
+      "accepted_moves": "51",
+      "rejected_trials": "8",
+      "tracking_equilibrium_calls": "169",
+      "tracking_sensitivity_calls": "111",
+      "tracking_stability_calls": "111",
+      "external_equilibrium_calls": "3",
+      "failed_calls_without_rhs_counts": "0",
+      "external_sensitivity_calls": "0",
+      "external_stability_calls": "2",
+      "maximum_accepted_tip_error_m": "3.72033966806229e-05",
+      "final_minimum_eigenvalue": "2.69542911470825",
+      "final_joint_target_error_scaled": "0.0",
+      "refinement_tip_error_m": "7.519661107204848e-16",
+      "final_twist_difference_from_cold": "1.2564252373269853",
+      "seconds": "55.35470589299999"
+    },
+    {
+      "case": "1",
+      "kind": "negative_regression",
+      "system": "ctr_1",
+      "source_sample": "0",
+      "contract_passed": "True",
+      "failure": "",
+      "negative_root_rejected": "True",
+      "target_reached": "True",
+      "path_status": "target_reached",
+      "stop_reason": "",
+      "accepted_moves": "34",
+      "rejected_trials": "0",
+      "tracking_equilibrium_calls": "102",
+      "tracking_sensitivity_calls": "69",
+      "tracking_stability_calls": "69",
+      "external_equilibrium_calls": "3",
+      "failed_calls_without_rhs_counts": "0",
+      "external_sensitivity_calls": "0",
+      "external_stability_calls": "2",
+      "maximum_accepted_tip_error_m": "5.1843374619825e-05",
+      "final_minimum_eigenvalue": "7.92651307374533",
+      "final_joint_target_error_scaled": "0.0",
+      "refinement_tip_error_m": "1.4657007049417497e-15",
+      "final_twist_difference_from_cold": "4.144197042925034",
+      "seconds": "35.73261777100004"
+    },
+    {
+      "case": "2",
+      "kind": "negative_regression",
+      "system": "ctr_1",
+      "source_sample": "1",
+      "contract_passed": "True",
+      "failure": "",
+      "negative_root_rejected": "True",
+      "target_reached": "True",
+      "path_status": "target_reached",
+      "stop_reason": "",
+      "accepted_moves": "40",
+      "rejected_trials": "1",
+      "tracking_equilibrium_calls": "123",
+      "tracking_sensitivity_calls": "83",
+      "tracking_stability_calls": "83",
+      "external_equilibrium_calls": "3",
+      "failed_calls_without_rhs_counts": "1",
+      "external_sensitivity_calls": "0",
+      "external_stability_calls": "2",
+      "maximum_accepted_tip_error_m": "3.4610860598036704e-05",
+      "final_minimum_eigenvalue": "11.165758920820917",
+      "final_joint_target_error_scaled": "0.0",
+      "refinement_tip_error_m": "7.690881096834035e-14",
+      "final_twist_difference_from_cold": "3.8780171890787076",
+      "seconds": "30.52420292300002"
+    },
+    {
+      "case": "3",
+      "kind": "negative_regression",
+      "system": "ctr_1",
+      "source_sample": "3",
+      "contract_passed": "True",
+      "failure": "",
+      "negative_root_rejected": "True",
+      "target_reached": "True",
+      "path_status": "target_reached",
+      "stop_reason": "",
+      "accepted_moves": "38",
+      "rejected_trials": "0",
+      "tracking_equilibrium_calls": "114",
+      "tracking_sensitivity_calls": "77",
+      "tracking_stability_calls": "77",
+      "external_equilibrium_calls": "3",
+      "failed_calls_without_rhs_counts": "0",
+      "external_sensitivity_calls": "0",
+      "external_stability_calls": "2",
+      "maximum_accepted_tip_error_m": "9.672783960759841e-05",
+      "final_minimum_eigenvalue": "3.5901364339777064",
+      "final_joint_target_error_scaled": "0.0",
+      "refinement_tip_error_m": "7.7335930382558e-14",
+      "final_twist_difference_from_cold": "3.1107823449436",
+      "seconds": "42.22794837800001"
+    },
+    {
+      "case": "4",
+      "kind": "negative_regression",
+      "system": "ctr_2",
+      "source_sample": "0",
+      "contract_passed": "True",
+      "failure": "",
+      "negative_root_rejected": "True",
+      "target_reached": "True",
+      "path_status": "target_reached",
+      "stop_reason": "",
+      "accepted_moves": "36",
+      "rejected_trials": "0",
+      "tracking_equilibrium_calls": "108",
+      "tracking_sensitivity_calls": "73",
+      "tracking_stability_calls": "73",
+      "external_equilibrium_calls": "3",
+      "failed_calls_without_rhs_counts": "0",
+      "external_sensitivity_calls": "0",
+      "external_stability_calls": "2",
+      "maximum_accepted_tip_error_m": "1.1611087498387599e-05",
+      "final_minimum_eigenvalue": "6.743118056819933",
+      "final_joint_target_error_scaled": "0.0",
+      "refinement_tip_error_m": "5.34815557114177e-16",
+      "final_twist_difference_from_cold": "3.474037461569792",
+      "seconds": "16.40634768900003"
+    },
+    {
+      "case": "5",
+      "kind": "seeded_command",
+      "system": "ctr_0",
+      "source_sample": "0",
+      "contract_passed": "True",
+      "failure": "",
+      "negative_root_rejected": "",
+      "target_reached": "False",
+      "path_status": "partial_command_accepted",
+      "stop_reason": "",
+      "accepted_moves": "1",
+      "rejected_trials": "0",
+      "tracking_equilibrium_calls": "3",
+      "tracking_sensitivity_calls": "3",
+      "tracking_stability_calls": "3",
+      "external_equilibrium_calls": "2",
+      "failed_calls_without_rhs_counts": "0",
+      "external_sensitivity_calls": "0",
+      "external_stability_calls": "1",
+      "maximum_accepted_tip_error_m": "1.8700465336262264e-05",
+      "final_minimum_eigenvalue": "4.2773340852080945",
+      "final_joint_target_error_scaled": "2.1179693399189237",
+      "refinement_tip_error_m": "1.5519780555808065e-15",
+      "final_twist_difference_from_cold": "",
+      "seconds": "2.643411979000007"
+    },
+    {
+      "case": "6",
+      "kind": "seeded_command",
+      "system": "ctr_0",
+      "source_sample": "1",
+      "contract_passed": "True",
+      "failure": "",
+      "negative_root_rejected": "",
+      "target_reached": "False",
+      "path_status": "partial_command_accepted",
+      "stop_reason": "",
+      "accepted_moves": "1",
+      "rejected_trials": "2",
+      "tracking_equilibrium_calls": "9",
+      "tracking_sensitivity_calls": "7",
+      "tracking_stability_calls": "7",
+      "external_equilibrium_calls": "2",
+      "failed_calls_without_rhs_counts": "2",
+      "external_sensitivity_calls": "0",
+      "external_stability_calls": "1",
+      "maximum_accepted_tip_error_m": "6.781721142005024e-06",
+      "final_minimum_eigenvalue": "3.465153713533649",
+      "final_joint_target_error_scaled": "3.7352643599079802",
+      "refinement_tip_error_m": "2.258387045835352e-15",
+      "final_twist_difference_from_cold": "",
+      "seconds": "5.838196322999977"
+    },
+    {
+      "case": "7",
+      "kind": "seeded_command",
+      "system": "ctr_1",
+      "source_sample": "0",
+      "contract_passed": "True",
+      "failure": "",
+      "negative_root_rejected": "",
+      "target_reached": "False",
+      "path_status": "partial_command_accepted",
+      "stop_reason": "",
+      "accepted_moves": "1",
+      "rejected_trials": "0",
+      "tracking_equilibrium_calls": "3",
+      "tracking_sensitivity_calls": "3",
+      "tracking_stability_calls": "3",
+      "external_equilibrium_calls": "2",
+      "failed_calls_without_rhs_counts": "0",
+      "external_sensitivity_calls": "0",
+      "external_stability_calls": "1",
+      "maximum_accepted_tip_error_m": "3.767083557160419e-05",
+      "final_minimum_eigenvalue": "3.5724857144741504",
+      "final_joint_target_error_scaled": "1.682386737230428",
+      "refinement_tip_error_m": "8.781609259902483e-17",
+      "final_twist_difference_from_cold": "",
+      "seconds": "2.9666600620000168"
+    },
+    {
+      "case": "8",
+      "kind": "seeded_command",
+      "system": "ctr_1",
+      "source_sample": "1",
+      "contract_passed": "True",
+      "failure": "",
+      "negative_root_rejected": "",
+      "target_reached": "False",
+      "path_status": "partial_command_accepted",
+      "stop_reason": "",
+      "accepted_moves": "1",
+      "rejected_trials": "0",
+      "tracking_equilibrium_calls": "3",
+      "tracking_sensitivity_calls": "3",
+      "tracking_stability_calls": "3",
+      "external_equilibrium_calls": "2",
+      "failed_calls_without_rhs_counts": "0",
+      "external_sensitivity_calls": "0",
+      "external_stability_calls": "1",
+      "maximum_accepted_tip_error_m": "9.302701908303253e-06",
+      "final_minimum_eigenvalue": "3.4874532332792256",
+      "final_joint_target_error_scaled": "2.8443405548153056",
+      "refinement_tip_error_m": "1.4307213628773769e-16",
+      "final_twist_difference_from_cold": "",
+      "seconds": "1.9515876350000099"
+    },
+    {
+      "case": "9",
+      "kind": "seeded_command",
+      "system": "ctr_2",
+      "source_sample": "0",
+      "contract_passed": "True",
+      "failure": "",
+      "negative_root_rejected": "",
+      "target_reached": "False",
+      "path_status": "partial_command_accepted",
+      "stop_reason": "",
+      "accepted_moves": "1",
+      "rejected_trials": "1",
+      "tracking_equilibrium_calls": "6",
+      "tracking_sensitivity_calls": "5",
+      "tracking_stability_calls": "5",
+      "external_equilibrium_calls": "2",
+      "failed_calls_without_rhs_counts": "1",
+      "external_sensitivity_calls": "0",
+      "external_stability_calls": "1",
+      "maximum_accepted_tip_error_m": "7.498415933833087e-06",
+      "final_minimum_eigenvalue": "5.629432753464373",
+      "final_joint_target_error_scaled": "3.1596719058841622",
+      "refinement_tip_error_m": "5.00455614652476e-17",
+      "final_twist_difference_from_cold": "",
+      "seconds": "3.431099902000028"
+    },
+    {
+      "case": "10",
+      "kind": "seeded_command",
+      "system": "ctr_2",
+      "source_sample": "1",
+      "contract_passed": "True",
+      "failure": "",
+      "negative_root_rejected": "",
+      "target_reached": "False",
+      "path_status": "partial_command_accepted",
+      "stop_reason": "",
+      "accepted_moves": "1",
+      "rejected_trials": "0",
+      "tracking_equilibrium_calls": "3",
+      "tracking_sensitivity_calls": "3",
+      "tracking_stability_calls": "3",
+      "external_equilibrium_calls": "2",
+      "failed_calls_without_rhs_counts": "0",
+      "external_sensitivity_calls": "0",
+      "external_stability_calls": "1",
+      "maximum_accepted_tip_error_m": "1.2406468748868247e-05",
+      "final_minimum_eigenvalue": "7.191515448615718",
+      "final_joint_target_error_scaled": "2.278662138655574",
+      "refinement_tip_error_m": "3.1038494650351746e-17",
+      "final_twist_difference_from_cold": "",
+      "seconds": "1.384611446000008"
+    },
+    {
+      "case": "11",
+      "kind": "seeded_command",
+      "system": "ctr_3",
+      "source_sample": "0",
+      "contract_passed": "True",
+      "failure": "",
+      "negative_root_rejected": "",
+      "target_reached": "False",
+      "path_status": "partial_command_accepted",
+      "stop_reason": "",
+      "accepted_moves": "1",
+      "rejected_trials": "0",
+      "tracking_equilibrium_calls": "3",
+      "tracking_sensitivity_calls": "3",
+      "tracking_stability_calls": "3",
+      "external_equilibrium_calls": "2",
+      "failed_calls_without_rhs_counts": "0",
+      "external_sensitivity_calls": "0",
+      "external_stability_calls": "1",
+      "maximum_accepted_tip_error_m": "5.5479857885846075e-06",
+      "final_minimum_eigenvalue": "3.6236267269078244",
+      "final_joint_target_error_scaled": "2.2971150875055155",
+      "refinement_tip_error_m": "1.1938139548514265e-16",
+      "final_twist_difference_from_cold": "",
+      "seconds": "2.5334302750000006"
+    },
+    {
+      "case": "12",
+      "kind": "seeded_command",
+      "system": "ctr_3",
+      "source_sample": "1",
+      "contract_passed": "True",
+      "failure": "",
+      "negative_root_rejected": "",
+      "target_reached": "False",
+      "path_status": "partial_command_accepted",
+      "stop_reason": "",
+      "accepted_moves": "1",
+      "rejected_trials": "0",
+      "tracking_equilibrium_calls": "3",
+      "tracking_sensitivity_calls": "3",
+      "tracking_stability_calls": "3",
+      "external_equilibrium_calls": "2",
+      "failed_calls_without_rhs_counts": "0",
+      "external_sensitivity_calls": "0",
+      "external_stability_calls": "1",
+      "maximum_accepted_tip_error_m": "4.5182828717803306e-05",
+      "final_minimum_eigenvalue": "3.4053323037965404",
+      "final_joint_target_error_scaled": "1.4421009550609902",
+      "refinement_tip_error_m": "1.3258174589373225e-16",
+      "final_twist_difference_from_cold": "",
+      "seconds": "2.6683548070000143"
+    }
+  ],
+  "details": [
+    {
+      "kind": "negative_regression",
+      "system": "ctr_0",
+      "source_sample": 0,
+      "target_q": [
+        -0.19599808468096527,
+        -0.12600990538805137,
+        -0.003737862197937286,
+        2.2994960463889864,
+        -0.8594645906266152,
+        -1.4681794936637027
+      ],
+      "external_calls": [
+        {
+          "kind": "cold_negative_root",
+          "shooting_evaluations": 15,
+          "rhs_evaluations": 5655,
+          "ivp_integrations": 96,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "The solution converged.",
+          "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+          "boundary_residual_scaled": 5.9215132797163505e-15,
+          "base_torque_sum_nm": 7.876483406410303e-17,
+          "max_quaternion_norm_error": 2.098321516541546e-14,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "aligned_reference",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 1587,
+          "ivp_integrations": 18,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+          "boundary_residual_scaled": 0.0,
+          "base_torque_sum_nm": 0.0,
+          "max_quaternion_norm_error": 1.9984014443252818e-14,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "refined_final_root",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 4692,
+          "ivp_integrations": 18,
+          "options": {
+            "rtol": 1e-11,
+            "atol": 1e-13,
+            "max_step": 0.002,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+          "boundary_residual_scaled": 1.4276678797497944e-15,
+          "base_torque_sum_nm": -1.019082085745423e-15,
+          "max_quaternion_norm_error": 4.440892098500626e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "explicit",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        }
+      ],
+      "negative_initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 0,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 477,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.1581728349999878,
+        "accepted": false,
+        "rejection_details": {
+          "elastic_status": "negative_second_variation",
+          "minimum_eigenvalues": [
+            -2.4667432941898673,
+            -2.467190994401275,
+            -2.467302924408153
+          ]
+        }
+      },
+      "initial_q": [
+        -0.19599808468096527,
+        -0.12600990538805137,
+        -0.003737862197937286,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 1,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 984,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.21046937100001628,
+        "accepted": true,
+        "supplied_equilibrium_solve_included": false
+      },
+      "final_q": [
+        -0.19599808468096527,
+        -0.12600990538805137,
+        -0.003737862197937286,
+        2.2994960463889864,
+        -0.8594645906266152,
+        -1.4681794936637027
+      ],
+      "final_base_torsion": [
+        -4.6432258371499975,
+        -0.433395751929853,
+        0.5721435267759662
+      ],
+      "final_elastic_energy_j": 0.6090936679823361,
+      "cold_elastic_energy_j": 0.6198193780971979,
+      "refined_stability": {
+        "rhs_evaluations": 1872,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 2.543559113332705e-15,
+        "reintegration_tip_discrepancy_m": 5.594315114139762e-17,
+        "seconds": 0.21985202799999115,
+        "mesh_dofs": [
+          123,
+          243,
+          483
+        ],
+        "last_refinement_change": 1.8506730232736857e-05,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "equilibrium_base_torsion": [
+          -4.6432258371499975,
+          -0.433395751929853,
+          0.5721435267759662
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0
+      },
+      "tracking_totals": {
+        "equilibrium_calls": 169,
+        "sensitivity_calls": 111,
+        "stability_calls": 111,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 768150,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 54.37559305600004
+      }
+    },
+    {
+      "kind": "negative_regression",
+      "system": "ctr_1",
+      "source_sample": 0,
+      "target_q": [
+        -0.16100884574324326,
+        -0.10534328407452676,
+        -0.03490923823267869,
+        -0.7540984570531166,
+        -1.5802475464775367,
+        1.6795892598221007
+      ],
+      "external_calls": [
+        {
+          "kind": "cold_negative_root",
+          "shooting_evaluations": 15,
+          "rhs_evaluations": 5373,
+          "ivp_integrations": 96,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "The solution converged.",
+          "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+          "boundary_residual_scaled": 2.0120781767343525e-13,
+          "base_torque_sum_nm": -1.3892667056952428e-18,
+          "max_quaternion_norm_error": 4.218847493575595e-15,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "aligned_reference",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 1509,
+          "ivp_integrations": 18,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+          "boundary_residual_scaled": 0.0,
+          "base_torque_sum_nm": 0.0,
+          "max_quaternion_norm_error": 8.881784197001252e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "refined_final_root",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 4152,
+          "ivp_integrations": 18,
+          "options": {
+            "rtol": 1e-11,
+            "atol": 1e-13,
+            "max_step": 0.002,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+          "boundary_residual_scaled": 6.680973030507618e-11,
+          "base_torque_sum_nm": 2.077786868786241e-17,
+          "max_quaternion_norm_error": 2.220446049250313e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "explicit",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        }
+      ],
+      "negative_initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 0,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 462,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.2469817159999934,
+        "accepted": false,
+        "rejection_details": {
+          "elastic_status": "negative_second_variation",
+          "minimum_eigenvalues": [
+            -10.889150009864164,
+            -10.897137601667778,
+            -10.899135374630955
+          ]
+        }
+      },
+      "initial_q": [
+        -0.16100884574324326,
+        -0.10534328407452676,
+        -0.03490923823267869,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 1,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 969,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.4350961150000785,
+        "accepted": true,
+        "supplied_equilibrium_solve_included": false
+      },
+      "final_q": [
+        -0.16100884574324326,
+        -0.10534328407452676,
+        -0.03490923823267869,
+        -0.7540984570531166,
+        -1.5802475464775367,
+        1.6795892598221007
+      ],
+      "final_base_torsion": [
+        3.9971753741048106,
+        10.127061615703628,
+        -1.4329044803036342
+      ],
+      "final_elastic_energy_j": 0.026533461197038123,
+      "cold_elastic_energy_j": 0.03621723333699529,
+      "refined_stability": {
+        "rhs_evaluations": 1692,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 6.683333593890057e-11,
+        "reintegration_tip_discrepancy_m": 1.469096744237406e-16,
+        "seconds": 0.25561816100002943,
+        "mesh_dofs": [
+          115,
+          227,
+          451
+        ],
+        "last_refinement_change": 0.0003599180746913788,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "equilibrium_base_torsion": [
+          3.9971753741048106,
+          10.127061615703628,
+          -1.4329044803036342
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0
+      },
+      "tracking_totals": {
+        "equilibrium_calls": 102,
+        "sensitivity_calls": 69,
+        "stability_calls": 69,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 434775,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 34.58496973500007
+      }
+    },
+    {
+      "kind": "negative_regression",
+      "system": "ctr_1",
+      "source_sample": 1,
+      "target_q": [
+        -0.22169799495045392,
+        -0.18714532439420878,
+        -0.10959499221931462,
+        1.5376490819265891,
+        1.6782587024614797,
+        -1.9666207582104145
+      ],
+      "external_calls": [
+        {
+          "kind": "cold_negative_root",
+          "shooting_evaluations": 15,
+          "rhs_evaluations": 4030,
+          "ivp_integrations": 80,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "The solution converged.",
+          "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+          "boundary_residual_scaled": 9.875855463462837e-15,
+          "base_torque_sum_nm": -3.770800277268285e-18,
+          "max_quaternion_norm_error": 7.105427357601002e-15,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "aligned_reference",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 1203,
+          "ivp_integrations": 15,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+          "boundary_residual_scaled": 0.0,
+          "base_torque_sum_nm": 0.0,
+          "max_quaternion_norm_error": 1.9984014443252818e-15,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "refined_final_root",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 3003,
+          "ivp_integrations": 15,
+          "options": {
+            "rtol": 1e-11,
+            "atol": 1e-13,
+            "max_step": 0.002,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+          "boundary_residual_scaled": 6.70288037914784e-11,
+          "base_torque_sum_nm": -5.4928268846647574e-18,
+          "max_quaternion_norm_error": 6.661338147750939e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "explicit",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        }
+      ],
+      "negative_initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 0,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 340,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.1219645990000231,
+        "accepted": false,
+        "rejection_details": {
+          "elastic_status": "negative_second_variation",
+          "minimum_eigenvalues": [
+            -18.337298978526675,
+            -18.348919090601697,
+            -18.351824329655486
+          ]
+        }
+      },
+      "initial_q": [
+        -0.22169799495045392,
+        -0.18714532439420878,
+        -0.10959499221931462,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 1,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 740,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.37792437099994913,
+        "accepted": true,
+        "supplied_equilibrium_solve_included": false
+      },
+      "final_q": [
+        -0.22169799495045392,
+        -0.18714532439420878,
+        -0.10959499221931462,
+        1.5376490819265891,
+        1.6782587024614797,
+        -1.9666207582104145
+      ],
+      "final_base_torsion": [
+        -6.648930833334208,
+        -11.783337914899741,
+        1.6789537496007347
+      ],
+      "final_elastic_energy_j": 0.05595098985143101,
+      "cold_elastic_energy_j": 0.06642913906893129,
+      "refined_stability": {
+        "rhs_evaluations": 1195,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 6.701996115959609e-11,
+        "reintegration_tip_discrepancy_m": 6.947562107041945e-17,
+        "seconds": 0.1551879550000308,
+        "mesh_dofs": [
+          91,
+          179,
+          355
+        ],
+        "last_refinement_change": 0.0004898550959477888,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "equilibrium_base_torsion": [
+          -6.648930833334208,
+          -11.783337914899741,
+          1.6789537496007347
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0
+      },
+      "tracking_totals": {
+        "equilibrium_calls": 123,
+        "sensitivity_calls": 83,
+        "stability_calls": 83,
+        "failed_calls": 1,
+        "rhs_evaluations_known": 404944,
+        "failed_calls_without_rhs_counts": 1,
+        "call_seconds": 29.78799496400029
+      }
+    },
+    {
+      "kind": "negative_regression",
+      "system": "ctr_1",
+      "source_sample": 3,
+      "target_q": [
+        -0.08925963865429792,
+        -0.04535308032861529,
+        -0.03504410517798334,
+        1.370295121171698,
+        -1.85347933934204,
+        -1.1762628791600045
+      ],
+      "external_calls": [
+        {
+          "kind": "cold_negative_root",
+          "shooting_evaluations": 12,
+          "rhs_evaluations": 6108,
+          "ivp_integrations": 78,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "The solution converged.",
+          "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+          "boundary_residual_scaled": 6.325993716005541e-14,
+          "base_torque_sum_nm": -8.374184640901901e-18,
+          "max_quaternion_norm_error": 1.7763568394002505e-15,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "aligned_reference",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 1812,
+          "ivp_integrations": 18,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+          "boundary_residual_scaled": 0.0,
+          "base_torque_sum_nm": 0.0,
+          "max_quaternion_norm_error": 1.7763568394002505e-15,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "refined_final_root",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 5445,
+          "ivp_integrations": 18,
+          "options": {
+            "rtol": 1e-11,
+            "atol": 1e-13,
+            "max_step": 0.002,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+          "boundary_residual_scaled": 1.7315006048911851e-10,
+          "base_torque_sum_nm": -8.10584483221109e-18,
+          "max_quaternion_norm_error": 2.220446049250313e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "explicit",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        }
+      ],
+      "negative_initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 0,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 552,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.19960209099997428,
+        "accepted": false,
+        "rejection_details": {
+          "elastic_status": "negative_second_variation",
+          "minimum_eigenvalues": [
+            -61.784228328658855,
+            -61.874974701632766,
+            -61.89770413318371
+          ]
+        }
+      },
+      "initial_q": [
+        -0.08925963865429792,
+        -0.04535308032861529,
+        -0.03504410517798334,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 1,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 1149,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.261749377000001,
+        "accepted": true,
+        "supplied_equilibrium_solve_included": false
+      },
+      "final_q": [
+        -0.08925963865429792,
+        -0.04535308032861529,
+        -0.03504410517798334,
+        1.370295121171698,
+        -1.85347933934204,
+        -1.1762628791600045
+      ],
+      "final_base_torsion": [
+        -8.658279752433238,
+        0.36423051843168347,
+        -7.126596331935258e-16
+      ],
+      "final_elastic_energy_j": 0.010981806030460698,
+      "cold_elastic_energy_j": 0.013316989668549422,
+      "refined_stability": {
+        "rhs_evaluations": 2217,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 1.731145357069722e-10,
+        "reintegration_tip_discrepancy_m": 1.8124332432935232e-16,
+        "seconds": 0.24272430300004544,
+        "mesh_dofs": [
+          107,
+          211,
+          419
+        ],
+        "last_refinement_change": 0.0001230836024603832,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "equilibrium_base_torsion": [
+          -8.658279752433238,
+          0.36423051843168347,
+          -7.126596331935258e-16
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0
+      },
+      "tracking_totals": {
+        "equilibrium_calls": 114,
+        "sensitivity_calls": 77,
+        "stability_calls": 77,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 644787,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 41.116975832000435
+      }
+    },
+    {
+      "kind": "negative_regression",
+      "system": "ctr_2",
+      "source_sample": 0,
+      "target_q": [
+        -0.20621533928186023,
+        -0.2012987582558699,
+        -0.1526195102759111,
+        1.7514001008164977,
+        -1.078254281629671,
+        0.9072604521452661
+      ],
+      "external_calls": [
+        {
+          "kind": "cold_negative_root",
+          "shooting_evaluations": 16,
+          "rhs_evaluations": 2754,
+          "ivp_integrations": 51,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "The solution converged.",
+          "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+          "boundary_residual_scaled": 3.6729173868987885e-13,
+          "base_torque_sum_nm": 5.096956669483158e-17,
+          "max_quaternion_norm_error": 4.6629367034256575e-15,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "aligned_reference",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 750,
+          "ivp_integrations": 9,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+          "boundary_residual_scaled": 0.0,
+          "base_torque_sum_nm": 0.0,
+          "max_quaternion_norm_error": 5.551115123125783e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "refined_final_root",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 2055,
+          "ivp_integrations": 9,
+          "options": {
+            "rtol": 1e-11,
+            "atol": 1e-13,
+            "max_step": 0.002,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+          "boundary_residual_scaled": 1.7677242101248282e-14,
+          "base_torque_sum_nm": 3.1061760725581887e-18,
+          "max_quaternion_norm_error": 2.220446049250313e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "explicit",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        }
+      ],
+      "negative_initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 0,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 216,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.058286536000025535,
+        "accepted": false,
+        "rejection_details": {
+          "elastic_status": "negative_second_variation",
+          "minimum_eigenvalues": [
+            -6.986940128281092,
+            -6.988464867406382,
+            -6.988846160828849
+          ]
+        }
+      },
+      "initial_q": [
+        -0.20621533928186023,
+        -0.2012987582558699,
+        -0.1526195102759111,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 1,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 462,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.08742906899999525,
+        "accepted": true,
+        "supplied_equilibrium_solve_included": false
+      },
+      "final_q": [
+        -0.20621533928186023,
+        -0.2012987582558699,
+        -0.1526195102759111,
+        1.7514001008164977,
+        -1.078254281629671,
+        0.9072604521452661
+      ],
+      "final_base_torsion": [
+        -5.817556701589104,
+        3.7190704910620576,
+        -0.8234941707515445
+      ],
+      "final_elastic_energy_j": 0.8574926095537099,
+      "cold_elastic_energy_j": 0.9266534686577839,
+      "refined_stability": {
+        "rhs_evaluations": 831,
+        "ivp_integrations": 3,
+        "boundary_residual_scaled": 1.8441830492188573e-14,
+        "reintegration_tip_discrepancy_m": 2.9079264368403834e-17,
+        "seconds": 0.11654566299995395,
+        "mesh_dofs": [
+          51,
+          99,
+          195
+        ],
+        "last_refinement_change": 0.00024904230489486423,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "equilibrium_base_torsion": [
+          -5.817556701589104,
+          3.7190704910620576,
+          -0.8234941707515445
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0
+      },
+      "tracking_totals": {
+        "equilibrium_calls": 108,
+        "sensitivity_calls": 73,
+        "stability_calls": 73,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 236868,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 15.932301038999867
+      }
+    },
+    {
+      "kind": "seeded_command",
+      "system": "ctr_0",
+      "source_sample": 0,
+      "initial_q": [
+        -0.22078165772867792,
+        -0.18354235174339753,
+        -0.16229463011914122,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "command": [
+        -0.0007057057213504212,
+        -0.0031179693399189254,
+        0.0024254705993425256,
+        0.09672117087574574,
+        -0.0445891182237958,
+        0.04760101380465951
+      ],
+      "external_calls": [
+        {
+          "kind": "aligned_reference",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 1485,
+          "ivp_integrations": 15,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+          "boundary_residual_scaled": 0.0,
+          "base_torque_sum_nm": 0.0,
+          "max_quaternion_norm_error": 1.9206858326015208e-14,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "refined_final_root",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 4125,
+          "ivp_integrations": 15,
+          "options": {
+            "rtol": 1e-11,
+            "atol": 1e-13,
+            "max_step": 0.002,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+          "boundary_residual_scaled": 5.704456546885838e-17,
+          "base_torque_sum_nm": -4.951203680038558e-18,
+          "max_quaternion_norm_error": 5.551115123125783e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "explicit",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        }
+      ],
+      "initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 1,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 860,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.1797728280000115,
+        "accepted": true,
+        "supplied_equilibrium_solve_included": false
+      },
+      "final_q": [
+        -0.22100799277062827,
+        -0.18454235174339753,
+        -0.16151672939757555,
+        0.031020565095826354,
+        -0.014300691688313789,
+        0.015266671546519204
+      ],
+      "final_base_torsion": [
+        -0.05913744035907018,
+        0.01772262713125871,
+        6.285077591503482e-35
+      ],
+      "final_elastic_energy_j": 0.1586733313860578,
+      "refined_stability": {
+        "rhs_evaluations": 1660,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 5.196277436114727e-17,
+        "reintegration_tip_discrepancy_m": 4.38894694821931e-17,
+        "seconds": 0.2660408159999861,
+        "mesh_dofs": [
+          83,
+          163,
+          323
+        ],
+        "last_refinement_change": 8.776002325205923e-05,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "equilibrium_base_torsion": [
+          -0.05913744035907018,
+          0.01772262713125871,
+          6.285077591503482e-35
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0
+      },
+      "tracking_totals": {
+        "equilibrium_calls": 3,
+        "sensitivity_calls": 3,
+        "stability_calls": 3,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 35511,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 2.019533010000032
+      }
+    },
+    {
+      "kind": "seeded_command",
+      "system": "ctr_0",
+      "source_sample": 1,
+      "initial_q": [
+        -0.1818169464888889,
+        -0.17396894153531103,
+        -0.07431229286105857,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "command": [
+        -0.003985264359907988,
+        0.0035218027478135,
+        -0.003588344418823924,
+        0.10779977159586121,
+        -0.10194812056375922,
+        0.13890415546013804
+      ],
+      "external_calls": [
+        {
+          "kind": "aligned_reference",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 1602,
+          "ivp_integrations": 15,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+          "boundary_residual_scaled": 0.0,
+          "base_torque_sum_nm": 0.0,
+          "max_quaternion_norm_error": 2.0761170560490427e-14,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "refined_final_root",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 4863,
+          "ivp_integrations": 15,
+          "options": {
+            "rtol": 1e-11,
+            "atol": 1e-13,
+            "max_step": 0.002,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+          "boundary_residual_scaled": 2.6962698566890262e-17,
+          "base_torque_sum_nm": -4.0962393575151897e-19,
+          "max_quaternion_norm_error": 6.661338147750939e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "explicit",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        }
+      ],
+      "initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 1,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 980,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.29462559900002816,
+        "accepted": true,
+        "supplied_equilibrium_solve_included": false
+      },
+      "final_q": [
+        -0.1820669464888889,
+        -0.1737480149900583,
+        -0.07453739363824433,
+        0.006762397789738489,
+        -0.006395317308769022,
+        0.008713609870998954
+      ],
+      "final_base_torsion": [
+        -0.004874888995589687,
+        0.02476228283067675,
+        -0.007305439530440888
+      ],
+      "final_elastic_energy_j": 0.31357266999563016,
+      "refined_stability": {
+        "rhs_evaluations": 1945,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 1.852809355593066e-17,
+        "reintegration_tip_discrepancy_m": 3.1032103067895856e-17,
+        "seconds": 0.2198173290000227,
+        "mesh_dofs": [
+          91,
+          179,
+          355
+        ],
+        "last_refinement_change": 8.044589255717938e-05,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "equilibrium_base_torsion": [
+          -0.004874888995589687,
+          0.02476228283067675,
+          -0.007305439530440888
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0
+      },
+      "tracking_totals": {
+        "equilibrium_calls": 9,
+        "sensitivity_calls": 7,
+        "stability_calls": 7,
+        "failed_calls": 2,
+        "rhs_evaluations_known": 58225,
+        "failed_calls_without_rhs_counts": 2,
+        "call_seconds": 5.30278992100034
+      }
+    },
+    {
+      "kind": "seeded_command",
+      "system": "ctr_1",
+      "source_sample": 0,
+      "initial_q": [
+        -0.0726531994048395,
+        -0.017836377021965666,
+        -0.010935329913034031,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "command": [
+        0.00044397518582015927,
+        -0.0013573848347618904,
+        -7.726978362501135e-06,
+        -0.13411933686152142,
+        0.024281151875240214,
+        -0.09362402026750888
+      ],
+      "external_calls": [
+        {
+          "kind": "aligned_reference",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 1851,
+          "ivp_integrations": 18,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+          "boundary_residual_scaled": 0.0,
+          "base_torque_sum_nm": 0.0,
+          "max_quaternion_norm_error": 1.887379141862766e-15,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "refined_final_root",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 5736,
+          "ivp_integrations": 18,
+          "options": {
+            "rtol": 1e-11,
+            "atol": 1e-13,
+            "max_step": 0.002,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+          "boundary_residual_scaled": 1.6137578244627704e-12,
+          "base_torque_sum_nm": -1.133538509667055e-18,
+          "max_quaternion_norm_error": 3.3306690738754696e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "explicit",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        }
+      ],
+      "initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 1,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 1194,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.1969086870000183,
+        "accepted": true,
+        "supplied_equilibrium_solve_included": false
+      },
+      "final_q": [
+        -0.07248768442534084,
+        -0.018342413238116733,
+        -0.010938210548497685,
+        -0.05000000000000001,
+        0.009052069762434993,
+        -0.0349032520061503
+      ],
+      "final_base_torsion": [
+        0.1612670351969,
+        -0.0067840699902544715,
+        -1.3183898417423776e-16
+      ],
+      "final_elastic_energy_j": 0.010338945900308287,
+      "refined_stability": {
+        "rhs_evaluations": 2337,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 1.6128696030182443e-12,
+        "reintegration_tip_discrepancy_m": 1.9478596515358357e-16,
+        "seconds": 0.24807384000001775,
+        "mesh_dofs": [
+          107,
+          211,
+          419
+        ],
+        "last_refinement_change": 0.00010480833072268325,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "equilibrium_base_torsion": [
+          0.1612670351969,
+          -0.0067840699902544715,
+          -1.3183898417423776e-16
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0
+      },
+      "tracking_totals": {
+        "equilibrium_calls": 3,
+        "sensitivity_calls": 3,
+        "stability_calls": 3,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 49764,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 2.3038069349999546
+      }
+    },
+    {
+      "kind": "seeded_command",
+      "system": "ctr_1",
+      "source_sample": 1,
+      "initial_q": [
+        -0.22890989992726818,
+        -0.2203042362568423,
+        -0.09616882196380436,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "command": [
+        0.0017777577759904794,
+        0.0013232272411978184,
+        0.0038443405548153047,
+        0.09038710182614347,
+        0.14885788498420674,
+        -0.07597466933899495
+      ],
+      "external_calls": [
+        {
+          "kind": "aligned_reference",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 1062,
+          "ivp_integrations": 12,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+          "boundary_residual_scaled": 0.0,
+          "base_torque_sum_nm": 0.0,
+          "max_quaternion_norm_error": 1.887379141862766e-15,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "refined_final_root",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 2790,
+          "ivp_integrations": 12,
+          "options": {
+            "rtol": 1e-11,
+            "atol": 1e-13,
+            "max_step": 0.002,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+          "boundary_residual_scaled": 1.1439543103252931e-14,
+          "base_torque_sum_nm": 1.8671878371379814e-19,
+          "max_quaternion_norm_error": 3.3306690738754696e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "explicit",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        }
+      ],
+      "initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 1,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 661,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.15098225499991713,
+        "accepted": true,
+        "supplied_equilibrium_solve_included": false
+      },
+      "final_q": [
+        -0.22844746488785322,
+        -0.21996003489842197,
+        -0.09516882196380436,
+        0.023511731215624818,
+        0.03872130547793218,
+        -0.019762731281397886
+      ],
+      "final_base_torsion": [
+        -7.57984408694564e-17,
+        -0.1998787622242549,
+        0.027819453673689345
+      ],
+      "final_elastic_energy_j": 0.03282533180319995,
+      "refined_stability": {
+        "rhs_evaluations": 1118,
+        "ivp_integrations": 4,
+        "boundary_residual_scaled": 1.1503089519081038e-14,
+        "reintegration_tip_discrepancy_m": 8.355556263899026e-17,
+        "seconds": 0.1652387140000542,
+        "mesh_dofs": [
+          59,
+          115,
+          227
+        ],
+        "last_refinement_change": 7.296782047339079e-05,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "3d31efe603dc234cb980e4bec19c7886d84146648ff102dfb3e4fb33d5699a95",
+        "equilibrium_base_torsion": [
+          -7.57984408694564e-17,
+          -0.1998787622242549,
+          0.027819453673689345
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0
+      },
+      "tracking_totals": {
+        "equilibrium_calls": 3,
+        "sensitivity_calls": 3,
+        "stability_calls": 3,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 28959,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 1.5450719459998368
+      }
+    },
+    {
+      "kind": "seeded_command",
+      "system": "ctr_2",
+      "source_sample": 0,
+      "initial_q": [
+        -0.14924788121752472,
+        -0.14047925292102903,
+        -0.11227421473719365,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "command": [
+        0.001529131212604609,
+        -0.0003937649092736173,
+        -0.0036596719058841626,
+        -0.013156124749510612,
+        -0.12661614132397478,
+        0.05038852073233215
+      ],
+      "external_calls": [
+        {
+          "kind": "aligned_reference",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 1242,
+          "ivp_integrations": 15,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+          "boundary_residual_scaled": 0.0,
+          "base_torque_sum_nm": 0.0,
+          "max_quaternion_norm_error": 5.551115123125783e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "refined_final_root",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 3156,
+          "ivp_integrations": 15,
+          "options": {
+            "rtol": 1e-11,
+            "atol": 1e-13,
+            "max_step": 0.002,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+          "boundary_residual_scaled": 1.4817238825877778e-16,
+          "base_torque_sum_nm": -9.298057745365387e-19,
+          "max_quaternion_norm_error": 4.440892098500626e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "explicit",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        }
+      ],
+      "initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 1,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 755,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.2213634880000086,
+        "accepted": true,
+        "supplied_equilibrium_solve_included": false
+      },
+      "final_q": [
+        -0.1490389647829468,
+        -0.14053305076403247,
+        -0.11277421473719365,
+        -0.0017974459306526471,
+        -0.017298837789310625,
+        0.0068842948258989465
+      ],
+      "final_base_torsion": [
+        0.0005180376293926265,
+        0.06373978082870749,
+        -0.019842476448755364
+      ],
+      "final_elastic_energy_j": 0.5446412658318742,
+      "refined_stability": {
+        "rhs_evaluations": 1300,
+        "ivp_integrations": 5,
+        "boundary_residual_scaled": 1.3300966163437393e-16,
+        "reintegration_tip_discrepancy_m": 3.925234890099783e-17,
+        "seconds": 0.20812526299999945,
+        "mesh_dofs": [
+          99,
+          195,
+          387
+        ],
+        "last_refinement_change": 0.00033284760856489015,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "equilibrium_base_torsion": [
+          0.0005180376293926265,
+          0.06373978082870749,
+          -0.019842476448755364
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0
+      },
+      "tracking_totals": {
+        "equilibrium_calls": 6,
+        "sensitivity_calls": 5,
+        "stability_calls": 5,
+        "failed_calls": 1,
+        "rhs_evaluations_known": 35026,
+        "failed_calls_without_rhs_counts": 1,
+        "call_seconds": 2.9717333549999125
+      }
+    },
+    {
+      "kind": "seeded_command",
+      "system": "ctr_2",
+      "source_sample": 1,
+      "initial_q": [
+        -0.19239682356775098,
+        -0.16307112703231272,
+        -0.09305038600589907,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "command": [
+        -0.0020148837344619343,
+        0.00048280361314160115,
+        -0.003278662138655574,
+        -0.13824668558332653,
+        -0.09638695626156302,
+        -0.043129627747709884
+      ],
+      "external_calls": [
+        {
+          "kind": "aligned_reference",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 828,
+          "ivp_integrations": 9,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+          "boundary_residual_scaled": 0.0,
+          "base_torque_sum_nm": 0.0,
+          "max_quaternion_norm_error": 2.220446049250313e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "refined_final_root",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 2250,
+          "ivp_integrations": 9,
+          "options": {
+            "rtol": 1e-11,
+            "atol": 1e-13,
+            "max_step": 0.002,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+          "boundary_residual_scaled": 4.0274139646829587e-16,
+          "base_torque_sum_nm": -2.7635684323184653e-18,
+          "max_quaternion_norm_error": 4.440892098500626e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "explicit",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        }
+      ],
+      "initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 1,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 537,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.11728843600002392,
+        "accepted": true,
+        "supplied_equilibrium_solve_included": false
+      },
+      "final_q": [
+        -0.19301136805243768,
+        -0.16292387074522863,
+        -0.09405038600589907,
+        -0.042165578439263954,
+        -0.02939825824843507,
+        -0.013154642327798777
+      ],
+      "final_base_torsion": [
+        0.09295737207886458,
+        0.04879380873982479,
+        -0.020480658101633957
+      ],
+      "final_elastic_energy_j": 0.44943453547842466,
+      "refined_stability": {
+        "rhs_evaluations": 936,
+        "ivp_integrations": 3,
+        "boundary_residual_scaled": 3.9357341848457806e-16,
+        "reintegration_tip_discrepancy_m": 7.076842637639571e-17,
+        "seconds": 0.10971629199997324,
+        "mesh_dofs": [
+          51,
+          99,
+          195
+        ],
+        "last_refinement_change": 0.0007187276007378784,
+        "refinement_converged": true,
+        "classification_margin": 0.001437455201475757,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "4261f596822b7d46f2a82f5e97365a04036de6f2355ea7eab67fdfaa9bbcf2e8",
+        "equilibrium_base_torsion": [
+          0.09295737207886458,
+          0.04879380873982479,
+          -0.020480658101633957
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0
+      },
+      "tracking_totals": {
+        "equilibrium_calls": 3,
+        "sensitivity_calls": 3,
+        "stability_calls": 3,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 20079,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 1.065171384999985
+      }
+    },
+    {
+      "kind": "seeded_command",
+      "system": "ctr_3",
+      "source_sample": 0,
+      "initial_q": [
+        -0.029076825297557146,
+        -0.013713300439440426,
+        -0.005764443033171307,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "command": [
+        -0.0015302453913051677,
+        0.0024879714697680216,
+        0.0032971150875055156,
+        -0.1313140268376733,
+        0.089327075554982,
+        0.12491532859711828
+      ],
+      "external_calls": [
+        {
+          "kind": "aligned_reference",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 1218,
+          "ivp_integrations": 18,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+          "boundary_residual_scaled": 0.0,
+          "base_torque_sum_nm": 0.0,
+          "max_quaternion_norm_error": 1.7763568394002505e-15,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "refined_final_root",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 2490,
+          "ivp_integrations": 18,
+          "options": {
+            "rtol": 1e-11,
+            "atol": 1e-13,
+            "max_step": 0.002,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+          "boundary_residual_scaled": 4.262619914289679e-16,
+          "base_torque_sum_nm": -3.334409180288795e-17,
+          "max_quaternion_norm_error": 4.440892098500626e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "explicit",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        }
+      ],
+      "initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 1,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 699,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.5029708490000075,
+        "accepted": true,
+        "supplied_equilibrium_solve_included": false
+      },
+      "final_q": [
+        -0.029540941760189603,
+        -0.01295871001607418,
+        -0.004764443033171307,
+        -0.03982694669509428,
+        0.02709249546474394,
+        0.03788625064089739
+      ],
+      "final_base_torsion": [
+        0.2588424605599931,
+        -0.034416425383333164,
+        -0.008286855954950307
+      ],
+      "final_elastic_energy_j": 0.7869226691800796,
+      "refined_stability": {
+        "rhs_evaluations": 1047,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 4.1864410931634147e-16,
+        "reintegration_tip_discrepancy_m": 3.480018757039482e-18,
+        "seconds": 0.1857443279999984,
+        "mesh_dofs": [
+          115,
+          227,
+          451
+        ],
+        "last_refinement_change": 0.00011899636609813413,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "equilibrium_base_torsion": [
+          0.2588424605599931,
+          -0.034416425383333164,
+          -0.008286855954950307
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0
+      },
+      "tracking_totals": {
+        "equilibrium_calls": 3,
+        "sensitivity_calls": 3,
+        "stability_calls": 3,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 26931,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 2.041244574000018
+      }
+    },
+    {
+      "kind": "seeded_command",
+      "system": "ctr_3",
+      "source_sample": 1,
+      "initial_q": [
+        -0.03476333362250415,
+        -0.02954846503437264,
+        -0.027755631336631413,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "command": [
+        0.002442100955060993,
+        -0.0019676566959131022,
+        -0.0024089835929125025,
+        -0.09864158184685047,
+        0.038219864826096385,
+        -0.12103891835314004
+      ],
+      "external_calls": [
+        {
+          "kind": "aligned_reference",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 1188,
+          "ivp_integrations": 18,
+          "options": {
+            "rtol": 1e-08,
+            "atol": 1e-10,
+            "max_step": 0.01,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+          "boundary_residual_scaled": 0.0,
+          "base_torque_sum_nm": 0.0,
+          "max_quaternion_norm_error": 2.1094237467877974e-15,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "zero",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        },
+        {
+          "kind": "refined_final_root",
+          "shooting_evaluations": 2,
+          "rhs_evaluations": 2433,
+          "ivp_integrations": 18,
+          "options": {
+            "rtol": 1e-11,
+            "atol": 1e-13,
+            "max_step": 0.002,
+            "boundary_tolerance": 1e-07,
+            "max_shooting_evaluations": 250,
+            "max_rhs_evaluations": 500000,
+            "samples_per_segment": 17
+          },
+          "root_message": "Initial guess satisfies boundary tolerance",
+          "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+          "boundary_residual_scaled": 1.5490356894676287e-16,
+          "base_torque_sum_nm": 2.4607370825172853e-16,
+          "max_quaternion_norm_error": 4.440892098500626e-16,
+          "elastic_stability": "not_certified",
+          "uniqueness": "not_certified",
+          "initial_guess": "explicit",
+          "used_curvature_continuation": false,
+          "continuation_stages": 0
+        }
+      ],
+      "initialization": {
+        "equilibrium_calls": 0,
+        "sensitivity_calls": 1,
+        "stability_calls": 1,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 684,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 0.18758191199998464,
+        "accepted": true,
+        "supplied_equilibrium_solve_included": false
+      },
+      "final_q": [
+        -0.03376333362250415,
+        -0.030354187947602473,
+        -0.028742070323897743,
+        -0.0403920983047103,
+        0.015650403291841735,
+        -0.04956343762214249
+      ],
+      "final_base_torsion": [
+        0.109996266727061,
+        -0.03739701706332181,
+        0.002585116179250772
+      ],
+      "final_elastic_energy_j": 0.6531567683543904,
+      "refined_stability": {
+        "rhs_evaluations": 987,
+        "ivp_integrations": 6,
+        "boundary_residual_scaled": 1.524669639037082e-16,
+        "reintegration_tip_discrepancy_m": 1.3879481770324007e-17,
+        "seconds": 0.3982809080000038,
+        "mesh_dofs": [
+          115,
+          227,
+          451
+        ],
+        "last_refinement_change": 0.00017312884796183425,
+        "refinement_converged": true,
+        "classification_margin": 0.001,
+        "sign_tolerance": 0.001,
+        "refinement_tolerance": 0.01,
+        "model_fingerprint": "9a30889cbe2a45cfeee8a28f78e142f28e02a545cf9953d3b7ebd6e4531fdab5",
+        "equilibrium_base_torsion": [
+          0.109996266727061,
+          -0.03739701706332181,
+          0.002585116179250772
+        ],
+        "method": "reduced_torsional_energy_second_variation_linear_fem",
+        "elastic_stability_certified": false,
+        "global_uniqueness_certified": false,
+        "controller_stability_certified": false,
+        "additional_equilibrium_solves": 0
+      },
+      "tracking_totals": {
+        "equilibrium_calls": 3,
+        "sensitivity_calls": 3,
+        "stability_calls": 3,
+        "failed_calls": 0,
+        "rhs_evaluations_known": 24576,
+        "failed_calls_without_rhs_counts": 0,
+        "call_seconds": 1.9490231260000428
+      }
+    }
+  ]
+}
