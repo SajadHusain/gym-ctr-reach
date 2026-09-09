@@ -9,6 +9,10 @@ on:
       - 'tests/test_mechanics_step2.py'
       - 'tests/test_mechanics_tracking.py'
       - 'tests/test_mechanics_control.py'
+      - 'tests/test_mechanics_rl.py'
+      - 'train_physics_ddpg_her.py'
+      - 'evaluate_physics_ddpg_her.py'
+      - 'pyproject.toml'
       - 'validate_mechanics.py'
       - 'validate_mechanics_step2.py'
       - 'validate_mechanics_step3.py'
@@ -47,3 +51,28 @@ jobs:
             runs/mechanics_step2_ci/
             runs/mechanics_step3_ci/
             runs/mechanics_step4_ci/
+
+  mechanics-rl:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
+      - run: python -m pip install -e ".[physics-train,test]"
+      - run: python -m pytest tests/test_mechanics_rl.py -q
+      - run: python train_physics_ddpg_her.py --total-timesteps 12 --learning-starts 4 --episode-steps 4 --hidden-width 32 --batch-size 8 --progress-every 2 --output-dir runs/mechanics_step5_ci
+      - run: python evaluate_physics_ddpg_her.py runs/mechanics_step5_ci/final_model.zip --episodes 1 --max-steps 2 --output-dir runs/mechanics_step5_eval_ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mechanics-rl-${{ matrix.os }}
+          path: |
+            runs/mechanics_step5_ci/
+            runs/mechanics_step5_eval_ci/
