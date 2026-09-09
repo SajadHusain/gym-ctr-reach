@@ -25,7 +25,7 @@ class EquilibriumReachEnv(gym.Env):
 
     def __init__(self, system_name="ctr_0", *, tolerance_m=.001,
                  max_episode_steps=60, witness_steps=4, tubes=None,
-                 tracking_options=None):
+                 tracking_options=None, legacy_observation_bounds=False):
         super().__init__()
         if system_name not in CTR_SYSTEMS_PARAMETERS:
             raise ValueError("Unknown CTR system")
@@ -42,13 +42,26 @@ class EquilibriumReachEnv(gym.Env):
         self.max_episode_steps = max_episode_steps
         self.witness_steps = witness_steps
         self.n, self.length = self.solver.n, self.solver.scale
+        self.observation_bounds_version = 1 if legacy_observation_bounds else 2
         self.action_scales = np.r_[np.full(self.n, self.tracking_options.max_translation_step_m),
                                    np.full(self.n, self.tracking_options.max_rotation_step_rad)]
         self.action_space = spaces.Box(-1., 1., (2*self.n,), dtype=np.float32)
-        # Egocentric cos/sin and normalized translations, branch torsion * L,
-        # then tolerance / L. Torsion has no proved finite global bound.
-        low = np.r_[np.tile([-1., -1., -1.], self.n), np.full(self.n, -np.inf), 0.]
-        high = np.r_[np.ones(3*self.n), np.full(self.n, np.inf), np.inf]
+        # In this unloaded isotropic model, |eta_i'| <= EI_i/GJ_i*k_i*k_max.
+        # It is zero outside the curved segment; eta_i is constant in the guide.
+        # Free-tip torsion therefore gives |L*eta_i(base)| <= L*Lc_i*EI_i/GJ_i*k_i*k_max.
+        # Add a numerical envelope, not a claimed rigorous integrator error bound.
+        curvature = np.array([np.hypot(t.x_curvature,t.y_curvature) for t in self.solver.tubes])
+        ideal = self.length*np.array([t.length_curved for t in self.solver.tubes])*self.solver.ei/self.solver.gj*curvature*curvature.max()
+        envelope = 1.01*ideal+100*self.solver.options.boundary_tolerance
+        if not np.all(np.isfinite(envelope)) or np.max(envelope) >= np.finfo(np.float32).max:
+            raise ValueError("Torsion observation envelope exceeds supported numerical range")
+        self.torsion_observation_bound = np.nextafter(envelope.astype(np.float32), np.float32(np.inf))
+        tol_bound = np.nextafter(np.float32(self.tolerance_m/self.length),np.float32(np.inf))
+        if not np.isfinite(tol_bound):
+            raise ValueError("Tolerance exceeds supported observation range")
+        torsion_bound = np.full(self.n,np.inf) if legacy_observation_bounds else self.torsion_observation_bound
+        low = np.r_[np.tile([-1., -1., -1.], self.n), -torsion_bound, 0.]
+        high = np.r_[np.ones(3*self.n), torsion_bound, np.inf if legacy_observation_bounds else tol_bound]
         self.observation_space = spaces.Dict({
             "observation": spaces.Box(low.astype(np.float32), high.astype(np.float32)),
             "achieved_goal": spaces.Box(-self.length, self.length, (3,), dtype=np.float32),
@@ -139,9 +152,14 @@ class EquilibriumReachEnv(gym.Env):
         alpha = np.diff(root.joints[self.n:], prepend=0)
         ego = np.column_stack((np.cos(alpha), np.sin(alpha), beta)).ravel()
         features = np.r_[ego, self.length*root.base_torsional_strain, self.tolerance_m/self.length]
-        return {"observation": features.astype(np.float32),
+        observation = {"observation": features.astype(np.float32),
                 "achieved_goal": root.tip.astype(np.float32),
                 "desired_goal": self.goal.astype(np.float32)}
+        if (not all(np.all(np.isfinite(v)) for v in observation.values())
+                or not self.observation_space.contains(observation)):
+            self._finished = True
+            raise RuntimeError("Equilibrium observation violates its declared bounds; no clipping was applied")
+        return observation
 
     def _tolerances(self, info):
         if isinstance(info, dict):
@@ -170,7 +188,7 @@ class EquilibriumReachEnv(gym.Env):
             raise ValueError("Action must be a finite normalized joint vector in [-1, 1]")
         return action.copy()
 
-    def _finish(self, proposal, before, applied, source, costs, *, decrease=False, reason=""):
+    def _finish(self, proposal, before, applied, source, costs, *, decrease=False, reason="", physics=None):
         self._add_costs(costs)
         self.steps += 1
         self.transitions += 1
@@ -192,15 +210,25 @@ class EquilibriumReachEnv(gym.Env):
                     torsion_after=root.base_torsional_strain.copy(),
                     numerical_decrease_verified=bool(decrease),
                     mechanics_costs={k:costs.get(k, 0) for k in self.costs if k != "call_seconds"}, reason=reason)
+        if physics is not None:
+            info["physics"] = physics
         reward = float(self.compute_reward(obs["achieved_goal"], obs["desired_goal"], info))
         return obs, reward, terminated, truncated, info
 
     def step(self, action):
         proposal = self._action(action)
-        before = self.tracker.state.equilibrium
+        state = self.tracker.state
+        before = state.equilibrium
+        physics = self._physics_context(state)
         move = self.tracker.step(proposal*self.action_scales)
         return self._finish(proposal, before, move.applied_delta, "plant", move.diagnostics,
-                            reason=move.diagnostics["reason"])
+                            reason=move.diagnostics["reason"], physics=physics)
+
+    def _physics_context(self, state):
+        # Already computed and branch-checked by the tracker: no additional ODEs.
+        return {"jacobian":state.sensitivity.tip_jacobian.copy(),
+                "joints":state.equilibrium.joints.copy(),
+                "action_scales":self.action_scales.copy()}
 
     def close(self):
         self.tracker = None
@@ -234,9 +262,11 @@ class GuidedRolloutWrapper(gym.Wrapper):
 
     def step(self, action):
         proposal = self.env._action(action)
-        before = self.env.tracker.state.equilibrium
+        state = self.env.tracker.state
+        before = state.equilibrium
+        physics = self.env._physics_context(state)
         result = self.controller.step(self.env.goal, policy_delta=proposal*self.env.action_scales)
         return self.env._finish(proposal, before, result.applied_delta, result.action_source,
                                 result.diagnostics,
                                 decrease=result.diagnostics["numerical_decrease_verified"],
-                                reason=result.diagnostics["reason"])
+                                reason=result.diagnostics["reason"], physics=physics)

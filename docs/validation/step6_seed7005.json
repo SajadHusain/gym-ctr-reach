@@ -1,0 +1,541 @@
+{
+  "source_parent_commit": "d2b5c0d764eb7bc69142ecf3ab31bab77960bf4a",
+  "source_context": "Step 6 changes applied to the parent snapshot; this report is committed with those changes. Local snapshot has no .git directory.",
+  "source_sha256": {
+    "ctr_reach_envs/mechanics/rl_env.py": "ec11061990ec3756911ab8f7f918adb7cd4f161cdaa98b29c193f37978614f2f",
+    "ctr_reach_envs/mechanics/rl_jacobian.py": "02b05fbda533101a86d66af88dda921ebff7932a1d44da770bca55b9451b14a1",
+    "ctr_reach_envs/mechanics/rl_replay.py": "dcfe84d3f16740ff5b6124ca5e6b12cd50fcaba4f8b75d7948cbd4c25a8c341c",
+    "ctr_reach_envs/mechanics/rl_policy.py": "fe6a09608c65fbae88c1aa5b4478ceae2f4abe96d8e08094dea11193e8ca92f3",
+    "ctr_reach_envs/mechanics/solver.py": "f01b19c37c28de8402d529a7c3b524a728622afc726418ec2ece39a72bf20f81",
+    "ctr_reach_envs/mechanics/sensitivity.py": "6d4e3739c987a061a69abfec86120cad7f2b5811a1b7280145fc6d5ab5bf0587",
+    "ctr_reach_envs/mechanics/geometry.py": "43e9daece02bdb3c32bdfd147cdfdf99530ffff25d24309fa68b42049969f0de",
+    "train_physics_ddpg_her.py": "638984d6e3e139e7b840f8e744fb873b591f8b6fa95b0fafa76442b1a98605a5",
+    "evaluate_physics_ddpg_her.py": "68d40d51f87b162c44de63dac435a79344fdc67648578257aee9757c61ea0e8b",
+    "tests/test_mechanics_jacobian.py": "d87d6ee4356c1aec4667880de813178b8e769fc346373a14fc3fcf1700ecc1f6",
+    "tests/test_mechanics_rl.py": "8bb0418cb60d43f70e848a7bd3c231b11a4a0e7ddb910af5800af299d0a2e69b"
+  },
+  "tests": {
+    "command": "python -m pytest tests/test_mechanics.py tests/test_mechanics_step2.py tests/test_mechanics_tracking.py tests/test_mechanics_control.py tests/test_mechanics_rl.py tests/test_mechanics_jacobian.py -q",
+    "passed": 88,
+    "failed": 0,
+    "seconds": 117.43,
+    "observation_box_warnings": 0,
+    "other_warnings": 1,
+    "other_warning_reason": "SciPy DOP853 trial warning during ctr_2 envelope test; accepted-result tests passed."
+  },
+  "step5_input_audit": {
+    "timesteps": 64,
+    "gradient_updates": 48,
+    "completed_episodes": 7,
+    "successes": 7,
+    "fallbacks": 57,
+    "fallback_fraction": 0.890625,
+    "replay_action_error": 0,
+    "all_parameters_finite": true,
+    "equilibrium_calls_including_resets_and_witnesses": 305,
+    "failed_calls_without_rhs_counts": 3
+  },
+  "runs": {
+    "step6_checked_control": {
+      "command": "python train_physics_ddpg_her.py --physics-weight 0 --total-timesteps 12 --learning-starts 4 --episode-steps 4 --hidden-width 32 --batch-size 8 --progress-every 4 --output-dir runs/step6_checked_control",
+      "config": {
+        "total_timesteps": 12,
+        "learning_starts": 4,
+        "episode_steps": 4,
+        "buffer_size": 10000,
+        "batch_size": 8,
+        "hidden_width": 32,
+        "layers": 3,
+        "learning_rate": 0.0005,
+        "noise_std": 0.05,
+        "guidance": "safeguard",
+        "system": "ctr_0",
+        "tolerance_m": 0.001,
+        "seed": 7005,
+        "progress_every": 4,
+        "physics_weight": 0.0,
+        "physics_final_weight": 0.0,
+        "physics_anneal_steps": 100000,
+        "output_dir": "runs/step6_checked_control",
+        "algorithm": "DDPG",
+        "gamma": 0.95,
+        "tau": 0.001,
+        "train_freq": 1,
+        "gradient_steps": 1,
+        "n_sampled_goal": 4,
+        "goal_selection_strategy": "future",
+        "action_semantics": "executed delta_q divided by fixed joint caps",
+        "observation_semantics": "normalized egocentric joints, branch torsion, tolerance; reconstructed goal error",
+        "tracking_options": {
+          "max_translation_step_m": 0.001,
+          "max_rotation_step_rad": 0.05,
+          "max_backtracks": 8,
+          "tip_absolute_tolerance_m": 2e-06,
+          "tip_relative_tolerance": 0.05,
+          "twist_absolute_tolerance": 0.001,
+          "twist_relative_tolerance": 0.05,
+          "max_twist_change": 0.25,
+          "minimum_elastic_eigenvalue": 0.05,
+          "shooting_condition_limit": 100000.0,
+          "event_clearance_m": 1e-08,
+          "reverse_tip_tolerance_m": 2e-06,
+          "reverse_twist_tolerance": 0.001
+        },
+        "observation_bounds_version": 2,
+        "torsion_observation_bound": [
+          5.548338890075684,
+          40.831275939941406,
+          2.5878183841705322
+        ],
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "goal_distribution": "seeded aligned starts and four local witness commands; fixed tolerance",
+        "critic_target_policy": "unfiltered actor under goal-independent plant",
+        "actor_physics_loss": false,
+        "physics_loss_semantics": "projected-current-actor Jacobian tracking, target recomputed for each HER goal",
+        "python": "3.12.14",
+        "numpy": "2.3.5",
+        "scipy": "1.17.0",
+        "torch": "2.7.1+cpu",
+        "stable_baselines3": "2.9.0",
+        "git_commit": null
+      },
+      "summary": {
+        "complete": true,
+        "failure": null,
+        "timesteps": 12,
+        "gradient_updates": 8,
+        "completed_episodes": 3,
+        "rollout_successes": 0,
+        "actor_parameters_changed": true,
+        "critic_parameters_changed": true,
+        "all_parameters_finite": true,
+        "replay_entries": 12,
+        "maximum_executed_action_replay_error": 0.0,
+        "replaced_actions": 5,
+        "jacobian_fallbacks": 5,
+        "decrease_verified_transitions": 12,
+        "physics_actor_updates": 0,
+        "last_physics_metrics": {},
+        "reset_attempts": 4,
+        "failed_resets": 0,
+        "physics_costs_including_resets_and_witnesses": {
+          "equilibrium_calls": 91,
+          "sensitivity_calls": 66,
+          "stability_calls": 66,
+          "failed_calls": 1,
+          "rhs_evaluations_known": 306059,
+          "failed_calls_without_rhs_counts": 1,
+          "call_seconds": 22.058674341000824
+        },
+        "elapsed_seconds": 22.165244822000204,
+        "scope": "local-goal pilot; collection safeguard and actor Jacobian loss are separate options",
+        "global_convergence_certified": false,
+        "sample_efficiency_improvement_demonstrated": false
+      },
+      "episodes": [
+        {
+          "episode": "0",
+          "timesteps": "4",
+          "success": "False",
+          "error_m": "0.00838574535164959",
+          "truncated": "True",
+          "cumulative_equilibrium_calls": "41"
+        },
+        {
+          "episode": "1",
+          "timesteps": "8",
+          "success": "False",
+          "error_m": "0.006118835737483387",
+          "truncated": "True",
+          "cumulative_equilibrium_calls": "66"
+        },
+        {
+          "episode": "2",
+          "timesteps": "12",
+          "success": "False",
+          "error_m": "0.009432213316408007",
+          "truncated": "True",
+          "cumulative_equilibrium_calls": "91"
+        }
+      ],
+      "updates": [
+        {
+          "timesteps": "6",
+          "gradient_updates": "1",
+          "weight": "0.0",
+          "jacobian_loss": "0.0",
+          "rl_actor_loss": "0.002399635035544634",
+          "total_actor_loss": "0.002399635035544634",
+          "critic_loss": "0.624052882194519",
+          "jacobian_action_gradient_norm": "0.0",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "7",
+          "gradient_updates": "2",
+          "weight": "0.0",
+          "jacobian_loss": "0.0",
+          "rl_actor_loss": "0.004217278677970171",
+          "total_actor_loss": "0.004217278677970171",
+          "critic_loss": "0.7461427450180054",
+          "jacobian_action_gradient_norm": "0.0",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "8",
+          "gradient_updates": "3",
+          "weight": "0.0",
+          "jacobian_loss": "0.0",
+          "rl_actor_loss": "0.006006723735481501",
+          "total_actor_loss": "0.006006723735481501",
+          "critic_loss": "0.37165534496307373",
+          "jacobian_action_gradient_norm": "0.0",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "9",
+          "gradient_updates": "4",
+          "weight": "0.0",
+          "jacobian_loss": "0.0",
+          "rl_actor_loss": "0.008141244761645794",
+          "total_actor_loss": "0.008141244761645794",
+          "critic_loss": "0.49372953176498413",
+          "jacobian_action_gradient_norm": "0.0",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "10",
+          "gradient_updates": "5",
+          "weight": "0.0",
+          "jacobian_loss": "0.0",
+          "rl_actor_loss": "0.010113338939845562",
+          "total_actor_loss": "0.010113338939845562",
+          "critic_loss": "0.6150436401367188",
+          "jacobian_action_gradient_norm": "0.0",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "11",
+          "gradient_updates": "6",
+          "weight": "0.0",
+          "jacobian_loss": "0.0",
+          "rl_actor_loss": "0.012297692708671093",
+          "total_actor_loss": "0.012297692708671093",
+          "critic_loss": "0.4900079667568207",
+          "jacobian_action_gradient_norm": "0.0",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "12",
+          "gradient_updates": "7",
+          "weight": "0.0",
+          "jacobian_loss": "0.0",
+          "rl_actor_loss": "0.014525719918310642",
+          "total_actor_loss": "0.014525719918310642",
+          "critic_loss": "0.36558061838150024",
+          "jacobian_action_gradient_norm": "0.0",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "12",
+          "gradient_updates": "8",
+          "weight": "0.0",
+          "jacobian_loss": "0.0",
+          "rl_actor_loss": "0.016481680795550346",
+          "total_actor_loss": "0.016481680795550346",
+          "critic_loss": "0.48598557710647583",
+          "jacobian_action_gradient_norm": "0.0",
+          "extra_equilibrium_calls": "0"
+        }
+      ]
+    },
+    "step6_checked_jacobian": {
+      "command": "python train_physics_ddpg_her.py --physics-weight 0.1 --total-timesteps 12 --learning-starts 4 --episode-steps 4 --hidden-width 32 --batch-size 8 --progress-every 4 --output-dir runs/step6_checked_jacobian",
+      "config": {
+        "total_timesteps": 12,
+        "learning_starts": 4,
+        "episode_steps": 4,
+        "buffer_size": 10000,
+        "batch_size": 8,
+        "hidden_width": 32,
+        "layers": 3,
+        "learning_rate": 0.0005,
+        "noise_std": 0.05,
+        "guidance": "safeguard",
+        "system": "ctr_0",
+        "tolerance_m": 0.001,
+        "seed": 7005,
+        "progress_every": 4,
+        "physics_weight": 0.1,
+        "physics_final_weight": 0.010000000000000002,
+        "physics_anneal_steps": 100000,
+        "output_dir": "runs/step6_checked_jacobian",
+        "algorithm": "JacobianDDPG",
+        "gamma": 0.95,
+        "tau": 0.001,
+        "train_freq": 1,
+        "gradient_steps": 1,
+        "n_sampled_goal": 4,
+        "goal_selection_strategy": "future",
+        "action_semantics": "executed delta_q divided by fixed joint caps",
+        "observation_semantics": "normalized egocentric joints, branch torsion, tolerance; reconstructed goal error",
+        "tracking_options": {
+          "max_translation_step_m": 0.001,
+          "max_rotation_step_rad": 0.05,
+          "max_backtracks": 8,
+          "tip_absolute_tolerance_m": 2e-06,
+          "tip_relative_tolerance": 0.05,
+          "twist_absolute_tolerance": 0.001,
+          "twist_relative_tolerance": 0.05,
+          "max_twist_change": 0.25,
+          "minimum_elastic_eigenvalue": 0.05,
+          "shooting_condition_limit": 100000.0,
+          "event_clearance_m": 1e-08,
+          "reverse_tip_tolerance_m": 2e-06,
+          "reverse_twist_tolerance": 0.001
+        },
+        "observation_bounds_version": 2,
+        "torsion_observation_bound": [
+          5.548338890075684,
+          40.831275939941406,
+          2.5878183841705322
+        ],
+        "model_fingerprint": "cfc2564d4b48bb2507c21c9c1621eaea75c9accc07715012c77bde91a3cc7666",
+        "goal_distribution": "seeded aligned starts and four local witness commands; fixed tolerance",
+        "critic_target_policy": "unfiltered actor under goal-independent plant",
+        "actor_physics_loss": true,
+        "physics_loss_semantics": "projected-current-actor Jacobian tracking, target recomputed for each HER goal",
+        "python": "3.12.14",
+        "numpy": "2.3.5",
+        "scipy": "1.17.0",
+        "torch": "2.7.1+cpu",
+        "stable_baselines3": "2.9.0",
+        "git_commit": null
+      },
+      "summary": {
+        "complete": true,
+        "failure": null,
+        "timesteps": 12,
+        "gradient_updates": 8,
+        "completed_episodes": 3,
+        "rollout_successes": 0,
+        "actor_parameters_changed": true,
+        "critic_parameters_changed": true,
+        "all_parameters_finite": true,
+        "replay_entries": 12,
+        "maximum_executed_action_replay_error": 0.0,
+        "replaced_actions": 5,
+        "jacobian_fallbacks": 4,
+        "decrease_verified_transitions": 12,
+        "physics_actor_updates": 8,
+        "last_physics_metrics": {
+          "weight": 0.09998920000000001,
+          "jacobian_loss": 0.46811092323031844,
+          "rl_actor_loss": 0.01654147543013096,
+          "total_actor_loss": 0.06334751215519192,
+          "critic_loss": 0.4863394498825073,
+          "jacobian_action_gradient_norm": 0.7343301177024841,
+          "extra_equilibrium_calls": 0
+        },
+        "reset_attempts": 4,
+        "failed_resets": 0,
+        "physics_costs_including_resets_and_witnesses": {
+          "equilibrium_calls": 97,
+          "sensitivity_calls": 70,
+          "stability_calls": 70,
+          "failed_calls": 3,
+          "rhs_evaluations_known": 328379,
+          "failed_calls_without_rhs_counts": 3,
+          "call_seconds": 23.660831115999827
+        },
+        "elapsed_seconds": 23.783992017999935,
+        "scope": "local-goal pilot; collection safeguard and actor Jacobian loss are separate options",
+        "global_convergence_certified": false,
+        "sample_efficiency_improvement_demonstrated": false
+      },
+      "episodes": [
+        {
+          "episode": "0",
+          "timesteps": "4",
+          "success": "False",
+          "error_m": "0.00838574535164959",
+          "truncated": "True",
+          "cumulative_equilibrium_calls": "41"
+        },
+        {
+          "episode": "1",
+          "timesteps": "8",
+          "success": "False",
+          "error_m": "0.006108701755088825",
+          "truncated": "True",
+          "cumulative_equilibrium_calls": "66"
+        },
+        {
+          "episode": "2",
+          "timesteps": "12",
+          "success": "False",
+          "error_m": "0.011388399296902128",
+          "truncated": "True",
+          "cumulative_equilibrium_calls": "97"
+        }
+      ],
+      "updates": [
+        {
+          "timesteps": "6",
+          "gradient_updates": "1",
+          "weight": "0.0999955",
+          "jacobian_loss": "0.6649347986237109",
+          "rl_actor_loss": "0.002399635035544634",
+          "total_actor_loss": "0.06889012269132191",
+          "critic_loss": "0.624052882194519",
+          "jacobian_action_gradient_norm": "0.8625271916389465",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "7",
+          "gradient_updates": "2",
+          "weight": "0.09999460000000002",
+          "jacobian_loss": "0.8047454103660845",
+          "rl_actor_loss": "0.004222196526825428",
+          "total_actor_loss": "0.08469239193821791",
+          "critic_loss": "0.7461429238319397",
+          "jacobian_action_gradient_norm": "0.9512567520141602",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "8",
+          "gradient_updates": "3",
+          "weight": "0.0999937",
+          "jacobian_loss": "0.5206105624745729",
+          "rl_actor_loss": "0.006016766186803579",
+          "total_actor_loss": "0.058074542587717284",
+          "critic_loss": "0.37165534496307373",
+          "jacobian_action_gradient_norm": "0.7658717632293701",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "9",
+          "gradient_updates": "4",
+          "weight": "0.0999928",
+          "jacobian_loss": "0.5118753882465834",
+          "rl_actor_loss": "0.008155621588230133",
+          "total_actor_loss": "0.0593394749100931",
+          "critic_loss": "0.49372947216033936",
+          "jacobian_action_gradient_norm": "0.8052535057067871",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "10",
+          "gradient_updates": "5",
+          "weight": "0.0999919",
+          "jacobian_loss": "0.617526424855231",
+          "rl_actor_loss": "0.010134204290807247",
+          "total_actor_loss": "0.07188184481228901",
+          "critic_loss": "0.615041196346283",
+          "jacobian_action_gradient_norm": "0.878278374671936",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "11",
+          "gradient_updates": "6",
+          "weight": "0.09999100000000001",
+          "jacobian_loss": "0.49201815203851584",
+          "rl_actor_loss": "0.012328431010246277",
+          "total_actor_loss": "0.06152581805072952",
+          "critic_loss": "0.4900079071521759",
+          "jacobian_action_gradient_norm": "0.8095444440841675",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "12",
+          "gradient_updates": "7",
+          "weight": "0.0999901",
+          "jacobian_loss": "0.47747026120372665",
+          "rl_actor_loss": "0.01456849928945303",
+          "total_actor_loss": "0.06231079845423978",
+          "critic_loss": "0.36558055877685547",
+          "jacobian_action_gradient_norm": "0.7856613993644714",
+          "extra_equilibrium_calls": "0"
+        },
+        {
+          "timesteps": "12",
+          "gradient_updates": "8",
+          "weight": "0.09998920000000001",
+          "jacobian_loss": "0.46811092323031844",
+          "rl_actor_loss": "0.01654147543013096",
+          "total_actor_loss": "0.06334751215519192",
+          "critic_loss": "0.4863394498825073",
+          "jacobian_action_gradient_norm": "0.7343301177024841",
+          "extra_equilibrium_calls": "0"
+        }
+      ]
+    }
+  },
+  "evaluation": {
+    "complete": true,
+    "episodes_per_mode": 1,
+    "first_seed": 800000,
+    "max_steps": 2,
+    "tolerance_m": 0.001,
+    "checkpoint": "runs/step6_final_smoke/final_model.zip",
+    "checkpoint_timesteps": 12,
+    "goal_distribution": "seeded aligned starts and four local witness commands; fixed tolerance",
+    "elapsed_seconds": 15.07847392199983,
+    "modes": {
+      "actor": {
+        "successes": 0,
+        "success_rate": 0.0,
+        "failures": 0,
+        "trivial_goals": 0,
+        "mean_error_m_on_completed_steps": 0.01973715004717902,
+        "equilibrium_calls": 19
+      },
+      "safeguard": {
+        "successes": 0,
+        "success_rate": 0.0,
+        "failures": 0,
+        "trivial_goals": 0,
+        "mean_error_m_on_completed_steps": 0.01973715004717902,
+        "equilibrium_calls": 19
+      },
+      "jacobian": {
+        "successes": 0,
+        "success_rate": 0.0,
+        "failures": 0,
+        "trivial_goals": 0,
+        "mean_error_m_on_completed_steps": 0.015890123635929863,
+        "equilibrium_calls": 19
+      }
+    }
+  },
+  "legacy_checkpoint_evaluation": {
+    "complete": true,
+    "episodes_per_mode": 1,
+    "first_seed": 800000,
+    "max_steps": 1,
+    "tolerance_m": 0.001,
+    "checkpoint": "runs/step5_final_smoke/final_model.zip",
+    "checkpoint_timesteps": 12,
+    "goal_distribution": "seeded aligned starts and four local witness commands; fixed tolerance",
+    "elapsed_seconds": 5.024747870000283,
+    "modes": {
+      "actor": {
+        "successes": 0,
+        "success_rate": 0.0,
+        "failures": 0,
+        "trivial_goals": 0,
+        "mean_error_m_on_completed_steps": 0.01994483444195177,
+        "equilibrium_calls": 16
+      }
+    }
+  },
+  "conclusions": [
+    "Observation values and feature ordering are unchanged. New Box bounds are finite; old checkpoint declarations are restored explicitly by the evaluator.",
+    "Zero physics weight reproduced standard SB3 network parameters bit for bit in the dedicated regression.",
+    "Projection derivatives matched finite differences; detached Jacobians stayed aligned with real and HER samples; the relabelled goal changed the direction of the actor physics gradient.",
+    "Both 12-transition three-tube runs completed eight gradient updates with finite parameters and exact executed-action replay. They are integration tests, not sample-efficiency evidence.",
+    "The enabled run used 97 equilibrium calls versus 91 in the control run. Additional optimizer equilibrium calls were zero in both; changed policy trajectories can change collection costs.",
+    "The first short enabled evaluation was not better than standalone Jacobian control. Lower fallback use alone is not improved reaching performance.",
+    "Finite observation bounds, local loss gradients and sampled decrease checks are not global convergence, physical accuracy or training-stability certificates."
+  ]
+}

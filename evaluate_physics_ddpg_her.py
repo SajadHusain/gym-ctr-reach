@@ -8,6 +8,7 @@ import numpy as np
 import torch
 from stable_baselines3 import DDPG
 from ctr_reach_envs.mechanics.rl_env import EquilibriumReachEnv, GuidedRolloutWrapper
+from ctr_reach_envs.mechanics.rl_jacobian import JacobianDDPG
 
 
 def main():
@@ -21,6 +22,9 @@ def main():
     a=p.parse_args()
     if a.episodes<1 or a.max_steps<1 or a.seed<0 or len(set(a.modes))!=len(a.modes):p.error("Invalid episode, seed, step or mode selection")
     config=json.loads((a.model.parent/"config.json").read_text())
+    bounds_version=config.get("observation_bounds_version",1)
+    if bounds_version not in (1,2):raise ValueError("Unsupported checkpoint observation bounds version")
+    algorithm=JacobianDDPG if config.get("algorithm")=="JacobianDDPG" else DDPG
     if a.output_dir.exists() and any(a.output_dir.iterdir()):
         raise SystemExit("Choose a new, empty output directory")
     a.output_dir.mkdir(parents=True,exist_ok=True)
@@ -29,11 +33,12 @@ def main():
     with (a.output_dir/"episodes.csv").open("w",newline="",encoding="utf-8") as stream:
         writer=None
         for mode in a.modes:
-            plant=EquilibriumReachEnv(config["system"],tolerance_m=config["tolerance_m"],max_episode_steps=a.max_steps)
+            plant=EquilibriumReachEnv(config["system"],tolerance_m=config["tolerance_m"],max_episode_steps=a.max_steps,
+                                     legacy_observation_bounds=bounds_version==1)
             if plant.solver.model_fingerprint!=config["model_fingerprint"]:
                 raise ValueError("Checkpoint and evaluator model parameters differ")
             env=plant if mode=="actor" else GuidedRolloutWrapper(plant)
-            model=DDPG.load(a.model,env=env,device="cpu") if mode!="jacobian" else None
+            model=algorithm.load(a.model,env=env,device="cpu") if mode!="jacobian" else None
             if model is not None:checkpoint_timesteps=model.num_timesteps
             for episode in range(a.episodes):
                 costs=dict(plant.costs);t=time.perf_counter()

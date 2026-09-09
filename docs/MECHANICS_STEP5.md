@@ -123,9 +123,11 @@ episode, so its already-incurred reset cost is included. Completed transitions
 are only one cost metric. Per-call elapsed time remains in lifetime cost totals
 and does not contaminate deterministic step information.
 
-The new observation space leaves branch torsion unbounded because there is no
-proved global bound. Gymnasium warns about those infinite bounds during its
-checker; finite-value runtime checks and the mechanics gates remain active.
+Step 5 originally left branch torsion unbounded, producing Gymnasium Box-bound
+warnings. Step 6 derives a finite unloaded-model envelope and uses a finite
+tolerance bound without changing observation values. See
+[`MECHANICS_STEP6.md`](MECHANICS_STEP6.md) for the derivation and compatibility
+handling for saved Step 5 checkpoints.
 
 ## Windows commands
 
