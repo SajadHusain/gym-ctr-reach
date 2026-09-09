@@ -8,9 +8,11 @@ on:
       - 'tests/test_mechanics.py'
       - 'tests/test_mechanics_step2.py'
       - 'tests/test_mechanics_tracking.py'
+      - 'tests/test_mechanics_control.py'
       - 'validate_mechanics.py'
       - 'validate_mechanics_step2.py'
       - 'validate_mechanics_step3.py'
+      - 'validate_mechanics_step4.py'
       - '.github/workflows/mechanics.yml'
   workflow_dispatch:
 
@@ -31,10 +33,11 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -e ".[test]"
-      - run: python -m pytest tests/test_mechanics.py tests/test_mechanics_step2.py tests/test_mechanics_tracking.py -q
+      - run: python -m pytest tests/test_mechanics.py tests/test_mechanics_step2.py tests/test_mechanics_tracking.py tests/test_mechanics_control.py -q
       - run: python validate_mechanics.py --samples-per-system 8 --output-dir runs/mechanics_ci
       - run: python validate_mechanics_step2.py --samples-per-system 2 --output-dir runs/mechanics_step2_ci
       - run: python validate_mechanics_step3.py --samples-per-system 1 --negative-cases 1 --output-dir runs/mechanics_step3_ci
+      - run: python validate_mechanics_step4.py --episodes-per-system 2 --seed 7004 --output-dir runs/mechanics_step4_ci
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -43,3 +46,4 @@ jobs:
             runs/mechanics_ci/
             runs/mechanics_step2_ci/
             runs/mechanics_step3_ci/
+            runs/mechanics_step4_ci/

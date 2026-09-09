@@ -66,6 +66,43 @@ class BranchInitializationError(EquilibriumError):
         self.diagnostics = diagnostics
 
 
+@dataclass(frozen=True)
+class GoalProgress:
+    """Numerical Armijo decrease for V = ||tip-goal||^2/2 at a fixed goal.
+
+    The test uses the actual joint increment and solved tip, without accepting
+    floating-point slack. It does not certify the underlying continuum model.
+    """
+    goal: tuple
+    armijo_fraction: float = .1
+
+    def __post_init__(self):
+        goal = np.asarray(self.goal, dtype=float)
+        if goal.shape != (3,) or not np.all(np.isfinite(goal)):
+            raise ValueError("goal must be a finite Cartesian three-vector in metres")
+        if not np.isfinite(self.armijo_fraction) or not 0 < self.armijo_fraction < 1:
+            raise ValueError("armijo_fraction must lie strictly between zero and one")
+        object.__setattr__(self, "goal", tuple(float(v) for v in goal))
+
+    def slope(self, origin, dq):
+        return float((origin.equilibrium.tip-np.asarray(self.goal))@origin.sensitivity.tip_jacobian@dq)
+
+    def check(self, origin, root, dq):
+        error = origin.equilibrium.tip-np.asarray(self.goal)
+        next_error = root.tip-np.asarray(self.goal)
+        before, after = .5*float(error@error), .5*float(next_error@next_error)
+        slope = self.slope(origin, dq)
+        upper = before+self.armijo_fraction*slope
+        result = {"v_before_m2": before, "v_after_m2": after, "directional_derivative_m2": slope,
+                  "armijo_upper_bound_m2": upper, "armijo_fraction": self.armijo_fraction,
+                  "goal_m": list(self.goal)}
+        if not all(np.isfinite(v) for v in (before, after, slope, upper)) or slope >= 0:
+            raise _Reject("goal_not_descent_direction", result)
+        if not after < before or after > upper:
+            raise _Reject("goal_decrease_failed", result)
+        return result
+
+
 class _Reject(Exception):
     def __init__(self, reason, details=None):
         super().__init__(reason)
@@ -190,7 +227,7 @@ class BranchTracker:
         if values["twist_change"] > self.options.max_twist_change:
             raise _Reject("branch_twist_change")
 
-    def step(self, delta_q):
+    def step(self, delta_q, *, goal_progress=None):
         """Try a bounded fraction of a feasible command, committing all or none.
 
         Each attempt checks midpoint and endpoint equilibria and a reverse solve.
@@ -198,6 +235,8 @@ class BranchTracker:
         partial progress; accepted_fraction refers to projected_delta.
         """
         solver, opt, origin = self._solver, self.options, self._current
+        if goal_progress is not None and not isinstance(goal_progress, GoalProgress):
+            raise ValueError("goal_progress must be GoalProgress or None")
         requested = solver.constraints._array(delta_q).copy()
         q0 = origin.equilibrium.joints
         target = solver.constraints.project(q0+requested)
@@ -219,6 +258,8 @@ class BranchTracker:
                            "accepted": False, "reason": "", "checkpoints": []}
                 attempts.append(attempt)
                 try:
+                    if goal_progress is not None and goal_progress.slope(origin, dq) >= 0:
+                        raise _Reject("goal_not_descent_direction")
                     if _ordering(solver, q0) != _ordering(solver, q0+dq):
                         raise _Reject("event_topology_change")
                     previous = origin
@@ -232,6 +273,7 @@ class BranchTracker:
                         local = self._prediction(previous, root, local_dq)
                         overall = self._prediction(origin, root, part*dq)
                         record = {"fraction_of_trial": part, "q": q.tolist(),
+                                  "tip_m": root.tip.tolist(),
                                   "base_torsion": root.base_torsional_strain.tolist(),
                                   "local_prediction": local, "overall_prediction": overall}
                         attempt["checkpoints"].append(record)
@@ -239,6 +281,9 @@ class BranchTracker:
                             raise _Reject("solver_joint_mismatch")
                         self._check_prediction(local)
                         self._check_prediction(overall)
+                        if goal_progress is not None:
+                            record["local_goal_progress"] = goal_progress.check(previous, root, local_dq)
+                            record["overall_goal_progress"] = goal_progress.check(origin, root, part*dq)
                         previous = self._analyze(root, origin.accepted_steps+1, meter)
                         record.update(elastic_status=previous.stability.status,
                                       minimum_eigenvalue=float(previous.stability.minimum_eigenvalues[-1]),
@@ -257,6 +302,9 @@ class BranchTracker:
                 except (_Reject, EquilibriumError, ValueError, np.linalg.LinAlgError) as exc:
                     attempt["reason"] = str(exc)
                     attempt["rejection_details"] = getattr(exc, "details", {})
+                    if str(exc) == "goal_not_descent_direction" and not attempt["checkpoints"]:
+                        # Scaling a fixed projected direction cannot change its sign.
+                        break
                     continue
                 # Only this assignment mutates the accepted mechanical state.
                 self._current = endpoint
@@ -269,6 +317,7 @@ class BranchTracker:
                        "reason": attempts[-1]["reason"] if attempts else "projected_no_motion",
                        "command_projected": bool(np.any(abs(projected-requested) > 1e-12)),
                        "accepted_steps": self._current.accepted_steps,
+                       "goal_progress": asdict(goal_progress) if goal_progress is not None else None,
                        "model_fingerprint": solver.model_fingerprint,
                        "elastic_stability_certified": False, "controller_stability_certified": False,
                        "continuous_path_certified": False, "global_uniqueness_certified": False}
