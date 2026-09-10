@@ -19,14 +19,12 @@ ROOT = Path(__file__).resolve().parent
 ARMS = {
     "ddpg": {"guidance": "none", "physics_weight": 0.},
     "jacobian": {"guidance": "none", "physics_weight": .1},
-    "safeguard": {"guidance": "safeguard", "physics_weight": 0.},
-    "both": {"guidance": "safeguard", "physics_weight": .1},
 }
 DEFAULTS = dict(seeds=[7100,7101,7102,7103,7104], arms=["ddpg","jacobian"],
-                total_timesteps=2000, learning_starts=128, episode_steps=60,
+                total_timesteps=10000, learning_starts=200, episode_steps=60,
                 checkpoint_freq=500, buffer_size=20000, batch_size=128,
                 hidden_width=256, layers=3, learning_rate=.0005, noise_std=.05,
-                physics_weight=.1, physics_final_weight=.01, physics_anneal_steps=2000,
+                physics_weight=.1, physics_final_weight=.1, physics_anneal_steps=10000,
                 system="ctr_0", tolerance_m=.001, eval_episodes=20, eval_steps=60,
                 eval_seed=810000, final_seed=910000, final_episodes=1000)
 
@@ -142,20 +140,10 @@ def evaluate(plan, folder, final=False):
                 args = command("evaluate_physics_ddpg_her.py", dict(
                     episodes=c["final_episodes"] if final else c["eval_episodes"],
                     max_steps=c["eval_steps"], seed=c["final_seed"] if final else c["eval_seed"],
-                    modes=["actor","safeguard"] if final else ["actor"], output_dir=out))
+                    modes=["actor"], output_dir=out))
                 args.insert(2,str(checkpoint/"model.zip"))
                 args.append("--record-trajectories")
                 run_command(args,out)
-    # One independent Jacobian-only benchmark per seed block; it ignores the
-    # network. Do not duplicate it for every training seed or count it as RL.
-    reference = folder/c["arms"][0]/f"seed_{c['seeds'][0]}"/"checkpoints"/"step_000000000"/"model.zip"
-    out = folder/("jacobian_reference_final" if final else "jacobian_reference")
-    if reference.exists() and not (out.exists() and any(out.iterdir())):
-        args = command("evaluate_physics_ddpg_her.py", dict(
-            episodes=c["final_episodes"] if final else c["eval_episodes"], max_steps=c["eval_steps"],
-            seed=c["final_seed"] if final else c["eval_seed"], modes=["jacobian"],output_dir=out))
-        args.insert(2,str(reference));args.append("--record-trajectories")
-        run_command(args,out)
 
 
 def paired_seed_statistics(values):
@@ -224,7 +212,7 @@ def report(plan, folder, final=False):
         with (folder/f"{prefix}_learning_curves.csv").open("w",newline="",encoding="utf-8") as stream:
             writer=csv.DictWriter(stream,fieldnames=list(rows[0]));writer.writeheader();writer.writerows(rows)
     contrasts={}
-    for base, guided in (("ddpg","jacobian"),("safeguard","both"),("ddpg","safeguard")):
+    for base, guided in (("ddpg","jacobian"),):
         if base not in c["arms"] or guided not in c["arms"]:continue
         by_key={(r["arm"],r["training_seed"],r["timesteps"],r["mode"]):r for r in rows}
         per_metric={}
@@ -261,22 +249,9 @@ def report(plan, folder, final=False):
             if d:common.append(float(np.mean(d)))
         per_metric["common_success_executed_action_change_rms"]={**paired_seed_statistics(common),"episodes_per_seed":counts}
         contrasts[f"{guided}_minus_{base}"]=per_metric
-    reference_dir=folder/("jacobian_reference_final" if final else "jacobian_reference")
-    reference=None
-    if (reference_dir/"summary.json").exists():
-        reference=read_json(reference_dir/"summary.json")
-        if not reference.get("complete"):missing.append(reference_dir.name)
-        if (reference_dir/"episodes.csv").exists():
-            with (reference_dir/"episodes.csv").open(newline="",encoding="utf-8") as stream:
-                for e in csv.DictReader(stream):
-                    key=int(e["seed"])
-                    if e["task_fingerprint"] and key in tasks and e["task_fingerprint"]!=tasks[key]:
-                        raise ValueError("Jacobian reference tasks differ from learned-policy evaluation")
-    else:missing.append(reference_dir.name)
     summary={"complete":not missing,"missing_jobs":missing,"training_seeds":c["seeds"],"planned_arms":c["arms"],
-             "evaluation_failures":sum(r["evaluation_failures"] for r in rows)+
-                                   (reference["modes"]["jacobian"]["failures"] if reference else 0),
-             "independent_jacobian_reference":reference,"contrasts":contrasts,
+             "plant":"joint_constraints_v1",
+             "evaluation_failures":sum(r["evaluation_failures"] for r in rows),"contrasts":contrasts,
              "uncertainty_unit":"paired training seed; percentile bootstrap is descriptive, especially with few seeds",
              "scope":"local witness goals and aligned starts; finite command differences, no physical acceleration/jerk",
              "final_evaluation":final,"sample_efficiency_improvement_demonstrated":False,
@@ -289,7 +264,7 @@ def report(plan, folder, final=False):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("--stage",choices=["plan","train","evaluate","report","all","final-evaluate","final-report"],default="plan")
-    p.add_argument("--output-dir",type=Path,default=Path("runs/step7_pilot"))
+    p.add_argument("--output-dir",type=Path,default=Path("runs/simple_jacobian_study"))
     for name,value in DEFAULTS.items():
         kwargs={"default":None}
         if isinstance(value,list):kwargs.update(nargs="+",type=type(value[0]))
@@ -300,6 +275,8 @@ def main():
     overrides={k:getattr(a,k) for k in DEFAULTS if getattr(a,k) is not None}
     if path.exists():
         plan=read_json(path)
+        if plan.get("plant") != "joint_constraints_v1":
+            p.error("This runner uses the joint-only plant. Use a new study directory; old plans belong to the previous implementation.")
         if any(v!=plan["config"].get(k) for k,v in overrides.items()):
             p.error("Study configuration is frozen. Use another output directory for a changed experiment.")
         if a.stage not in ("report","final-report") and plan["source_hashes"]!=source_hashes():
@@ -313,7 +290,7 @@ def main():
         try:validate_config(config)
         except ValueError as exc:p.error(str(exc))
         folder.mkdir(parents=True,exist_ok=True)
-        plan={"schema_version":1,"config":config,"source_hashes":source_hashes(),"runtime_versions":runtime_versions(),
+        plan={"schema_version":2,"plant":"joint_constraints_v1","config":config,"source_hashes":source_hashes(),"runtime_versions":runtime_versions(),
               "primary_endpoint":"unassisted actor success at the configured tolerance on held-out tasks at a fixed interaction budget",
               "secondary_endpoints":["error","command variation","solver work","wall time","interventions"],
               "selection_rule":"final fixed-budget checkpoint; development episodes are not final-test episodes",

@@ -26,6 +26,7 @@ class PhysicsSamples:
     joints: torch.Tensor
     action_scales: torch.Tensor
     discounts: torch.Tensor | None = None
+    jacobian_valid: torch.Tensor | None = None
 
 
 class JacobianHerReplayBuffer(ExecutedActionHerReplayBuffer):
@@ -44,6 +45,8 @@ class JacobianHerReplayBuffer(ExecutedActionHerReplayBuffer):
                 raise ValueError("Action scales must be positive")
             if not np.allclose(context["joints"],info["q_before"],rtol=0,atol=1e-12):
                 raise ValueError("Physics context belongs to a different source state")
+            if not isinstance(context.get("jacobian_valid", True), (bool, np.bool_)):
+                raise ValueError("jacobian_valid must be a Boolean")
         super().add(obs,next_obs,action,reward,done,infos)
 
     def _attach(self, data, batch_indices, env_indices):
@@ -54,6 +57,9 @@ class JacobianHerReplayBuffer(ExecutedActionHerReplayBuffer):
             values = np.array([self.infos[b,e]["physics"][key] for b,e in zip(batch_indices,env_indices)],dtype=np.float64)
             values = values.reshape((len(batch_indices),)+shapes[key])
             obs["__physics_"+key] = self.to_torch(values)
+        obs["__physics_jacobian_valid"] = self.to_torch(np.array([
+            [self.infos[b,e]["physics"].get("jacobian_valid", True)]
+            for b,e in zip(batch_indices,env_indices)], dtype=bool))
         return data._replace(observations=obs)
 
     def _get_real_samples(self,batch_indices,env_indices,env=None):
@@ -69,7 +75,9 @@ class JacobianHerReplayBuffer(ExecutedActionHerReplayBuffer):
         data = super().sample(batch_size,env)
         obs = dict(data.observations)
         context = {key:obs.pop("__physics_"+key) for key in self._fields}
-        return PhysicsSamples(obs,data.actions,data.next_observations,data.dones,data.rewards,**context)
+        valid = obs.pop("__physics_jacobian_valid")
+        return PhysicsSamples(obs,data.actions,data.next_observations,data.dones,data.rewards,
+                              **context,jacobian_valid=valid)
 
 
 class ProjectedJacobianLoss(torch.nn.Module):
@@ -113,7 +121,13 @@ class ProjectedJacobianLoss(torch.nn.Module):
         desired = self.gain*(sample.observations["desired_goal"]-sample.observations["achieved_goal"]).detach().double()
         norm = torch.linalg.vector_norm(desired,dim=1,keepdim=True)
         desired = desired/torch.clamp(norm/self.cartesian_scale,min=1.)/self.cartesian_scale
-        return ((predicted-desired)**2).sum(1).mean()
+        errors = ((predicted-desired)**2).sum(1)
+        if sample.jacobian_valid is None:
+            return errors.mean()
+        valid = sample.jacobian_valid.detach().reshape(-1).to(errors.dtype)
+        # Missing derivatives remove only their auxiliary contribution. The
+        # transition and its real/HER critic update remain in replay.
+        return (errors*valid).sum()/valid.sum().clamp_min(1.)
 
 
 class JacobianDDPG(DDPG):
@@ -154,7 +168,7 @@ class JacobianDDPG(DDPG):
             self._physics_loss = ProjectedJacobianLoss(self.physics_lengths).to(self.device)
         self.policy.set_training_mode(True)
         self._update_learning_rate([self.actor.optimizer,self.critic.optimizer])
-        actor_values,critic_values,physics_values,physics_gradients = [],[],[],[]
+        actor_values,critic_values,physics_values,physics_gradients,valid_fractions = [],[],[],[],[]
         for _ in range(gradient_steps):
             self._n_updates += 1
             data = self.replay_buffer.sample(batch_size,env=self._vec_normalize_env)
@@ -187,11 +201,13 @@ class JacobianDDPG(DDPG):
             actor_values.append(float(rl_loss.detach()));critic_values.append(float(critic_loss.detach()))
             physics_values.append(float(physics_loss.detach()));self.physics_update_count += 1
             physics_gradients.append(float(torch.linalg.vector_norm(physics_gradient.detach())))
+            valid_fractions.append(1. if data.jacobian_valid is None else float(data.jacobian_valid.float().mean()))
         self.last_physics_metrics = {"weight":weight,"jacobian_loss":float(np.mean(physics_values)),
                                      "rl_actor_loss":float(np.mean(actor_values)),
                                      "total_actor_loss":float(np.mean(actor_values)+weight*np.mean(physics_values)),
                                      "critic_loss":float(np.mean(critic_values)),
                                      "jacobian_action_gradient_norm":float(np.mean(physics_gradients)),
+                                     "jacobian_valid_fraction":float(np.mean(valid_fractions)),
                                      "extra_equilibrium_calls":0}
         self.logger.record("train/n_updates",self._n_updates,exclude="tensorboard")
         self.logger.record("train/actor_loss",self.last_physics_metrics["total_actor_loss"])

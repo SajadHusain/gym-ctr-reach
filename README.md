@@ -1,5 +1,12 @@
 # CTR reaching with DDPG and HER
 
+The `simple-jacobian-rl` branch provides the current simplified experiment:
+**DDPG + HER, joint constraints, and an optional Jacobian actor loss**.
+Use [the joint-only training and evaluation instructions](docs/simple_jacobian_rl.md).
+This path has no branch tracker, elastic acceptance test, reverse solve,
+controller wrapper, or action backtracking. Train a fresh checkpoint because
+its observation vector contains no branch torsion features.
+
 For the **ICRA 2021 author-archive reproduction**, use the separate
 [legacy TensorFlow/MPI implementation and Windows instructions](icra2021/README.md).
 It exposes Gymnasium while retaining the author's learner and archived robot.

@@ -1,4 +1,4 @@
-"""Compare an actor, safeguarded actor and Jacobian control on identical local goals."""
+"""Evaluate a joint-constrained reaching actor with no controller wrapper."""
 import argparse
 from contextlib import ExitStack
 import csv
@@ -9,7 +9,7 @@ import time
 import numpy as np
 import torch
 from stable_baselines3 import DDPG
-from ctr_reach_envs.mechanics.rl_env import EquilibriumReachEnv, GuidedRolloutWrapper
+from ctr_reach_envs.mechanics.simple_rl_env import JointConstrainedReachEnv
 from ctr_reach_envs.mechanics.rl_jacobian import JacobianDDPG
 from ctr_reach_envs.mechanics.rl_metrics import EpisodeMotion, summarize_motion
 
@@ -19,15 +19,15 @@ def main():
     p.add_argument("model",type=Path)
     p.add_argument("--episodes",type=int,default=10)
     p.add_argument("--seed",type=int,default=800000)
-    p.add_argument("--modes",nargs="+",choices=["actor","safeguard","jacobian"],default=["actor","safeguard","jacobian"])
+    p.add_argument("--modes",nargs="+",choices=["actor"],default=["actor"])
     p.add_argument("--max-steps",type=int,default=60)
     p.add_argument("--record-trajectories",action="store_true")
-    p.add_argument("--output-dir",type=Path,default=Path("runs/step5_evaluation"))
+    p.add_argument("--output-dir",type=Path,default=Path("runs/simple_jacobian_evaluation"))
     a=p.parse_args()
     if a.episodes<1 or a.max_steps<1 or a.seed<0 or len(set(a.modes))!=len(a.modes):p.error("Invalid episode, seed, step or mode selection")
     config=json.loads((a.model.parent/"config.json").read_text())
-    bounds_version=config.get("observation_bounds_version",1)
-    if bounds_version not in (1,2):raise ValueError("Unsupported checkpoint observation bounds version")
+    if config.get("plant") != JointConstrainedReachEnv.plant_version or config.get("observation_bounds_version") != 3:
+        raise ValueError("This evaluator requires a new joint-constrained checkpoint. Older checkpoints use the previous branch's evaluator.")
     algorithm=JacobianDDPG if config.get("algorithm")=="JacobianDDPG" else DDPG
     if a.output_dir.exists() and any(a.output_dir.iterdir()):
         raise SystemExit("Choose a new, empty output directory")
@@ -40,13 +40,15 @@ def main():
         trajectory_writer=None
         writer=None
         for mode in a.modes:
-            plant=EquilibriumReachEnv(config["system"],tolerance_m=config["tolerance_m"],max_episode_steps=a.max_steps,
-                                     legacy_observation_bounds=bounds_version==1)
+            plant=JointConstrainedReachEnv(config["system"],tolerance_m=config["tolerance_m"],
+                                           max_episode_steps=a.max_steps,compute_jacobian=False,
+                                           translation_step_m=config["action_scales"][0],
+                                           rotation_step_rad=config["action_scales"][3])
             if plant.solver.model_fingerprint!=config["model_fingerprint"]:
                 raise ValueError("Checkpoint and evaluator model parameters differ")
-            env=plant if mode=="actor" else GuidedRolloutWrapper(plant)
-            model=algorithm.load(a.model,env=env,device="cpu") if mode!="jacobian" else None
-            if model is not None:checkpoint_timesteps=model.num_timesteps
+            env=plant
+            model=algorithm.load(a.model,env=env,device="cpu")
+            checkpoint_timesteps=model.num_timesteps
             for episode in range(a.episodes):
                 costs=dict(plant.costs);t=time.perf_counter()
                 motion=EpisodeMotion(plant.n)
@@ -61,21 +63,20 @@ def main():
                     obs,info=env.reset(seed=a.seed+episode)
                     row["trivial_goal"]=info["trivial_goal"]
                     row["initial_error_m"]=info["error"]
-                    task=np.r_[info["initial_q"],info["initial_torsion"],obs["desired_goal"]].astype("<f8")
+                    task=np.r_[info["initial_q"],obs["desired_goal"]].astype("<f8")
                     row["task_fingerprint"]=hashlib.sha256(task.tobytes()).hexdigest()
                     initial_tip=obs["achieved_goal"].astype(float)
                     previous_tip=initial_tip.copy();path_length=0.
                     for step in range(a.max_steps):
-                        # A zero proposal invokes the same Jacobian fallback with no
-                        # policy solve or learned-policy contribution.
-                        action=np.zeros(plant.action_space.shape,dtype=np.float32) if model is None else model.predict(obs,deterministic=True)[0]
+                        action=model.predict(obs,deterministic=True)[0]
                         obs,reward,term,trunc,info=env.step(action)
                         tip=obs["achieved_goal"].astype(float)
                         path_length+=float(np.linalg.norm(tip-previous_tip));previous_tip=tip.copy()
                         motion.add(info)
                         if trajectory_stream is not None:
                             trace={"mode":mode,"episode":episode,"seed":a.seed+episode,"step":step+1,
-                                   "error_m":info["error"],"action_source":info["action_source"]}
+                                   "error_m":info["error"],"action_source":info["action_source"],
+                                   "mechanics_reason":info.get("reason","")}
                             for name,values in (("proposed",info["proposed_action"]),("executed",info["executed_action"]),
                                                 ("delta_q",info["applied_delta"]),("q",info["q_after"]),
                                                 ("tip_m",tip),("goal_m",obs["desired_goal"])):
@@ -104,6 +105,7 @@ def main():
                 print(f"{mode} {episode+1}/{a.episodes}: success={row['success']}, error={row['error_m']} m, failure={row['failure']}",flush=True)
             env.close()
     summary={"complete":True,"episodes_per_mode":a.episodes,"first_seed":a.seed,"max_steps":a.max_steps,
+             "plant":config["plant"],
              "tolerance_m":config["tolerance_m"],"checkpoint":str(a.model),"checkpoint_timesteps":checkpoint_timesteps,
              "goal_distribution":config["goal_distribution"],"elapsed_seconds":time.perf_counter()-started,
              "trajectories_recorded":a.record_trajectories,

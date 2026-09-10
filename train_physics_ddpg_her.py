@@ -1,8 +1,4 @@
-"""DDPG/HER integration pilot on local equilibrium goals, with optional guidance.
-
-This establishes executable training, not sample-efficiency improvement. The
-model is more costly than the original baseline; begin with a short run.
-"""
+"""DDPG + HER with joint constraints and an optional Jacobian actor loss."""
 import argparse
 import csv
 from dataclasses import asdict
@@ -20,7 +16,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.noise import NormalActionNoise
 
 from ctr_reach_envs.paper_policy import PaperMlpPolicy
-from ctr_reach_envs.mechanics.rl_env import EquilibriumReachEnv, GuidedRolloutWrapper
+from ctr_reach_envs.mechanics.simple_rl_env import JointConstrainedReachEnv
 from ctr_reach_envs.mechanics.rl_policy import EquilibriumStateExtractor
 from ctr_reach_envs.mechanics.rl_replay import ExecutedActionHerReplayBuffer
 from ctr_reach_envs.mechanics.rl_jacobian import JacobianDDPG, JacobianHerReplayBuffer
@@ -76,6 +72,7 @@ class AuditCallback(BaseCallback):
              "total_actor_loss":metrics.get("total_actor_loss",logged.get("train/actor_loss")),
              "critic_loss":metrics.get("critic_loss",logged.get("train/critic_loss")),
              "jacobian_action_gradient_norm":metrics.get("jacobian_action_gradient_norm",0.),
+             "jacobian_valid_fraction":metrics.get("jacobian_valid_fraction",0.),
              "extra_equilibrium_calls":metrics.get("extra_equilibrium_calls",0)}
         if self.update_writer is None:
             self.update_writer=csv.DictWriter(self.update_stream,fieldnames=list(row));self.update_writer.writeheader()
@@ -111,25 +108,26 @@ class AuditCallback(BaseCallback):
 
 def arguments():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--total-timesteps",type=int,default=64)
-    p.add_argument("--learning-starts",type=int,default=16)
-    p.add_argument("--episode-steps",type=int,default=16)
-    p.add_argument("--buffer-size",type=int,default=10000)
-    p.add_argument("--batch-size",type=int,default=32)
+    p.add_argument("--total-timesteps",type=int,default=10000)
+    p.add_argument("--learning-starts",type=int,default=200)
+    p.add_argument("--episode-steps",type=int,default=60)
+    p.add_argument("--buffer-size",type=int,default=20000)
+    p.add_argument("--batch-size",type=int,default=128)
     p.add_argument("--hidden-width",type=int,default=256)
     p.add_argument("--layers",type=int,default=3)
     p.add_argument("--learning-rate",type=float,default=.0005)
     p.add_argument("--noise-std",type=float,default=.05)
-    p.add_argument("--guidance",choices=["none","safeguard"],default="safeguard")
+    p.add_argument("--guidance",choices=["none"],default="none",
+                   help="Compatibility option; this trainer uses the actor without a controller wrapper")
     p.add_argument("--system",choices=[f"ctr_{i}" for i in range(4)],default="ctr_0")
     p.add_argument("--tolerance-m",type=float,default=.001)
-    p.add_argument("--seed",type=int,default=7005)
-    p.add_argument("--progress-every",type=int,default=8)
-    p.add_argument("--physics-weight",type=float,default=0.)
+    p.add_argument("--seed",type=int,default=7101)
+    p.add_argument("--progress-every",type=int,default=100)
+    p.add_argument("--physics-weight",type=float,default=.1)
     p.add_argument("--physics-final-weight",type=float,default=None)
     p.add_argument("--physics-anneal-steps",type=int,default=100000)
     p.add_argument("--checkpoint-freq",type=int,default=0)
-    p.add_argument("--output-dir",type=Path,default=Path("runs/step5_smoke"))
+    p.add_argument("--output-dir",type=Path,default=Path("runs/simple_jacobian_seed7101"))
     a=p.parse_args()
     for name in ("total_timesteps","learning_starts","episode_steps","buffer_size","batch_size","hidden_width","layers","progress_every"):
         if getattr(a,name)<1:p.error(f"{name} must be positive")
@@ -140,7 +138,7 @@ def arguments():
     if a.buffer_size<=2*a.episode_steps:p.error("buffer-size must exceed two episode lengths")
     if a.seed<0 or not np.isfinite(a.noise_std) or a.noise_std<0:p.error("Invalid seed/noise")
     if not np.isfinite(a.learning_rate) or a.learning_rate<=0:p.error("Invalid learning rate")
-    if a.physics_final_weight is None:a.physics_final_weight=.1*a.physics_weight
+    if a.physics_final_weight is None:a.physics_final_weight=a.physics_weight
     if any(not np.isfinite(x) or x<0 for x in (a.physics_weight,a.physics_final_weight)) or a.physics_anneal_steps<1:
         p.error("Physics weights must be finite/nonnegative and anneal steps positive")
     return a
@@ -152,23 +150,28 @@ def main():
         raise SystemExit("Output directory is not empty; choose a new run directory")
     a.output_dir.mkdir(parents=True,exist_ok=True)
     torch.set_num_threads(1)
-    plant=EquilibriumReachEnv(a.system,tolerance_m=a.tolerance_m,max_episode_steps=a.episode_steps)
-    env=GuidedRolloutWrapper(plant) if a.guidance=="safeguard" else plant
     physics_enabled = max(a.physics_weight,a.physics_final_weight)>0
+    plant=JointConstrainedReachEnv(a.system,tolerance_m=a.tolerance_m,
+                                  max_episode_steps=a.episode_steps,compute_jacobian=physics_enabled)
+    env=plant
+    replay_action_semantics = "proposal"
     config={**vars(a),"output_dir":str(a.output_dir),"algorithm":"JacobianDDPG" if physics_enabled else "DDPG",
         "gamma":.95,"tau":.001,"train_freq":1,"gradient_steps":1,
         "n_sampled_goal":4,"goal_selection_strategy":"future",
-        "action_semantics":"executed delta_q divided by fixed joint caps",
-        "observation_semantics":"normalized egocentric joints, branch torsion, tolerance; reconstructed goal error",
-        "tracking_options":asdict(plant.tracking_options),
+        "replay_action_semantics":replay_action_semantics,
+        "plant":plant.plant_version,"action_contract_version":3,
+        "action_semantics":"normalized proposal; joint projection and fixed joint increment caps",
+        "action_scales":plant.action_scales.tolist(),
+        "observation_semantics":"normalized egocentric joints and tolerance; reconstructed goal error",
+        "equilibrium_initialization":"deterministic default; no previous torsion",
         "solver_options":asdict(plant.solver.options),"integrator":"scale_safe_dop853_v1",
         "observation_bounds_version":plant.observation_bounds_version,
-        "torsion_observation_bound":plant.torsion_observation_bound.tolist(),
         "model_fingerprint":plant.solver.model_fingerprint,
-        "goal_distribution":"seeded aligned starts and four local witness commands; fixed tolerance",
-        "critic_target_policy":"unfiltered actor under goal-independent plant",
+        "goal_distribution":"seeded aligned starts; goals from four joint-constrained commands; fixed tolerance",
+        "critic_target_policy":"raw actor proposal to the joint-constrained plant",
         "actor_physics_loss":physics_enabled,
         "physics_loss_semantics":"projected-current-actor Jacobian tracking, target recomputed for each HER goal",
+        "unavailable_jacobian":"mask auxiliary sample; keep transition and RL update",
         "python":platform.python_version(),"numpy":np.__version__,"scipy":scipy.__version__,
         "torch":torch.__version__,"stable_baselines3":sb3.__version__}
     try: config["git_commit"]=subprocess.check_output(["git","rev-parse","HEAD"],text=True,stderr=subprocess.DEVNULL).strip()
@@ -186,7 +189,8 @@ def main():
                        "features_extractor_class":EquilibriumStateExtractor,
                        "features_extractor_kwargs":{"length_scale":plant.length}},
         replay_buffer_class=JacobianHerReplayBuffer if physics_enabled else ExecutedActionHerReplayBuffer,
-        replay_buffer_kwargs={"copy_info_dict":True,"n_sampled_goal":4,"goal_selection_strategy":"future"},verbose=0)
+        replay_buffer_kwargs={"copy_info_dict":True,"n_sampled_goal":4,"goal_selection_strategy":"future",
+                              "action_semantics":replay_action_semantics},verbose=0)
     actor=[p.detach().clone() for p in model.actor.parameters()]
     critic=[p.detach().clone() for p in model.critic.parameters()]
     started=time.perf_counter(); failure=None; complete=False
@@ -202,14 +206,18 @@ def main():
         model.save(a.output_dir/("final_model.zip" if complete else "interrupted_model.zip"))
         buffer=model.replay_buffer
         indices=range(buffer.buffer_size if buffer.full else buffer.pos)
-        replay_errors=[float(np.max(abs(buffer.actions[i,0]-buffer.infos[i,0]["executed_action"]))) for i in indices]
+        action_key="proposed_action" if replay_action_semantics=="proposal" else "executed_action"
+        replay_errors=[float(np.max(abs(buffer.actions[i,0]-buffer.infos[i,0][action_key]))) for i in indices]
+        execution_differences=[float(np.max(abs(buffer.actions[i,0]-buffer.infos[i,0]["executed_action"]))) for i in indices]
         summary={"complete":complete,"failure":failure,"timesteps":model.num_timesteps,
             "gradient_updates":model._n_updates,"completed_episodes":len(callback.rows),
             "rollout_successes":sum(r["success"] for r in callback.rows),
             "actor_parameters_changed":any(not torch.equal(x,p) for x,p in zip(actor,model.actor.parameters())),
             "critic_parameters_changed":any(not torch.equal(x,p) for x,p in zip(critic,model.critic.parameters())),
             "all_parameters_finite":all(bool(torch.isfinite(p).all()) for p in model.policy.parameters()),
-            "replay_entries":len(replay_errors),"maximum_executed_action_replay_error":max(replay_errors,default=None),
+            "replay_entries":len(replay_errors),"replay_action_semantics":replay_action_semantics,
+            "maximum_training_action_replay_error":max(replay_errors,default=None),
+            "maximum_replay_vs_executed_action_difference":max(execution_differences,default=None),
             "replaced_actions":callback.replaced,"jacobian_fallbacks":callback.fallbacks,
             "decrease_verified_transitions":callback.decrease_verified,
             "physics_actor_updates":getattr(model,"physics_update_count",0),
@@ -217,7 +225,8 @@ def main():
             "reset_attempts":plant.reset_attempts,"failed_resets":plant.failed_resets,
             "physics_costs_including_resets_and_witnesses":plant.costs,
             "elapsed_seconds":time.perf_counter()-started,
-            "scope":"local-goal pilot; collection safeguard and actor Jacobian loss are separate options",
+            "plant":plant.plant_version,"jacobian_failures":plant.jacobian_failures,
+            "scope":"joint-constrained local-goal task; optional Jacobian actor loss",
             "global_convergence_certified":False,"sample_efficiency_improvement_demonstrated":False}
         (a.output_dir/"summary.json").write_text(json.dumps(summary,indent=2,allow_nan=False)+"\n",encoding="utf-8")
     env.close()

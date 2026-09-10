@@ -68,11 +68,10 @@ def test_jacobian_tracking_does_not_penalize_nullspace_action_oscillation():
     assert metric.summary()["executed_action_change_rms"]>1.
 
 
-def test_study_has_true_unassisted_baselines_and_separate_safeguard_arms():
+def test_study_has_only_joint_constrained_unassisted_arms():
     assert ARMS["ddpg"]=={"guidance":"none","physics_weight":0.}
     assert ARMS["jacobian"]["guidance"]=="none"
-    assert ARMS["safeguard"]["physics_weight"]==0.
-    assert ARMS["both"]["guidance"]=="safeguard"
+    assert set(ARMS)=={"ddpg","jacobian"}
     validate_config(DEFAULTS)
     assert checkpoints({**DEFAULTS,"total_timesteps":1100,"checkpoint_freq":500})==[0,500,1000,1100]
     with pytest.raises(ValueError,match="distinct"):
@@ -108,7 +107,7 @@ def test_report_checks_paired_tasks_and_marks_missing_runs(tmp_path):
     fixture_evaluation(tmp_path,"ddpg",1)
     fixture_evaluation(tmp_path,"jacobian",1)
     value=report({"config":c},tmp_path,final=True)
-    assert not value["complete"] and len(value["missing_jobs"])==3
+    assert not value["complete"] and len(value["missing_jobs"])==2
     assert value["contrasts"]["jacobian_minus_ddpg"]["success_rate"]["seeds"]==1
     fixture_evaluation(tmp_path,"ddpg",2,fp="different")
     with pytest.raises(ValueError,match="tasks differ"):

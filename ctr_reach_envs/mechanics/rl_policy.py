@@ -1,4 +1,4 @@
-"""Egocentric branch state plus freshly reconstructed, scaled goal error."""
+"""Egocentric state plus freshly reconstructed, scaled goal error."""
 import numpy as np
 import torch
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
