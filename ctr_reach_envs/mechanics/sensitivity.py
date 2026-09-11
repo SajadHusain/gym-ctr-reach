@@ -20,12 +20,84 @@ class SensitivityError(EquilibriumError):
 
 
 @dataclass(frozen=True)
+class PaperJacobian:
+    """Burgner et al. (2014), Eqs. (6)-(7), specialized to zero tip load.
+
+    Columns use physical q=[beta (m), alpha (rad)] and u=base torsional
+    strains (1/m). B differentiates the distal torque residuals. V uses
+    relative tube angles followed by torsional strains; unloaded bending
+    moments have been eliminated. E/Js use spatial twist order [v, omega]
+    and the material frame of tube 1, not the stored Bishop frame.
+    """
+    E_q: np.ndarray
+    E_u: np.ndarray
+    V_q: np.ndarray
+    V_u: np.ndarray
+    B_q: np.ndarray
+    B_u: np.ndarray
+    spatial_jacobian: np.ndarray
+    body_jacobian: np.ndarray
+    tip_position: np.ndarray
+    material_tip_rotation: np.ndarray
+
+    @property
+    def spatial_jacobian_alpha_beta(self):
+        """Same matrix with the paper's [alpha, beta] column ordering."""
+        n = self.spatial_jacobian.shape[1] // 2
+        return self.spatial_jacobian[:, np.r_[np.arange(n, 2*n), np.arange(n)]].copy()
+
+
+@dataclass(frozen=True)
 class Sensitivity:
     # q order: beta in metres, alpha in radians. Tip units: metres.
     tip_jacobian: np.ndarray
     base_torsion_jacobian: np.ndarray
     shooting_jacobian: np.ndarray
     diagnostics: dict
+    paper: PaperJacobian | None = None
+
+
+def _skew(v):
+    x, y, z = v
+    return np.array([[0., -z, y], [z, 0., -x], [-y, x, 0.]])
+
+
+def _paper_matrices(solver, state, partial, qscale):
+    """Convert integrated sensitivities to the paper's physical coordinates.
+
+    For g=[R1,p;0,1], R1=RB Rz(theta1), E_j=(g_,j g^-1)^vee.
+    The variational integration uses q/qscale and z=L*u, so its columns
+    must be unscaled before forming E, V and B. No further ODE/FK solve.
+    """
+    n = solver.n
+    physical = partial / np.r_[qscale, np.full(n, 1/solver.scale)]
+    p = state[2*n:2*n+3]
+    quat = state[2*n+3:2*n+7]
+    norm = np.linalg.norm(quat)
+    unit = quat/norm
+    w, v = unit[0], unit[1:]
+    normalize = (np.eye(4)-np.outer(unit, unit))/norm
+    # 2 * vector(dquat * conjugate(quat)) = vee(dRB * RB.T).
+    omega_b = 2*np.column_stack((-v, w*np.eye(3)+_skew(v))) @ normalize @ physical[2*n+3:2*n+7]
+    rb = quaternion_matrix(quat)
+    omega = omega_b + rb[:, 2, None]*physical[0:1]
+    c, s = np.cos(state[0]), np.sin(state[0])
+    r1 = rb @ np.array([[c, -s, 0.], [s, c, 0.], [0., 0., 1.]])
+    dp = physical[2*n:2*n+3]
+    E = np.vstack((dp+_skew(p)@omega, omega))
+    V = np.vstack((physical[1:n]-physical[0:1], physical[n:2*n]))
+    # Ended tube strains are frozen at their own tips by the ODE.
+    B = solver.gj[:, None]*physical[n:2*n]
+    E_q, E_u = E[:, :2*n], E[:, 2*n:]
+    B_q, B_u = B[:, :2*n], B[:, 2*n:]
+    # Paper Eq. (7); solve the linear system instead of forming an inverse.
+    js = E_q-E_u@np.linalg.solve(B_u, B_q)
+    # Spatial linear twist v is NOT the velocity of the moving tip origin.
+    jp = js[:3]-_skew(p)@js[3:]
+    jb = np.vstack((r1.T@jp, r1.T@js[3:]))
+    paper = PaperJacobian(E_q, E_u, V[:, :2*n], V[:, 2*n:], B_q, B_u,
+                          js, jb, p.copy(), r1)
+    return jp, paper
 
 
 def _checked_input(solver, equilibrium):
@@ -173,12 +245,16 @@ def equilibrium_sensitivity(solver, equilibrium, *, condition_limit=1e8, event_c
     if not np.isfinite(condition) or condition > condition_limit or smallest < 1/condition_limit:
         raise SensitivityError(f"Shooting derivative is numerically singular: condition={condition:.6g}, sigma_min={smallest:.6g}")
     dz_dq_normalized = -np.linalg.solve(rz, rq)
-    tip = partial[2*n:2*n+3, :2*n]+partial[2*n:2*n+3, 2*n:]@dz_dq_normalized
+    tip, paper = _paper_matrices(solver, state, partial, qscale)
     diagnostics = {**counters, "shooting_condition_number": condition,
                    "shooting_smallest_singular_value": smallest,
                    "implicit_equation_residual": float(np.linalg.norm(rz@dz_dq_normalized+rq, ord=np.inf)),
                    "seconds": time.perf_counter()-started,
                    "method": "analytic_variational_ode_implicit_shooting",
+                   "paper_reference": "10.1109/TMECH.2013.2265804, Eqs. (6)-(7)",
+                   "paper_specialization": "unloaded; bending moments eliminated; material frame of tube 1",
+                   "spatial_twist_order": "linear_then_angular",
+                   "tip_conversion": "Jp = Js_linear - skew(p) @ Js_angular",
                    "q_order": "beta_m_then_alpha_rad", "q_normalization": qscale.tolist(),
                    "model_fingerprint": solver.model_fingerprint,
                    "equilibrium_base_torsion": equilibrium.base_torsional_strain.tolist(),
@@ -186,4 +262,4 @@ def equilibrium_sensitivity(solver, equilibrium, *, condition_limit=1e8, event_c
                    "joint_projection_differentiated": False,
                    "event_clearance_m": event_clearance_m,
                    "additional_equilibrium_solves": 0}
-    return Sensitivity(tip/qscale, dz_dq_normalized/solver.scale/qscale, rz, diagnostics)
+    return Sensitivity(tip, dz_dq_normalized/solver.scale/qscale, rz, diagnostics, paper)

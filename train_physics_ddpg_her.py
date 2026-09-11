@@ -20,6 +20,7 @@ from ctr_reach_envs.mechanics.simple_rl_env import JointConstrainedReachEnv
 from ctr_reach_envs.mechanics.rl_policy import EquilibriumStateExtractor
 from ctr_reach_envs.mechanics.rl_replay import ExecutedActionHerReplayBuffer
 from ctr_reach_envs.mechanics.rl_jacobian import JacobianDDPG, JacobianHerReplayBuffer
+from ctr_reach_envs.mechanics.rl_exploration import ExplorationDDPG, exploration_settings
 from ctr_reach_envs.mechanics.rl_metrics import EpisodeMotion
 
 
@@ -48,6 +49,7 @@ class AuditCallback(BaseCallback):
         self.model.save(folder/"model.zip")
         (folder/"config.json").write_text(json.dumps(self.config,indent=2)+"\n",encoding="utf-8")
         budget={"timesteps":step,"gradient_updates":self.model._n_updates,
+                "exploration_proposal_counts":dict(self.model.exploration_counts),
                 "training_seconds":time.perf_counter()-self.started,
                 "physics_costs_including_resets_and_witnesses":dict(self.plant.costs),
                 "replaced_actions":self.replaced,"jacobian_fallbacks":self.fallbacks,
@@ -116,7 +118,12 @@ def arguments():
     p.add_argument("--hidden-width",type=int,default=256)
     p.add_argument("--layers",type=int,default=3)
     p.add_argument("--learning-rate",type=float,default=.0005)
-    p.add_argument("--noise-std",type=float,default=.05)
+    p.add_argument("--exploration-profile",choices=["paper","gaussian"],default="paper",
+                   help="paper: the earlier DDPG+HER noise and uniform-action mixture; gaussian: previous simple-run exploration")
+    p.add_argument("--noise-std",type=float,default=None,
+                   help="Override the profile's normalized Gaussian standard deviation on all joints")
+    p.add_argument("--random-exploration",type=float,default=None,
+                   help="Override the probability of a uniform random action after warmup")
     p.add_argument("--guidance",choices=["none"],default="none",
                    help="Compatibility option; this trainer uses the actor without a controller wrapper")
     p.add_argument("--system",choices=[f"ctr_{i}" for i in range(4)],default="ctr_0")
@@ -136,7 +143,9 @@ def arguments():
     if a.learning_starts<a.episode_steps:p.error("learning-starts must cover one complete episode")
     if a.total_timesteps<=a.learning_starts:p.error("Run beyond learning-starts to test actual updates")
     if a.buffer_size<=2*a.episode_steps:p.error("buffer-size must exceed two episode lengths")
-    if a.seed<0 or not np.isfinite(a.noise_std) or a.noise_std<0:p.error("Invalid seed/noise")
+    if a.seed<0:p.error("Invalid seed")
+    try: exploration_settings(a.exploration_profile,a.noise_std,a.random_exploration)
+    except ValueError as exc: p.error(str(exc))
     if not np.isfinite(a.learning_rate) or a.learning_rate<=0:p.error("Invalid learning rate")
     if a.physics_final_weight is None:a.physics_final_weight=a.physics_weight
     if any(not np.isfinite(x) or x<0 for x in (a.physics_weight,a.physics_final_weight)) or a.physics_anneal_steps<1:
@@ -155,6 +164,7 @@ def main():
                                   max_episode_steps=a.episode_steps,compute_jacobian=physics_enabled)
     env=plant
     replay_action_semantics = "proposal"
+    exploration = exploration_settings(a.exploration_profile,a.noise_std,a.random_exploration,plant.n*2)
     config={**vars(a),"output_dir":str(a.output_dir),"algorithm":"JacobianDDPG" if physics_enabled else "DDPG",
         "gamma":.95,"tau":.001,"train_freq":1,"gradient_steps":1,
         "n_sampled_goal":4,"goal_selection_strategy":"future",
@@ -170,6 +180,8 @@ def main():
         "goal_distribution":"seeded aligned starts; goals from four joint-constrained commands; fixed tolerance",
         "critic_target_policy":"raw actor proposal to the joint-constrained plant",
         "actor_physics_loss":physics_enabled,
+        "jacobian_method":"Burgner 2014 Eqs. (6)-(7); analytical variational ODE, unloaded specialization, spatial-to-tip conversion",
+        "exploration":exploration,
         "physics_loss_semantics":"projected-current-actor Jacobian tracking, target recomputed for each HER goal",
         "unavailable_jacobian":"mask auxiliary sample; keep transition and RL update",
         "python":platform.python_version(),"numpy":np.__version__,"scipy":scipy.__version__,
@@ -177,14 +189,15 @@ def main():
     try: config["git_commit"]=subprocess.check_output(["git","rev-parse","HEAD"],text=True,stderr=subprocess.DEVNULL).strip()
     except (OSError,subprocess.CalledProcessError): config["git_commit"]=None
     (a.output_dir/"config.json").write_text(json.dumps(config,indent=2)+"\n",encoding="utf-8")
-    algorithm = JacobianDDPG if physics_enabled else sb3.DDPG
+    algorithm = JacobianDDPG if physics_enabled else ExplorationDDPG
     physics_kwargs = {"physics_lengths":plant.solver.lengths.tolist(),"physics_weight":a.physics_weight,
                       "physics_final_weight":a.physics_final_weight,"physics_anneal_steps":a.physics_anneal_steps} if physics_enabled else {}
     model=algorithm(PaperMlpPolicy,env,seed=a.seed,device="cpu",**physics_kwargs,
+        random_exploration=exploration["random_exploration"],
         learning_rate=a.learning_rate,gamma=.95,tau=.001,
         learning_starts=a.learning_starts,buffer_size=a.buffer_size,batch_size=a.batch_size,
         train_freq=1,gradient_steps=1,
-        action_noise=NormalActionNoise(np.zeros(plant.n*2),np.full(plant.n*2,a.noise_std)),
+        action_noise=NormalActionNoise(np.zeros(plant.n*2),np.asarray(exploration["normalized_action_noise_std"])),
         policy_kwargs={"net_arch":[a.hidden_width]*a.layers,
                        "features_extractor_class":EquilibriumStateExtractor,
                        "features_extractor_kwargs":{"length_scale":plant.length}},
@@ -210,6 +223,7 @@ def main():
         replay_errors=[float(np.max(abs(buffer.actions[i,0]-buffer.infos[i,0][action_key]))) for i in indices]
         execution_differences=[float(np.max(abs(buffer.actions[i,0]-buffer.infos[i,0]["executed_action"]))) for i in indices]
         summary={"complete":complete,"failure":failure,"timesteps":model.num_timesteps,
+            "exploration":exploration,"exploration_proposal_counts":dict(model.exploration_counts),
             "gradient_updates":model._n_updates,"completed_episodes":len(callback.rows),
             "rollout_successes":sum(r["success"] for r in callback.rows),
             "actor_parameters_changed":any(not torch.equal(x,p) for x,p in zip(actor,model.actor.parameters())),

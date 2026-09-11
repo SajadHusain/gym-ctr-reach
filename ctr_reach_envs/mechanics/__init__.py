@@ -1,7 +1,7 @@
 """Experimental equilibrium mechanics; importing does not change CTR-Reach-v1."""
 from .geometry import TubeParameters, JointConstraints, segment_tubes
 from .solver import Equilibrium, EquilibriumError, EquilibriumSolver, SolverOptions
-from .sensitivity import Sensitivity, SensitivityError, equilibrium_sensitivity
+from .sensitivity import PaperJacobian, Sensitivity, SensitivityError, equilibrium_sensitivity
 
 # Archived experiments retain their public imports without loading branch
 # tracking, elastic analysis or controllers in the joint-only training path.
@@ -20,7 +20,7 @@ def __getattr__(name):
     return value
 
 __all__ = ["TubeParameters", "JointConstraints", "segment_tubes", "Equilibrium",
-           "EquilibriumError", "EquilibriumSolver", "SolverOptions", "Sensitivity",
+           "EquilibriumError", "EquilibriumSolver", "SolverOptions", "Sensitivity", "PaperJacobian",
            "SensitivityError", "equilibrium_sensitivity", "StabilityDiagnostic", "elastic_stability",
            "BranchTracker", "TrackingOptions", "TrackingStep", "TrackedState", "BranchInitializationError", "GoalProgress",
            "GoalController", "ControlOptions", "ControlStep"]

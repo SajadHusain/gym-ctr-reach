@@ -14,6 +14,7 @@ import subprocess
 import sys
 
 import numpy as np
+from ctr_reach_envs.mechanics.rl_exploration import exploration_settings
 
 ROOT = Path(__file__).resolve().parent
 ARMS = {
@@ -23,7 +24,8 @@ ARMS = {
 DEFAULTS = dict(seeds=[7100,7101,7102,7103,7104], arms=["ddpg","jacobian"],
                 total_timesteps=10000, learning_starts=200, episode_steps=60,
                 checkpoint_freq=500, buffer_size=20000, batch_size=128,
-                hidden_width=256, layers=3, learning_rate=.0005, noise_std=.05,
+                hidden_width=256, layers=3, learning_rate=.0005, noise_std=None,
+                exploration_profile="paper", random_exploration=None,
                 physics_weight=.1, physics_final_weight=.1, physics_anneal_steps=10000,
                 system="ctr_0", tolerance_m=.001, eval_episodes=20, eval_steps=60,
                 eval_seed=810000, final_seed=910000, final_episodes=1000)
@@ -41,7 +43,7 @@ def source_hashes():
     files = list((ROOT/"ctr_reach_envs"/"mechanics").glob("*.py"))
     files += [ROOT/name for name in ("train_physics_ddpg_her.py", "evaluate_physics_ddpg_her.py",
              "run_physics_study.py", "ctr_reach_envs/paper_policy.py", "ctr_reach_envs/her_replay_buffer.py",
-             "ctr_reach_envs/config.py")]
+             "ctr_reach_envs/config.py", "ctr_reach_envs/paper_config.py")]
     return {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(files)}
 
 
@@ -66,9 +68,10 @@ def validate_config(c):
     for key in ("learning_rate", "tolerance_m", "physics_weight"):
         if not np.isfinite(c[key]) or c[key] <= 0:
             raise ValueError(f"Invalid {key}")
-    for key in ("noise_std", "physics_final_weight"):
+    for key in ("physics_final_weight",):
         if not np.isfinite(c[key]) or c[key] < 0:
             raise ValueError(f"Invalid {key}")
+    exploration_settings(c.get("exploration_profile","gaussian"),c.get("noise_std"),c.get("random_exploration"))
     if c["eval_seed"] < 0 or c["final_seed"] < 0:
         raise ValueError("Evaluation seeds must be nonnegative")
     dev = set(range(c["eval_seed"], c["eval_seed"]+c["eval_episodes"]))
@@ -112,8 +115,11 @@ def train(plan, folder):
                 ok = ok and (out/"summary.json").exists() and read_json(out/"summary.json").get("complete",False)
                 continue
             params = {k:c[k] for k in ("total_timesteps", "learning_starts", "episode_steps", "checkpoint_freq",
-                      "buffer_size", "batch_size", "hidden_width", "layers", "learning_rate", "noise_std",
+                      "buffer_size", "batch_size", "hidden_width", "layers", "learning_rate",
                       "system", "tolerance_m", "physics_anneal_steps")}
+            params["exploration_profile"] = c.get("exploration_profile","gaussian")
+            for key in ("noise_std","random_exploration"):
+                if c.get(key) is not None: params[key] = c[key]
             params.update(seed=seed, guidance=ARMS[arm]["guidance"],
                           physics_weight=c["physics_weight"] if ARMS[arm]["physics_weight"] else 0.,
                           physics_final_weight=c["physics_final_weight"] if ARMS[arm]["physics_weight"] else 0.,
@@ -268,8 +274,9 @@ def main():
     for name,value in DEFAULTS.items():
         kwargs={"default":None}
         if isinstance(value,list):kwargs.update(nargs="+",type=type(value[0]))
-        else:kwargs["type"]=type(value)
+        else:kwargs["type"]=float if value is None else type(value)
         if name=="system":kwargs["choices"]=[f"ctr_{i}" for i in range(4)]
+        if name=="exploration_profile":kwargs["choices"]=["paper","gaussian"]
         p.add_argument("--"+name.replace("_","-"),**kwargs)
     a=p.parse_args();folder=a.output_dir.resolve();path=folder/"study.json"
     overrides={k:getattr(a,k) for k in DEFAULTS if getattr(a,k) is not None}
@@ -291,6 +298,7 @@ def main():
         except ValueError as exc:p.error(str(exc))
         folder.mkdir(parents=True,exist_ok=True)
         plan={"schema_version":2,"plant":"joint_constraints_v1","config":config,"source_hashes":source_hashes(),"runtime_versions":runtime_versions(),
+              "exploration":exploration_settings(config["exploration_profile"],config["noise_std"],config["random_exploration"]),
               "primary_endpoint":"unassisted actor success at the configured tolerance on held-out tasks at a fixed interaction budget",
               "secondary_endpoints":["error","command variation","solver work","wall time","interventions"],
               "selection_rule":"final fixed-budget checkpoint; development episodes are not final-test episodes",

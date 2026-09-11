@@ -9,10 +9,10 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 from torch.nn import functional as F
-from stable_baselines3 import DDPG
 from stable_baselines3.common.utils import polyak_update
 from .geometry import JointConstraints
 from .rl_replay import ExecutedActionHerReplayBuffer
+from .rl_exploration import ExplorationDDPG
 
 
 @dataclass
@@ -130,7 +130,7 @@ class ProjectedJacobianLoss(torch.nn.Module):
         return (errors*valid).sum()/valid.sum().clamp_min(1.)
 
 
-class JacobianDDPG(DDPG):
+class JacobianDDPG(ExplorationDDPG):
     """DDPG actor objective -Q(s,mu(s)) + weight * local kinematic tracking loss."""
     def __init__(self,*args,physics_lengths=None,physics_weight=.1,physics_final_weight=.01,
                  physics_anneal_steps=100000,**kwargs):
