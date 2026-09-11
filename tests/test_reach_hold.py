@@ -5,7 +5,7 @@ import torch
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 from ctr_reach_envs.mechanics.geometry import TubeParameters
-from ctr_reach_envs.mechanics.solver import EquilibriumError
+from ctr_reach_envs.mechanics.solver import EquilibriumError, SolverOptions
 from ctr_reach_envs.mechanics.simple_rl_env import JointConstrainedReachEnv, make_reach_env
 from ctr_reach_envs.mechanics.rl_metrics import ReachHoldMetrics
 from ctr_reach_envs.mechanics.rl_replay import ExecutedActionHerReplayBuffer
@@ -153,6 +153,26 @@ def test_checkpoint_task_restore_and_legacy_compatibility():
     assert make_reach_env(config, task_profile="legacy").terminate_on_success
 
 
+def test_checkpoint_restores_solver_budget_and_hard_reported_configuration():
+    config = {"system":"ctr_0", "task_profile":"generalized_hold",
+              "solver_options":{**SolverOptions().__dict__, "max_shooting_evaluations":500}}
+    env = make_reach_env(config)
+    assert env.solver.options.max_shooting_evaluations == 500
+    # Configuration reported by the Windows seed-7101 failure: 250 exhausts
+    # the counter, whereas the explicitly checkpointed 500 budget converges.
+    q = [-0.30848364632511605, -0.27811755904387275, -0.1541822453017143,
+         -0.510274642092774, -3.88315894370072, -2.0636713227539984]
+    result = env.solver.solve(q)
+    assert result.diagnostics["shooting_evaluations"] == 280
+    assert result.diagnostics["boundary_residual_scaled"] < 1e-7
+    env.close()
+
+
+def test_solver_options_type_is_explicit():
+    with pytest.raises(ValueError, match="SolverOptions"):
+        JointConstrainedReachEnv(solver_options={"max_shooting_evaluations":500})
+
+
 def test_holding_requires_a_complete_final_window_and_survives_late_recovery():
     m = ReachHoldMetrics(.001, 3)
     for value in [.002, .0008, .0011, .0009]:
@@ -201,4 +221,3 @@ def test_generalized_gymnasium_and_sb3_contract():
     env = straight_env(compute_jacobian=False)
     check_env(env, skip_render_check=True)
     sb3_check(env)
-

@@ -40,7 +40,11 @@ Trivial endpoints are rejected with a bounded 32-candidate budget, and the
 rejection count and extra solve work are recorded. Numerical equilibrium failures
 are raised and counted rather than silently resampled. Failed equilibrium joint
 coordinates are included in training/evaluation diagnostics when available.
-This change does not repair every possible shooting-budget failure.
+New training uses an explicit shooting budget of 500 evaluations, increased
+from 250 after a recorded generalized-task configuration required 280. The
+budget is stored in checkpoint configuration and reconstructed by evaluation;
+both comparison arms use the same value. This removes that confirmed budget
+failure but does not guarantee that every possible configuration will converge.
 
 The paper-form analytical Jacobian, actor loss, six-joint action limits,
 egocentric encoding, actor/critic architecture, HER future-goal sampling,

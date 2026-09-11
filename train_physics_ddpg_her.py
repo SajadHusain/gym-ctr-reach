@@ -17,6 +17,7 @@ from stable_baselines3.common.noise import NormalActionNoise
 
 from ctr_reach_envs.paper_policy import PaperMlpPolicy
 from ctr_reach_envs.mechanics.simple_rl_env import JointConstrainedReachEnv, TASK_PROFILES
+from ctr_reach_envs.mechanics.solver import SolverOptions
 from ctr_reach_envs.mechanics.rl_policy import EquilibriumStateExtractor
 from ctr_reach_envs.mechanics.rl_replay import ExecutedActionHerReplayBuffer
 from ctr_reach_envs.mechanics.rl_jacobian import JacobianDDPG, JacobianHerReplayBuffer
@@ -143,6 +144,8 @@ def arguments():
                    help="Independent tube-angle offsets about a common angle sampled uniformly from [-pi, pi]")
     p.add_argument("--goal-steps-min", type=int, default=2)
     p.add_argument("--goal-steps-max", type=int, default=8)
+    p.add_argument("--max-shooting-evaluations", type=int, default=500,
+                   help="Per-equilibrium nonlinear shooting budget; stored in every checkpoint config")
     p.add_argument("--seed",type=int,default=7101)
     p.add_argument("--progress-every",type=int,default=100)
     p.add_argument("--physics-weight",type=float,default=.1)
@@ -165,6 +168,8 @@ def arguments():
         p.error("Initial rotation span must be finite and nonnegative")
     if not 1 <= a.goal_steps_min <= a.goal_steps_max:
         p.error("Need 1 <= goal-steps-min <= goal-steps-max")
+    if a.max_shooting_evaluations < 1:
+        p.error("Shooting evaluation budget must be positive")
     try: exploration_settings(a.exploration_profile,a.noise_std,a.random_exploration)
     except ValueError as exc: p.error(str(exc))
     if not np.isfinite(a.learning_rate) or a.learning_rate<=0:p.error("Invalid learning rate")
@@ -181,10 +186,12 @@ def main():
     a.output_dir.mkdir(parents=True,exist_ok=True)
     torch.set_num_threads(1)
     physics_enabled = max(a.physics_weight,a.physics_final_weight)>0
+    solver_options = SolverOptions(max_shooting_evaluations=a.max_shooting_evaluations)
     plant=JointConstrainedReachEnv(a.system,tolerance_m=a.tolerance_m,
         max_episode_steps=a.episode_steps,compute_jacobian=physics_enabled,
         task_profile=a.task_profile, initial_rotation_span_rad=a.initial_rotation_span_rad,
-        goal_steps_min=a.goal_steps_min, goal_steps_max=a.goal_steps_max)
+        goal_steps_min=a.goal_steps_min, goal_steps_max=a.goal_steps_max,
+        solver_options=solver_options)
     env=plant
     replay_action_semantics = "proposal"
     exploration = exploration_settings(a.exploration_profile,a.noise_std,a.random_exploration,plant.n*2)

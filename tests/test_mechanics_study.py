@@ -126,3 +126,5 @@ def test_generalized_study_window_validation():
         validate_config({**DEFAULTS,"hold_steps":61})
     with pytest.raises(ValueError,match="goal step"):
         validate_config({**DEFAULTS,"goal_steps_min":10,"goal_steps_max":3})
+    with pytest.raises(ValueError,match="Shooting evaluation"):
+        validate_config({**DEFAULTS,"max_shooting_evaluations":0})

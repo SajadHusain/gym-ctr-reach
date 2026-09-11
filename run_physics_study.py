@@ -29,6 +29,7 @@ DEFAULTS = dict(seeds=[7100,7101,7102,7103,7104], arms=["ddpg","jacobian"],
                 exploration_profile="paper", random_exploration=None,
                 task_profile="generalized_hold", hold_steps=10,
                 initial_rotation_span_rad=.15, goal_steps_min=2, goal_steps_max=8,
+                max_shooting_evaluations=500,
                 physics_weight=.1, physics_final_weight=.1, physics_anneal_steps=10000,
                 system="ctr_0", tolerance_m=.001, eval_episodes=20, eval_steps=60,
                 eval_seed=810000, final_seed=910000, final_episodes=1000)
@@ -85,6 +86,8 @@ def validate_config(c):
         raise ValueError("Initial rotation span must be finite and nonnegative")
     if not 1 <= c.get("goal_steps_min",2) <= c.get("goal_steps_max",8):
         raise ValueError("Invalid goal step bounds")
+    if c.get("max_shooting_evaluations",500) < 1:
+        raise ValueError("Shooting evaluation budget must be positive")
     if c["eval_seed"] < 0 or c["final_seed"] < 0:
         raise ValueError("Evaluation seeds must be nonnegative")
     dev = set(range(c["eval_seed"], c["eval_seed"]+c["eval_episodes"]))
@@ -132,7 +135,8 @@ def train(plan, folder):
                       "system", "tolerance_m", "physics_anneal_steps")}
             params["exploration_profile"] = c.get("exploration_profile","gaussian")
             params["task_profile"] = c.get("task_profile", "legacy")
-            for key in ("hold_steps","initial_rotation_span_rad","goal_steps_min","goal_steps_max"):
+            for key in ("hold_steps","initial_rotation_span_rad","goal_steps_min","goal_steps_max",
+                        "max_shooting_evaluations"):
                 if key in c: params[key] = c[key]
             for key in ("noise_std","random_exploration"):
                 if c.get(key) is not None: params[key] = c[key]

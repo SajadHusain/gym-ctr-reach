@@ -12,7 +12,7 @@ import numpy as np
 
 from ctr_reach_envs.config import CTR_SYSTEMS_PARAMETERS
 from .geometry import TubeParameters
-from .solver import EquilibriumError, EquilibriumSolver
+from .solver import EquilibriumError, EquilibriumSolver, SolverOptions
 from .sensitivity import equilibrium_sensitivity
 
 
@@ -24,10 +24,11 @@ def make_reach_env(config, *, max_episode_steps=None, compute_jacobian=False, ta
     settings = dict(config.get("task_settings", {}))
     settings["task_profile"] = config.get("task_profile", "legacy") if task_profile is None else task_profile
     scales = config.get("action_scales", [.001]*3+[.05]*3)
+    solver_options = SolverOptions(**config["solver_options"]) if "solver_options" in config else None
     return JointConstrainedReachEnv(config.get("system", "ctr_0"),
         tolerance_m=config.get("tolerance_m", .001),
         max_episode_steps=config.get("episode_steps", 60) if max_episode_steps is None else max_episode_steps,
-        compute_jacobian=compute_jacobian,
+        compute_jacobian=compute_jacobian, solver_options=solver_options,
         translation_step_m=scales[0], rotation_step_rad=scales[len(scales)//2], **settings)
 
 
@@ -41,7 +42,8 @@ class JointConstrainedReachEnv(gym.Env):
                  compute_jacobian=True, translation_step_m=.001,
                  rotation_step_rad=.05, task_profile="legacy",
                  initial_rotation_span_rad=.15, goal_steps_min=2, goal_steps_max=8,
-                 minimum_goal_distance_m=None, max_goal_sampling_attempts=32):
+                 minimum_goal_distance_m=None, max_goal_sampling_attempts=32,
+                 solver_options=None):
         super().__init__()
         if system_name not in CTR_SYSTEMS_PARAMETERS:
             raise ValueError("Unknown CTR system")
@@ -76,8 +78,11 @@ class JointConstrainedReachEnv(gym.Env):
             "uniform common rotation plus independent bounded offsets; signed independent joint directions; "
             "variable-length projected witnesses; nontrivial reachable endpoints")
         self.system_name = system_name
+        if solver_options is not None and not isinstance(solver_options, SolverOptions):
+            raise ValueError("solver_options must be SolverOptions")
         self.solver = EquilibriumSolver(tubes if tubes is not None else
-            [TubeParameters(**t) for t in CTR_SYSTEMS_PARAMETERS[system_name].values()])
+            [TubeParameters(**t) for t in CTR_SYSTEMS_PARAMETERS[system_name].values()],
+            options=solver_options)
         self.n, self.length = self.solver.n, self.solver.scale
         self.tolerance_m = float(tolerance_m)
         self.max_episode_steps, self.witness_steps = max_episode_steps, witness_steps
