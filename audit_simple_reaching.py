@@ -13,7 +13,7 @@ import time
 
 import numpy as np
 
-from ctr_reach_envs.mechanics.simple_rl_env import JointConstrainedReachEnv
+from ctr_reach_envs.mechanics.simple_rl_env import JointConstrainedReachEnv, make_reach_env
 
 
 MODES = ("actor", "fixed", "goal_zero", "goal_shuffled", "reverse_actor")
@@ -44,9 +44,13 @@ def make_tasks(env, episodes, seed, reverse=False):
             # initial joints are the same; no branch state or stability check.
             rng = np.random.default_rng(np.random.SeedSequence([seed+i, 719]))
             target = q.copy()
-            for _ in range(4):
-                delta = np.r_[np.full(env.n, -.0005), -(.04+rng.uniform(-.015, .015, env.n))]
-                target += env.projected_delta(target, np.clip(delta/env.action_scales, -1., 1.))
+            if env.task_profile == "generalized_hold":
+                for _ in range(info["goal_witness_steps"]):
+                    target += env.projected_delta(target, -info["goal_witness_action"])
+            else:
+                for _ in range(4):
+                    delta = np.r_[np.full(env.n, -.0005), -(.04+rng.uniform(-.015, .015, env.n))]
+                    target += env.projected_delta(target, np.clip(delta/env.action_scales, -1., 1.))
             target_obs, _ = env.reset(options={"joints": target, "goal": obs["desired_goal"]})
             reverse_goal = target_obs["achieved_goal"].astype(float)
         tasks.append(Task(seed+i, q, obs["desired_goal"].astype(float), reverse_goal))
@@ -69,12 +73,12 @@ def independent_error(obs, goal):
     return float(np.linalg.norm(obs["achieved_goal"].astype(float)-goal))
 
 
-def check_transition(obs, info, terminated, goal, tolerance):
+def check_transition(obs, info, terminated, goal, tolerance, terminate_on_success=True):
     if not np.array_equal(obs["desired_goal"], goal.astype(np.float32)):
         raise AssertionError("The real task goal changed during the audit")
     error = independent_error(obs, goal)
     expected = error <= tolerance
-    if expected != bool(info["is_success"]) or expected != bool(terminated):
+    if expected != bool(info["is_success"]) or (expected and terminate_on_success) != bool(terminated):
         raise AssertionError("Reported success/termination disagrees with Cartesian error")
     if abs(error-float(info["error"])) > 1e-10:
         raise AssertionError("Reported error disagrees with Cartesian coordinates")
@@ -101,10 +105,12 @@ def run_case(env, task, mode, model=None, wrong_goal=None, max_steps=8, hold_ste
             action = fixed_action(env) if mode == "fixed" else model.predict(
                 policy_observation(obs, mode, wrong_goal), deterministic=True)[0]
             obs, _, term, trunc, info = env.step(action)
-            error = check_transition(obs, info, term, goal, env.tolerance_m)
+            error = check_transition(obs, info, term, goal, env.tolerance_m, env.terminate_on_success)
             row.update(steps=step+1, final_error_m=error, success=error <= env.tolerance_m)
             traces.append(trace_row(mode, task.seed, "reach", step+1, error, obs, info))
-            if term or trunc:
+            # This diagnostic deliberately measures first hit, then a separate
+            # continuation. The main evaluator measures the full fixed horizon.
+            if row["success"] or term or trunc:
                 break
         if row["success"] and mode == "actor" and hold_steps:
             errors = []
@@ -115,7 +121,7 @@ def run_case(env, task, mode, model=None, wrong_goal=None, max_steps=8, hold_ste
                 obs, _ = env.reset(options={"joints": env.equilibrium.joints.copy(), "goal": goal})
                 action = model.predict(obs, deterministic=True)[0]
                 obs, _, term, _, info = env.step(action)
-                error = check_transition(obs, info, term, goal, env.tolerance_m)
+                error = check_transition(obs, info, term, goal, env.tolerance_m, env.terminate_on_success)
                 errors.append(error)
                 row.update(hold_steps=step+1, hold_max_error_m=max(errors),
                            held_within_tolerance=bool(max(errors) <= env.tolerance_m))
@@ -182,10 +188,7 @@ def main():
     config = json.loads((args.model.parent/"config.json").read_text()) if args.model else {}
     if config and (config.get("plant") != JointConstrainedReachEnv.plant_version or config.get("observation_bounds_version") != 3):
         parser.error("This audit requires a simple-jacobian-rl checkpoint")
-    scales = config.get("action_scales", [.001]*3+[.05]*3)
-    env = JointConstrainedReachEnv(config.get("system", "ctr_0"),
-        tolerance_m=config.get("tolerance_m", .001), max_episode_steps=args.max_steps,
-        compute_jacobian=False, translation_step_m=scales[0], rotation_step_rad=scales[3])
+    env = make_reach_env(config, max_episode_steps=args.max_steps, compute_jacobian=False)
     model = load_actor(args.model, env) if any(m != "fixed" for m in args.modes) else None
     before_digest = None if model is None else policy_digest(model)
     before_updates = 0 if model is None else model._n_updates
@@ -219,6 +222,7 @@ def main():
         checkpoint=str(args.model) if args.model else None,
         checkpoint_timesteps=None if model is None else model.num_timesteps,
         episodes_per_mode=args.episodes, seed=args.seed, max_steps=args.max_steps,
+        task_profile=env.task_profile, task_settings=env.task_settings,
         tolerance_m=env.tolerance_m, elapsed_seconds=time.perf_counter()-started,
         semantics="Diagnostic only; original and reverse targets separated. Hold phases continue from reached q.",
         physics_costs=dict(env.costs), modes={})

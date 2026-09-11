@@ -16,6 +16,21 @@ from .solver import EquilibriumError, EquilibriumSolver
 from .sensitivity import equilibrium_sensitivity
 
 
+TASK_PROFILES = ("legacy", "generalized_hold")
+
+
+def make_reach_env(config, *, max_episode_steps=None, compute_jacobian=False, task_profile=None):
+    """Restore task semantics; checkpoints predating profiles remain legacy."""
+    settings = dict(config.get("task_settings", {}))
+    settings["task_profile"] = config.get("task_profile", "legacy") if task_profile is None else task_profile
+    scales = config.get("action_scales", [.001]*3+[.05]*3)
+    return JointConstrainedReachEnv(config.get("system", "ctr_0"),
+        tolerance_m=config.get("tolerance_m", .001),
+        max_episode_steps=config.get("episode_steps", 60) if max_episode_steps is None else max_episode_steps,
+        compute_jacobian=compute_jacobian,
+        translation_step_m=scales[0], rotation_step_rad=scales[len(scales)//2], **settings)
+
+
 class JointConstrainedReachEnv(gym.Env):
     metadata = {"render_modes": []}
     plant_version = "joint_constraints_v1"
@@ -24,7 +39,9 @@ class JointConstrainedReachEnv(gym.Env):
     def __init__(self, system_name="ctr_0", *, tolerance_m=.001,
                  max_episode_steps=60, witness_steps=4, tubes=None,
                  compute_jacobian=True, translation_step_m=.001,
-                 rotation_step_rad=.05):
+                 rotation_step_rad=.05, task_profile="legacy",
+                 initial_rotation_span_rad=.15, goal_steps_min=2, goal_steps_max=8,
+                 minimum_goal_distance_m=None, max_goal_sampling_attempts=32):
         super().__init__()
         if system_name not in CTR_SYSTEMS_PARAMETERS:
             raise ValueError("Unknown CTR system")
@@ -35,6 +52,29 @@ class JointConstrainedReachEnv(gym.Env):
         for value in (max_episode_steps, witness_steps):
             if isinstance(value, bool) or not isinstance(value, int) or value < 1:
                 raise ValueError("Episode and witness counts must be positive integers")
+        if task_profile not in TASK_PROFILES:
+            raise ValueError("Unknown task profile")
+        if not np.isfinite(initial_rotation_span_rad) or initial_rotation_span_rad < 0:
+            raise ValueError("Initial rotation span must be finite and nonnegative")
+        for value in (goal_steps_min, goal_steps_max, max_goal_sampling_attempts):
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                raise ValueError("Goal sampling counts must be positive integers")
+        if goal_steps_min > goal_steps_max:
+            raise ValueError("Goal step minimum exceeds maximum")
+        if minimum_goal_distance_m is None:
+            minimum_goal_distance_m = 2*tolerance_m
+        if not np.isfinite(minimum_goal_distance_m) or minimum_goal_distance_m <= tolerance_m:
+            raise ValueError("Minimum goal distance must be finite and exceed tolerance")
+        self.task_profile = task_profile
+        self.terminate_on_success = task_profile == "legacy"
+        self.task_settings = dict(initial_rotation_span_rad=float(initial_rotation_span_rad),
+            goal_steps_min=goal_steps_min, goal_steps_max=goal_steps_max,
+            minimum_goal_distance_m=float(minimum_goal_distance_m),
+            max_goal_sampling_attempts=max_goal_sampling_attempts)
+        self.goal_distribution = ("seeded aligned starts; goals from four joint-constrained commands; fixed tolerance"
+            if self.terminate_on_success else
+            "uniform common rotation plus independent bounded offsets; signed independent joint directions; "
+            "variable-length projected witnesses; nontrivial reachable endpoints")
         self.system_name = system_name
         self.solver = EquilibriumSolver(tubes if tubes is not None else
             [TubeParameters(**t) for t in CTR_SYSTEMS_PARAMETERS[system_name].values()])
@@ -59,6 +99,8 @@ class JointConstrainedReachEnv(gym.Env):
                           failed_calls=0, rhs_evaluations_known=0,
                           failed_calls_without_rhs_counts=0, call_seconds=0.)
         self.reset_attempts = self.failed_resets = self.transitions = self.jacobian_failures = 0
+        self.rejected_trivial_goals = 0
+        self.last_failed_solve_q = None
         self.equilibrium = self.goal = self._physics_cache = None
         self._finished = True
 
@@ -79,7 +121,11 @@ class JointConstrainedReachEnv(gym.Env):
 
     def _solve(self, q):
         # No previous torsion or history is used to choose the next root.
-        result = self._call("equilibrium", self.solver.solve, q)
+        try:
+            result = self._call("equilibrium", self.solver.solve, q)
+        except EquilibriumError:
+            self.last_failed_solve_q = np.asarray(q, dtype=float).tolist()
+            raise
         if not np.all(np.isfinite(result.tip)) or not np.array_equal(result.joints, q):
             raise EquilibriumError("Equilibrium result is nonfinite or belongs to different joints")
         return result
@@ -89,6 +135,10 @@ class JointConstrainedReachEnv(gym.Env):
             q = np.r_[self.np_random.uniform(-self.solver.lengths+self.solver.constraints.minimum_deployed, 0),
                       np.zeros(self.n)]
             if self.solver.constraints.is_feasible(q):
+                if not self.terminate_on_success:
+                    common = self.np_random.uniform(-np.pi, np.pi)
+                    span = self.task_settings["initial_rotation_span_rad"]
+                    q[self.n:] = common + self.np_random.uniform(-span, span, self.n)
                 return q
         raise RuntimeError("No feasible reset configuration found")
 
@@ -96,6 +146,28 @@ class JointConstrainedReachEnv(gym.Env):
         """Same extension projection and joint caps as ProjectedJacobianLoss."""
         dq = self.solver.constraints.project(q+self.action_scales*action)-q
         return dq/max(1., float(np.max(np.abs(dq/self.action_scales))))
+
+    def _sample_generalized_goal(self, initial):
+        """Sample signed endpoint witnesses, not a controller or an IK teacher.
+
+        Only trivial Cartesian endpoints are resampled. Numerical failures are
+        raised and counted, never silently filtered from the task distribution.
+        Endpoint reachability does not certify every intermediate equilibrium.
+        """
+        settings = self.task_settings
+        for attempt in range(1, settings["max_goal_sampling_attempts"]+1):
+            count = int(self.np_random.integers(settings["goal_steps_min"], settings["goal_steps_max"]+1))
+            action = self.np_random.uniform(-1., 1., 2*self.n)
+            target = initial.joints.copy()
+            for _ in range(count):
+                target += self.projected_delta(target, action)
+            goal = self._solve(target).tip
+            distance = np.linalg.norm(goal.astype(np.float32).astype(float)-initial.tip.astype(np.float32).astype(float))
+            if distance >= settings["minimum_goal_distance_m"]:
+                return goal, dict(goal_joint_witness=target.copy(), goal_witness_action=action.copy(),
+                                  goal_witness_steps=count, goal_sampling_attempts=attempt)
+            self.rejected_trivial_goals += 1
+        raise RuntimeError("No nontrivial reachable goal within the bounded sampling budget")
 
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
@@ -106,15 +178,19 @@ class JointConstrainedReachEnv(gym.Env):
             raise ValueError("Reset options support only joints and goal")
         self._finished = True
         self.equilibrium = self._physics_cache = None
+        self.last_failed_solve_q = None
         self.reset_attempts += 1
         before = dict(self.costs)
         try:
             q = self.solver.constraints._array(options["joints"]).copy() if "joints" in options else self._sample_joints()
             initial = self._solve(q)
+            goal_metadata = {}
             if "goal" in options:
                 goal = np.asarray(options["goal"], dtype=float)
                 if goal.shape != (3,) or not np.all(np.isfinite(goal)) or np.any(abs(goal) > self.length):
                     raise ValueError("Goal must be a finite Cartesian point within the declared bounds")
+            elif not self.terminate_on_success:
+                goal, goal_metadata = self._sample_generalized_goal(initial)
             else:
                 # Reachable joint-space witness; only its endpoint needs an FK
                 # solve. This reset path performs no sensitivity/stability calls.
@@ -129,7 +205,7 @@ class JointConstrainedReachEnv(gym.Env):
             obs = self._observation()
             info = self._task_info(obs)
             info.update(initial_q=q.copy(), trivial_goal=info["is_success"],
-                        reset_costs={k: self.costs[k]-before[k] for k in self.costs})
+                        reset_costs={k: self.costs[k]-before[k] for k in self.costs}, **goal_metadata)
             return obs, info
         except Exception:
             self.failed_resets += 1
@@ -154,17 +230,22 @@ class JointConstrainedReachEnv(gym.Env):
             return info.get("position_tolerance", self.tolerance_m)
         return np.asarray([item.get("position_tolerance", self.tolerance_m) for item in info])
 
-    def compute_terminated(self, achieved_goal, desired_goal, info):
+    def compute_success(self, achieved_goal, desired_goal, info):
         error = np.linalg.norm(np.asarray(achieved_goal, dtype=np.float64)-
                                np.asarray(desired_goal, dtype=np.float64), axis=-1)
         return error <= self._tolerances(info)
 
+    def compute_terminated(self, achieved_goal, desired_goal, info):
+        success = self.compute_success(achieved_goal, desired_goal, info)
+        # Goal relabelling changes rewards, never ends a continuing task.
+        return success if self.terminate_on_success else np.zeros_like(success, dtype=bool)
+
     def compute_reward(self, achieved_goal, desired_goal, info):
-        return -np.asarray(~np.asarray(self.compute_terminated(achieved_goal, desired_goal, info)), dtype=np.float32)
+        return -np.asarray(~np.asarray(self.compute_success(achieved_goal, desired_goal, info)), dtype=np.float32)
 
     def _task_info(self, obs):
         info = {"position_tolerance": self.tolerance_m}
-        info["is_success"] = bool(self.compute_terminated(obs["achieved_goal"], obs["desired_goal"], info))
+        info["is_success"] = bool(self.compute_success(obs["achieved_goal"], obs["desired_goal"], info))
         info["error"] = float(np.linalg.norm(obs["achieved_goal"].astype(float)-obs["desired_goal"].astype(float)))
         return info
 
@@ -213,7 +294,7 @@ class JointConstrainedReachEnv(gym.Env):
         self.steps += 1
         self.transitions += 1
         info = self._task_info(obs)
-        terminated = info["is_success"]
+        terminated = info["is_success"] and self.terminate_on_success
         truncated = self.steps >= self.max_episode_steps and not terminated
         self._finished = terminated or truncated
         executed = applied/self.action_scales

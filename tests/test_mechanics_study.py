@@ -103,7 +103,7 @@ def fixture_evaluation(folder,arm,seed,fp="same"):
 
 
 def test_report_checks_paired_tasks_and_marks_missing_runs(tmp_path):
-    c={**DEFAULTS,"seeds":[1,2],"total_timesteps":2,"final_episodes":1}
+    c={**DEFAULTS,"seeds":[1,2],"total_timesteps":2,"final_episodes":1,"task_profile":"legacy"}
     fixture_evaluation(tmp_path,"ddpg",1)
     fixture_evaluation(tmp_path,"jacobian",1)
     value=report({"config":c},tmp_path,final=True)
@@ -112,3 +112,17 @@ def test_report_checks_paired_tasks_and_marks_missing_runs(tmp_path):
     fixture_evaluation(tmp_path,"ddpg",2,fp="different")
     with pytest.raises(ValueError,match="tasks differ"):
         report({"config":c},tmp_path,final=True)
+
+
+def test_report_rejects_legacy_results_for_a_generalized_hold_study(tmp_path):
+    c={**DEFAULTS,"seeds":[1],"total_timesteps":2,"final_episodes":1}
+    fixture_evaluation(tmp_path,"ddpg",1)
+    with pytest.raises(ValueError,match="task profile"):
+        report({"config":c},tmp_path,final=True)
+
+
+def test_generalized_study_window_validation():
+    with pytest.raises(ValueError,match="Holding window"):
+        validate_config({**DEFAULTS,"hold_steps":61})
+    with pytest.raises(ValueError,match="goal step"):
+        validate_config({**DEFAULTS,"goal_steps_min":10,"goal_steps_max":3})

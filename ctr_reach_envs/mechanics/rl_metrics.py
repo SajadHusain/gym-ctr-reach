@@ -2,6 +2,42 @@
 import numpy as np
 
 
+class ReachHoldMetrics:
+    """First-hit reaching and final-window holding, measured independently.
+
+    Holding requires every error in the final K executed steps to satisfy the
+    tolerance. One late hit or a short/interrupted trajectory cannot count.
+    This is an empirical criterion, not a stability certificate.
+    """
+    def __init__(self, tolerance_m, hold_steps=10):
+        if not np.isfinite(tolerance_m) or tolerance_m <= 0:
+            raise ValueError("Tolerance must be positive and finite")
+        if isinstance(hold_steps, bool) or not isinstance(hold_steps, int) or hold_steps < 1:
+            raise ValueError("Holding window must be a positive integer")
+        self.tolerance_m, self.hold_steps = float(tolerance_m), hold_steps
+        self.errors = []
+
+    def add(self, error_m):
+        if not np.isfinite(error_m) or error_m < 0:
+            raise ValueError("Error must be finite and nonnegative")
+        self.errors.append(float(error_m))
+
+    def summary(self, *, episode_complete=True):
+        errors = np.asarray(self.errors)
+        hits = np.flatnonzero(errors <= self.tolerance_m)
+        full = len(errors) >= self.hold_steps
+        window = errors[-self.hold_steps:]
+        return dict(reached=bool(len(hits)),
+            first_success_step=int(hits[0])+1 if len(hits) else None,
+            final_success=bool(len(errors) and errors[-1] <= self.tolerance_m),
+            sustained_success=bool(episode_complete and full and np.all(window <= self.tolerance_m)),
+            hold_window_steps=self.hold_steps, hold_window_observed=full,
+            hold_window_max_error_m=float(window.max()) if full else None,
+            hold_window_rms_error_m=float(np.sqrt(np.mean(window**2))) if full else None,
+            within_tolerance_fraction=float(np.mean(errors <= self.tolerance_m)) if len(errors) else None,
+            post_first_hit_max_error_m=float(errors[hits[0]:].max()) if len(hits) else None)
+
+
 class EpisodeMotion:
     def __init__(self, joint_count):
         self.n = joint_count

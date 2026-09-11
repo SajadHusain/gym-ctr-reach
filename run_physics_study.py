@@ -15,6 +15,7 @@ import sys
 
 import numpy as np
 from ctr_reach_envs.mechanics.rl_exploration import exploration_settings
+from ctr_reach_envs.mechanics.simple_rl_env import TASK_PROFILES
 
 ROOT = Path(__file__).resolve().parent
 ARMS = {
@@ -26,6 +27,8 @@ DEFAULTS = dict(seeds=[7100,7101,7102,7103,7104], arms=["ddpg","jacobian"],
                 checkpoint_freq=500, buffer_size=20000, batch_size=128,
                 hidden_width=256, layers=3, learning_rate=.0005, noise_std=None,
                 exploration_profile="paper", random_exploration=None,
+                task_profile="generalized_hold", hold_steps=10,
+                initial_rotation_span_rad=.15, goal_steps_min=2, goal_steps_max=8,
                 physics_weight=.1, physics_final_weight=.1, physics_anneal_steps=10000,
                 system="ctr_0", tolerance_m=.001, eval_episodes=20, eval_steps=60,
                 eval_seed=810000, final_seed=910000, final_episodes=1000)
@@ -72,6 +75,16 @@ def validate_config(c):
         if not np.isfinite(c[key]) or c[key] < 0:
             raise ValueError(f"Invalid {key}")
     exploration_settings(c.get("exploration_profile","gaussian"),c.get("noise_std"),c.get("random_exploration"))
+    if c.get("task_profile", "legacy") not in TASK_PROFILES:
+        raise ValueError("Unknown task profile")
+    if c.get("hold_steps", 10) < 1:
+        raise ValueError("Holding window must be positive")
+    if c.get("task_profile", "legacy") == "generalized_hold" and c["hold_steps"] > min(c["episode_steps"],c["eval_steps"]):
+        raise ValueError("Holding window must fit training and evaluation horizons")
+    if not np.isfinite(c.get("initial_rotation_span_rad",.15)) or c.get("initial_rotation_span_rad",.15) < 0:
+        raise ValueError("Initial rotation span must be finite and nonnegative")
+    if not 1 <= c.get("goal_steps_min",2) <= c.get("goal_steps_max",8):
+        raise ValueError("Invalid goal step bounds")
     if c["eval_seed"] < 0 or c["final_seed"] < 0:
         raise ValueError("Evaluation seeds must be nonnegative")
     dev = set(range(c["eval_seed"], c["eval_seed"]+c["eval_episodes"]))
@@ -118,6 +131,9 @@ def train(plan, folder):
                       "buffer_size", "batch_size", "hidden_width", "layers", "learning_rate",
                       "system", "tolerance_m", "physics_anneal_steps")}
             params["exploration_profile"] = c.get("exploration_profile","gaussian")
+            params["task_profile"] = c.get("task_profile", "legacy")
+            for key in ("hold_steps","initial_rotation_span_rad","goal_steps_min","goal_steps_max"):
+                if key in c: params[key] = c[key]
             for key in ("noise_std","random_exploration"):
                 if c.get(key) is not None: params[key] = c[key]
             params.update(seed=seed, guidance=ARMS[arm]["guidance"],
@@ -146,7 +162,7 @@ def evaluate(plan, folder, final=False):
                 args = command("evaluate_physics_ddpg_her.py", dict(
                     episodes=c["final_episodes"] if final else c["eval_episodes"],
                     max_steps=c["eval_steps"], seed=c["final_seed"] if final else c["eval_seed"],
-                    modes=["actor"], output_dir=out))
+                    modes=["actor"], hold_steps=c.get("hold_steps",10), output_dir=out))
                 args.insert(2,str(checkpoint/"model.zip"))
                 args.append("--record-trajectories")
                 run_command(args,out)
@@ -182,6 +198,11 @@ def report(plan, folder, final=False):
                         or result["first_seed"]!=expected_seed or result["max_steps"]!=c["eval_steps"]
                         or result["tolerance_m"]!=c["tolerance_m"]):
                     raise ValueError(f"Mismatched evaluation: {out}")
+                if result.get("task_profile","legacy") != c.get("task_profile","legacy"):
+                    raise ValueError(f"Mismatched evaluation task profile: {out}")
+                if c.get("task_profile","legacy") == "generalized_hold" and (
+                        result.get("success_definition") != "final_hold_window" or result.get("hold_steps") != c["hold_steps"]):
+                    raise ValueError(f"Mismatched sustained-success definition: {out}")
                 with (out/"episodes.csv").open(newline="",encoding="utf-8") as stream:
                     episode_rows=list(csv.DictReader(stream))
                 for mode, values in result["modes"].items():
@@ -199,6 +220,9 @@ def report(plan, folder, final=False):
                     datasets[(arm,seed,step,mode)]=episodes
                     row={"arm":arm,"training_seed":seed,"timesteps":step,"mode":mode,
                          "success_rate":values["success_rate"],"final_error_m":values["mean_error_m_on_completed_steps"],
+                         "reaching_success_rate":values.get("reaching_success_rate",values["success_rate"]),
+                         "sustained_success_rate":values.get("sustained_success_rate"),
+                         "hold_window_max_error_m":values.get("mean_hold_window_max_error_m"),
                          "evaluation_failures":values["failures"],"gradient_updates":budget["gradient_updates"],
                          "training_seconds":budget["training_seconds"],
                          "training_equilibrium_calls":budget["physics_costs_including_resets_and_witnesses"]["equilibrium_calls"],
@@ -222,7 +246,8 @@ def report(plan, folder, final=False):
         if base not in c["arms"] or guided not in c["arms"]:continue
         by_key={(r["arm"],r["training_seed"],r["timesteps"],r["mode"]):r for r in rows}
         per_metric={}
-        for metric in ("success_rate","final_error_m","executed_action_change_rms","proposed_action_change_rms",
+        for metric in ("success_rate","reaching_success_rate","sustained_success_rate","hold_window_max_error_m",
+                       "final_error_m","executed_action_change_rms","proposed_action_change_rms",
                        "training_seconds","training_equilibrium_calls"):
             deltas=[]
             for seed in c["seeds"]:
@@ -259,7 +284,9 @@ def report(plan, folder, final=False):
              "plant":"joint_constraints_v1",
              "evaluation_failures":sum(r["evaluation_failures"] for r in rows),"contrasts":contrasts,
              "uncertainty_unit":"paired training seed; percentile bootstrap is descriptive, especially with few seeds",
-             "scope":"local witness goals and aligned starts; finite command differences, no physical acceleration/jerk",
+             "task_profile":c.get("task_profile","legacy"),
+             "success_definition":"final_hold_window" if c.get("task_profile","legacy") == "generalized_hold" else "first_hit",
+             "scope":"configured reachable-witness distribution; finite command differences, no physical acceleration/jerk or global stability guarantee",
              "final_evaluation":final,"sample_efficiency_improvement_demonstrated":False,
              "note":"Interpret success, error, motion and cost jointly; empty common-success metrics are not zero."}
     write_json(folder/f"{prefix}_report.json",summary)
@@ -277,6 +304,7 @@ def main():
         else:kwargs["type"]=float if value is None else type(value)
         if name=="system":kwargs["choices"]=[f"ctr_{i}" for i in range(4)]
         if name=="exploration_profile":kwargs["choices"]=["paper","gaussian"]
+        if name=="task_profile":kwargs["choices"]=TASK_PROFILES
         p.add_argument("--"+name.replace("_","-"),**kwargs)
     a=p.parse_args();folder=a.output_dir.resolve();path=folder/"study.json"
     overrides={k:getattr(a,k) for k in DEFAULTS if getattr(a,k) is not None}
@@ -299,8 +327,8 @@ def main():
         folder.mkdir(parents=True,exist_ok=True)
         plan={"schema_version":2,"plant":"joint_constraints_v1","config":config,"source_hashes":source_hashes(),"runtime_versions":runtime_versions(),
               "exploration":exploration_settings(config["exploration_profile"],config["noise_std"],config["random_exploration"]),
-              "primary_endpoint":"unassisted actor success at the configured tolerance on held-out tasks at a fixed interaction budget",
-              "secondary_endpoints":["error","command variation","solver work","wall time","interventions"],
+              "primary_endpoint":"unassisted actor final-window sustained success" if config["task_profile"] == "generalized_hold" else "unassisted actor first-hit success",
+              "secondary_endpoints":["first-hit reaching","terminal error","final-window maximum error","command variation","solver work","wall time","interventions"],
               "selection_rule":"final fixed-budget checkpoint; development episodes are not final-test episodes",
               "seed_matching":"same initial network/noise seed and episode-index reset stream, trajectories may diverge"}
         write_json(path,plan)

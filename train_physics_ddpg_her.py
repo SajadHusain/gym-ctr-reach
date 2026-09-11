@@ -16,12 +16,12 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.noise import NormalActionNoise
 
 from ctr_reach_envs.paper_policy import PaperMlpPolicy
-from ctr_reach_envs.mechanics.simple_rl_env import JointConstrainedReachEnv
+from ctr_reach_envs.mechanics.simple_rl_env import JointConstrainedReachEnv, TASK_PROFILES
 from ctr_reach_envs.mechanics.rl_policy import EquilibriumStateExtractor
 from ctr_reach_envs.mechanics.rl_replay import ExecutedActionHerReplayBuffer
 from ctr_reach_envs.mechanics.rl_jacobian import JacobianDDPG, JacobianHerReplayBuffer
 from ctr_reach_envs.mechanics.rl_exploration import ExplorationDDPG, exploration_settings
-from ctr_reach_envs.mechanics.rl_metrics import EpisodeMotion
+from ctr_reach_envs.mechanics.rl_metrics import EpisodeMotion, ReachHoldMetrics
 
 
 class AuditCallback(BaseCallback):
@@ -35,6 +35,8 @@ class AuditCallback(BaseCallback):
         self.started = time.perf_counter()
         self.update_stream,self.update_writer,self.last_logged_update = update_stream,None,-1
         self.motion=EpisodeMotion(plant.n)
+        self.hold_steps = (config or {}).get("hold_steps", 10)
+        self.reaching = ReachHoldMetrics(plant.tolerance_m, self.hold_steps)
         self.checkpoint_freq,self.output_dir,self.config=checkpoint_freq,output_dir,config
         self.saved_steps=set()
 
@@ -86,6 +88,7 @@ class AuditCallback(BaseCallback):
         # Only actions are used here; terminal-observation resets cannot leak
         # into action-difference statistics.
         self.motion.add(info)
+        self.reaching.add(info["error"])
         self.replaced += int(info["action_replaced"])
         self.decrease_verified += int(info["numerical_decrease_verified"])
         self.fallbacks += int(info["action_source"].startswith("jacobian"))
@@ -95,7 +98,11 @@ class AuditCallback(BaseCallback):
                    "truncated": info.get("TimeLimit.truncated",False),
                    "cumulative_equilibrium_calls": self.plant.costs["equilibrium_calls"]}
             row.update(self.motion.summary())
+            row.update(self.reaching.summary())
+            if not self.plant.terminate_on_success:
+                row["success"] = row["sustained_success"]
             self.motion=EpisodeMotion(self.plant.n)
+            self.reaching=ReachHoldMetrics(self.plant.tolerance_m, self.hold_steps)
             self.rows.append(row)
             if self.writer is None:
                 self.writer = csv.DictWriter(self.stream, fieldnames=list(row)); self.writer.writeheader()
@@ -128,6 +135,14 @@ def arguments():
                    help="Compatibility option; this trainer uses the actor without a controller wrapper")
     p.add_argument("--system",choices=[f"ctr_{i}" for i in range(4)],default="ctr_0")
     p.add_argument("--tolerance-m",type=float,default=.001)
+    p.add_argument("--task-profile", choices=TASK_PROFILES, default="generalized_hold",
+                   help="generalized_hold: signed reachable goals and no success termination; legacy: reproduce the old task")
+    p.add_argument("--hold-steps", type=int, default=10,
+                   help="Report sustained success over the final K steps; does not change rewards or terminate an episode")
+    p.add_argument("--initial-rotation-span-rad", type=float, default=.15,
+                   help="Independent tube-angle offsets about a common angle sampled uniformly from [-pi, pi]")
+    p.add_argument("--goal-steps-min", type=int, default=2)
+    p.add_argument("--goal-steps-max", type=int, default=8)
     p.add_argument("--seed",type=int,default=7101)
     p.add_argument("--progress-every",type=int,default=100)
     p.add_argument("--physics-weight",type=float,default=.1)
@@ -144,6 +159,12 @@ def arguments():
     if a.total_timesteps<=a.learning_starts:p.error("Run beyond learning-starts to test actual updates")
     if a.buffer_size<=2*a.episode_steps:p.error("buffer-size must exceed two episode lengths")
     if a.seed<0:p.error("Invalid seed")
+    if a.hold_steps < 1 or (a.task_profile == "generalized_hold" and a.hold_steps > a.episode_steps):
+        p.error("Holding window must be positive and fit the generalized episode")
+    if not np.isfinite(a.initial_rotation_span_rad) or a.initial_rotation_span_rad < 0:
+        p.error("Initial rotation span must be finite and nonnegative")
+    if not 1 <= a.goal_steps_min <= a.goal_steps_max:
+        p.error("Need 1 <= goal-steps-min <= goal-steps-max")
     try: exploration_settings(a.exploration_profile,a.noise_std,a.random_exploration)
     except ValueError as exc: p.error(str(exc))
     if not np.isfinite(a.learning_rate) or a.learning_rate<=0:p.error("Invalid learning rate")
@@ -161,7 +182,9 @@ def main():
     torch.set_num_threads(1)
     physics_enabled = max(a.physics_weight,a.physics_final_weight)>0
     plant=JointConstrainedReachEnv(a.system,tolerance_m=a.tolerance_m,
-                                  max_episode_steps=a.episode_steps,compute_jacobian=physics_enabled)
+        max_episode_steps=a.episode_steps,compute_jacobian=physics_enabled,
+        task_profile=a.task_profile, initial_rotation_span_rad=a.initial_rotation_span_rad,
+        goal_steps_min=a.goal_steps_min, goal_steps_max=a.goal_steps_max)
     env=plant
     replay_action_semantics = "proposal"
     exploration = exploration_settings(a.exploration_profile,a.noise_std,a.random_exploration,plant.n*2)
@@ -177,7 +200,12 @@ def main():
         "solver_options":asdict(plant.solver.options),"integrator":"scale_safe_dop853_v1",
         "observation_bounds_version":plant.observation_bounds_version,
         "model_fingerprint":plant.solver.model_fingerprint,
-        "goal_distribution":"seeded aligned starts; goals from four joint-constrained commands; fixed tolerance",
+        "goal_distribution":plant.goal_distribution,"task_settings":plant.task_settings,
+        "task_semantics_version":1,
+        "success_definition":"first_hit" if plant.terminate_on_success else "final_hold_window",
+        "reward_semantics":"0 within tolerance, -1 outside, recomputed for every real/HER transition",
+        "episode_semantics":"terminate on success" if plant.terminate_on_success else
+            "continuing reaching-and-holding task; fixed collection horizon truncates and bootstraps, including at success",
         "critic_target_policy":"raw actor proposal to the joint-constrained plant",
         "actor_physics_loss":physics_enabled,
         "jacobian_method":"Burgner 2014 Eqs. (6)-(7); analytical variational ODE, unloaded specialization, spatial-to-tip conversion",
@@ -226,6 +254,9 @@ def main():
             "exploration":exploration,"exploration_proposal_counts":dict(model.exploration_counts),
             "gradient_updates":model._n_updates,"completed_episodes":len(callback.rows),
             "rollout_successes":sum(r["success"] for r in callback.rows),
+            "rollout_reaches":sum(r["reached"] for r in callback.rows),
+            "rollout_sustained_successes":sum(r["sustained_success"] for r in callback.rows),
+            "task_profile":a.task_profile,"success_definition":config["success_definition"],
             "actor_parameters_changed":any(not torch.equal(x,p) for x,p in zip(actor,model.actor.parameters())),
             "critic_parameters_changed":any(not torch.equal(x,p) for x,p in zip(critic,model.critic.parameters())),
             "all_parameters_finite":all(bool(torch.isfinite(p).all()) for p in model.policy.parameters()),
@@ -237,10 +268,12 @@ def main():
             "physics_actor_updates":getattr(model,"physics_update_count",0),
             "last_physics_metrics":getattr(model,"last_physics_metrics",{}),
             "reset_attempts":plant.reset_attempts,"failed_resets":plant.failed_resets,
+            "rejected_trivial_goals":plant.rejected_trivial_goals,
+            "last_failed_solve_q":plant.last_failed_solve_q,
             "physics_costs_including_resets_and_witnesses":plant.costs,
             "elapsed_seconds":time.perf_counter()-started,
             "plant":plant.plant_version,"jacobian_failures":plant.jacobian_failures,
-            "scope":"joint-constrained local-goal task; optional Jacobian actor loss",
+            "scope":plant.goal_distribution+"; optional Jacobian actor loss; no holding or stability guarantee",
             "global_convergence_certified":False,"sample_efficiency_improvement_demonstrated":False}
         (a.output_dir/"summary.json").write_text(json.dumps(summary,indent=2,allow_nan=False)+"\n",encoding="utf-8")
     env.close()

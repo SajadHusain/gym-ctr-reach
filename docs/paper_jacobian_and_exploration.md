@@ -1,5 +1,11 @@
 # Analytical CTR Jacobian and matched exploration
 
+New training runs now default to the generalized reaching-and-holding task
+described in [generalized_reach_hold.md](generalized_reach_hold.md). The Jacobian
+and exploration equations below are unchanged. Use `--task-profile legacy` to
+retain the earlier aligned-start, success-terminated task; old checkpoints still
+load with those original evaluation semantics.
+
 This implementation uses the analytical sensitivity method of Burgner et al.,
 *A Telerobotic System for Transnasal Surgery*, IEEE/ASME Transactions on
 Mechatronics, 19(3), 996–1006 (2014),
