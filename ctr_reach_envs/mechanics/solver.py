@@ -19,6 +19,10 @@ class EquilibriumError(RuntimeError):
     """No validated numerical equilibrium was obtained within the solve budget."""
 
 
+class _RetryBudgetExceeded(RuntimeError):
+    """End the local root retry without resetting the shared solve counters."""
+
+
 @dataclass(frozen=True)
 class SolverOptions:
     rtol: float = 1e-8
@@ -28,16 +32,21 @@ class SolverOptions:
     max_shooting_evaluations: int = 250
     max_rhs_evaluations: int = 500_000
     samples_per_segment: int = 17
+    # Missing fields in old checkpoint configs preserve their numerical map.
+    shooting_strategy: str = "legacy"
+    max_restart_evaluations: int = 200
 
     def __post_init__(self):
         for key in ("rtol", "atol", "max_step", "boundary_tolerance"):
             value = getattr(self, key)
             if not np.isfinite(value) or value <= 0:
                 raise ValueError(f"{key} must be finite and positive")
-        for key in ("max_shooting_evaluations", "max_rhs_evaluations", "samples_per_segment"):
+        for key in ("max_shooting_evaluations", "max_rhs_evaluations", "samples_per_segment", "max_restart_evaluations"):
             value = getattr(self, key)
             if isinstance(value, bool) or int(value) != value or value < (2 if key == "samples_per_segment" else 1):
                 raise ValueError(f"Invalid {key}")
+        if self.shooting_strategy not in ("legacy", "hybr_restarts"):
+            raise ValueError("Unknown shooting strategy")
 
 
 @dataclass(frozen=True)
@@ -183,6 +192,48 @@ class EquilibriumSolver:
             solution = root(residual, z0, method="hybr", options={"xtol": 1e-9, "maxfev": opt.max_shooting_evaluations})
             z, root_message = solution.x, str(solution.message)
         final = residual(z)
+        retry = {"root_restart_attempts": 0, "root_restart_accepted": False,
+                 "root_restart_evaluations": 0, "root_restart_message": "not_attempted",
+                 "root_restart_seed": None}
+        if (np.max(np.abs(final)) > opt.boundary_tolerance and initial_torsion is None
+                and opt.shooting_strategy == "hybr_restarts"):
+            # Fixed, goal/history-independent guesses for z = L * base torsion.
+            # Project each signed unit vector onto zero total base torque.
+            # This is a bounded numerical search, not an elastic-stability test.
+            retry_start = counters["shooting_evaluations"]
+
+            def retry_residual(candidate):
+                if counters["shooting_evaluations"]-retry_start >= opt.max_restart_evaluations:
+                    raise _RetryBudgetExceeded("Root restart evaluation budget exceeded")
+                return residual(candidate)
+
+            for axis in range(n):
+                if retry["root_restart_accepted"]:
+                    break
+                for sign in (-1, 1):
+                    guess = sign*np.eye(n)[axis]
+                    guess -= (self.gj @ guess)/self.gj.sum()
+                    if not np.any(guess):
+                        continue
+                    retry["root_restart_attempts"] += 1
+                    try:
+                        trial = root(retry_residual, guess, method="hybr",
+                                     options={"xtol": 1e-9, "maxfev": 45})
+                        error = retry_residual(trial.x)
+                        retry["root_restart_message"] = str(trial.message)
+                        # scipy success alone is never an acceptance criterion.
+                        if np.max(np.abs(error)) <= opt.boundary_tolerance:
+                            z, final, root_message = trial.x, error, str(trial.message)
+                            retry["root_restart_accepted"] = True
+                            retry["root_restart_seed"] = {"axis": axis, "sign": sign}
+                            break
+                    except _RetryBudgetExceeded as exc:
+                        retry["root_restart_message"] = str(exc)
+                        break
+                    finally:
+                        retry["root_restart_evaluations"] = counters["shooting_evaluations"]-retry_start
+                if retry["root_restart_evaluations"] >= opt.max_restart_evaluations:
+                    break
         used_continuation = False
         continuation_stages = 0
         if np.max(np.abs(final)) > opt.boundary_tolerance and initial_torsion is None:
@@ -225,6 +276,8 @@ class EquilibriumSolver:
         intrinsic_squared = np.array([t.x_curvature**2+t.y_curvature**2 for t in self.tubes])
         guide_energy = 0.5*np.sum(self.gj*(-beta)*eta**2 + self.ei*guide_curved*intrinsic_squared)
         diag = {**counters, "options": asdict(opt), "integrator": "scale_safe_dop853_v1", "root_message": root_message,
+                "shooting_algorithm": "hybr_restarts_continuation_v2" if opt.shooting_strategy == "hybr_restarts" else "hybr_continuation_v1",
+                **retry,
                 "model_fingerprint": self.model_fingerprint,
                 "boundary_residual_scaled": float(np.max(np.abs(final_shape_residual))),
                 "base_torque_sum_nm": float(self.gj @ eta),

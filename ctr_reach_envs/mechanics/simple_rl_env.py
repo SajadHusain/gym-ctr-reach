@@ -101,6 +101,7 @@ class JointConstrainedReachEnv(gym.Env):
         # Keep the cost schema compatible with previous study tables; stability
         # calls remain identically zero in this environment.
         self.costs = dict(equilibrium_calls=0, sensitivity_calls=0, stability_calls=0,
+                          root_recovery_solves=0,
                           failed_calls=0, rhs_evaluations_known=0,
                           failed_calls_without_rhs_counts=0, call_seconds=0.)
         self.reset_attempts = self.failed_resets = self.transitions = self.jacobian_failures = 0
@@ -133,6 +134,7 @@ class JointConstrainedReachEnv(gym.Env):
             raise
         if not np.all(np.isfinite(result.tip)) or not np.array_equal(result.joints, q):
             raise EquilibriumError("Equilibrium result is nonfinite or belongs to different joints")
+        self.costs["root_recovery_solves"] += int(result.diagnostics.get("root_restart_accepted", False))
         return result
 
     def _sample_joints(self):

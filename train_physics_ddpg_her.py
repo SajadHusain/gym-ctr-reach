@@ -148,6 +148,8 @@ def arguments():
     p.add_argument("--goal-steps-max", type=int, default=8)
     p.add_argument("--max-shooting-evaluations", type=int, default=500,
                    help="Per-equilibrium nonlinear shooting budget; stored in every checkpoint config")
+    p.add_argument("--shooting-strategy", choices=["legacy", "hybr_restarts"], default="hybr_restarts",
+                   help="hybr_restarts: bounded full-curvature retry before continuation; legacy: original solver path")
     p.add_argument("--seed",type=int,default=7101)
     p.add_argument("--progress-every",type=int,default=100)
     p.add_argument("--physics-weight",type=float,default=.1)
@@ -196,7 +198,8 @@ def main():
     a.output_dir.mkdir(parents=True,exist_ok=True)
     torch.set_num_threads(1)
     physics_enabled = max(a.physics_weight,a.physics_final_weight)>0
-    solver_options = SolverOptions(max_shooting_evaluations=a.max_shooting_evaluations)
+    solver_options = SolverOptions(max_shooting_evaluations=a.max_shooting_evaluations,
+                                   shooting_strategy=a.shooting_strategy)
     plant=JointConstrainedReachEnv(a.system,tolerance_m=a.tolerance_m,
         max_episode_steps=a.episode_steps,compute_jacobian=physics_enabled,
         task_profile=a.task_profile, initial_rotation_span_rad=a.initial_rotation_span_rad,
