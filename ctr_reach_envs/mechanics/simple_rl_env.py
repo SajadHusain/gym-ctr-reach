@@ -16,7 +16,7 @@ from .solver import EquilibriumError, EquilibriumSolver, SolverOptions
 from .sensitivity import equilibrium_sensitivity
 
 
-TASK_PROFILES = ("legacy", "generalized_hold")
+TASK_PROFILES = ("legacy", "generalized_reach", "generalized_hold")
 
 
 def make_reach_env(config, *, max_episode_steps=None, compute_jacobian=False, task_profile=None):
@@ -68,13 +68,13 @@ class JointConstrainedReachEnv(gym.Env):
         if not np.isfinite(minimum_goal_distance_m) or minimum_goal_distance_m <= tolerance_m:
             raise ValueError("Minimum goal distance must be finite and exceed tolerance")
         self.task_profile = task_profile
-        self.terminate_on_success = task_profile == "legacy"
+        self.terminate_on_success = task_profile != "generalized_hold"
         self.task_settings = dict(initial_rotation_span_rad=float(initial_rotation_span_rad),
             goal_steps_min=goal_steps_min, goal_steps_max=goal_steps_max,
             minimum_goal_distance_m=float(minimum_goal_distance_m),
             max_goal_sampling_attempts=max_goal_sampling_attempts)
         self.goal_distribution = ("seeded aligned starts; goals from four joint-constrained commands; fixed tolerance"
-            if self.terminate_on_success else
+            if task_profile == "legacy" else
             "uniform common rotation plus independent bounded offsets; signed independent joint directions; "
             "variable-length projected witnesses; nontrivial reachable endpoints")
         self.system_name = system_name
@@ -140,7 +140,7 @@ class JointConstrainedReachEnv(gym.Env):
             q = np.r_[self.np_random.uniform(-self.solver.lengths+self.solver.constraints.minimum_deployed, 0),
                       np.zeros(self.n)]
             if self.solver.constraints.is_feasible(q):
-                if not self.terminate_on_success:
+                if self.task_profile != "legacy":
                     common = self.np_random.uniform(-np.pi, np.pi)
                     span = self.task_settings["initial_rotation_span_rad"]
                     q[self.n:] = common + self.np_random.uniform(-span, span, self.n)
@@ -194,7 +194,7 @@ class JointConstrainedReachEnv(gym.Env):
                 goal = np.asarray(options["goal"], dtype=float)
                 if goal.shape != (3,) or not np.all(np.isfinite(goal)) or np.any(abs(goal) > self.length):
                     raise ValueError("Goal must be a finite Cartesian point within the declared bounds")
-            elif not self.terminate_on_success:
+            elif self.task_profile != "legacy":
                 goal, goal_metadata = self._sample_generalized_goal(initial)
             else:
                 # Reachable joint-space witness; only its endpoint needs an FK

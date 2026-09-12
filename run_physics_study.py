@@ -31,6 +31,7 @@ DEFAULTS = dict(seeds=[7100,7101,7102,7103,7104], arms=["ddpg","jacobian"],
                 initial_rotation_span_rad=.15, goal_steps_min=2, goal_steps_max=8,
                 max_shooting_evaluations=500,
                 physics_weight=.1, physics_final_weight=.1, physics_anneal_steps=10000,
+                physics_integration="rl_priority", physics_max_aux_ratio=1., actor_max_backtracks=6,
                 system="ctr_0", tolerance_m=.001, eval_episodes=20, eval_steps=60,
                 eval_seed=810000, final_seed=910000, final_episodes=1000)
 
@@ -78,6 +79,12 @@ def validate_config(c):
     exploration_settings(c.get("exploration_profile","gaussian"),c.get("noise_std"),c.get("random_exploration"))
     if c.get("task_profile", "legacy") not in TASK_PROFILES:
         raise ValueError("Unknown task profile")
+    if c.get("physics_integration", "sum") not in ("sum", "rl_priority"):
+        raise ValueError("Unknown physics integration")
+    if not np.isfinite(c.get("physics_max_aux_ratio", 1.)) or c.get("physics_max_aux_ratio", 1.) <= 0:
+        raise ValueError("Invalid auxiliary norm ratio")
+    if c.get("actor_max_backtracks", 6) < 0:
+        raise ValueError("Negative actor backtrack budget")
     if c.get("hold_steps", 10) < 1:
         raise ValueError("Holding window must be positive")
     if c.get("task_profile", "legacy") == "generalized_hold" and c["hold_steps"] > min(c["episode_steps"],c["eval_steps"]):
@@ -135,8 +142,10 @@ def train(plan, folder):
                       "system", "tolerance_m", "physics_anneal_steps")}
             params["exploration_profile"] = c.get("exploration_profile","gaussian")
             params["task_profile"] = c.get("task_profile", "legacy")
+            # Old frozen plans must retain their original weighted-sum update.
+            params["physics_integration"] = c.get("physics_integration", "sum")
             for key in ("hold_steps","initial_rotation_span_rad","goal_steps_min","goal_steps_max",
-                        "max_shooting_evaluations"):
+                        "max_shooting_evaluations","physics_max_aux_ratio","actor_max_backtracks"):
                 if key in c: params[key] = c[key]
             for key in ("noise_std","random_exploration"):
                 if c.get(key) is not None: params[key] = c[key]

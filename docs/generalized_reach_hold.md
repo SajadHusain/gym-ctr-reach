@@ -6,6 +6,11 @@ successful step. It is now the default for **new training runs and new study
 plans**. Existing checkpoints without `task_profile` still evaluate on the
 legacy task. Use `--task-profile legacy` to explicitly reproduce old training.
 
+The optional `--task-profile generalized_reach` uses identical generalized
+start/goal sampling and stops at first hit. Use it for reaching experiments;
+holding remains a separate endpoint. New runs also support RL-priority Jacobian
+gradient integration, documented in [rl_priority_jacobian.md](rl_priority_jacobian.md).
+
 These changes provide a learning task and measurements for broader reaching
 and holding. They do not demonstrate improved performance before retraining
 and matched evaluation, and they do not provide a stability guarantee.
@@ -46,11 +51,12 @@ budget is stored in checkpoint configuration and reconstructed by evaluation;
 both comparison arms use the same value. This removes that confirmed budget
 failure but does not guarantee that every possible configuration will converge.
 
-The paper-form analytical Jacobian, actor loss, six-joint action limits,
+The paper-form analytical Jacobian, six-joint action limits,
 egocentric encoding, actor/critic architecture, HER future-goal sampling,
-optimizer settings and exploration profile remain unchanged. The baseline and
-guided runs differ in the Jacobian actor-loss weight and the associated
-sensitivity work. No branch tracker, stability test, controller wrapper,
+exploration profile and critic objective remain unchanged. The baseline and
+guided runs differ in the Jacobian actor-loss weight, configured actor-gradient
+integration and associated sensitivity work. The `sum` integration retains the
+old weighted loss; `rl_priority` additionally checks actor updates. No branch tracker, stability test, controller wrapper,
 near-goal action override or temporal smoothness penalty is introduced.
 
 ## Reward, holding and HER consistency
@@ -89,7 +95,7 @@ For horizon H and holding window K (default H=60, K=10):
 - `sustained_success_rate`: the episode completes and all errors at steps
   H-K+1 through H are <= epsilon.
 - `success_rate`: equals sustained success for `generalized_hold`, and first-hit
-  success for `legacy`. Always compare the same `success_definition`.
+  success for `legacy` and `generalized_reach`. Always compare the same `success_definition`.
 - `first_success_step`: first hit, or null if none. Initial trivial goals remain
   separately flagged; sampled generalized tasks exclude them.
 - `hold_window_max_error_m` and `hold_window_rms_error_m`: maximum and RMS error

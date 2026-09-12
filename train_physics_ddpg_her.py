@@ -21,6 +21,7 @@ from ctr_reach_envs.mechanics.solver import SolverOptions
 from ctr_reach_envs.mechanics.rl_policy import EquilibriumStateExtractor
 from ctr_reach_envs.mechanics.rl_replay import ExecutedActionHerReplayBuffer
 from ctr_reach_envs.mechanics.rl_jacobian import JacobianDDPG, JacobianHerReplayBuffer
+from ctr_reach_envs.mechanics.actor_gradients import STEP_METRICS
 from ctr_reach_envs.mechanics.rl_exploration import ExplorationDDPG, exploration_settings
 from ctr_reach_envs.mechanics.rl_metrics import EpisodeMotion, ReachHoldMetrics
 
@@ -79,6 +80,7 @@ class AuditCallback(BaseCallback):
              "jacobian_action_gradient_norm":metrics.get("jacobian_action_gradient_norm",0.),
              "jacobian_valid_fraction":metrics.get("jacobian_valid_fraction",0.),
              "extra_equilibrium_calls":metrics.get("extra_equilibrium_calls",0)}
+        row.update({key:metrics.get(key) for key in STEP_METRICS})
         if self.update_writer is None:
             self.update_writer=csv.DictWriter(self.update_stream,fieldnames=list(row));self.update_writer.writeheader()
         self.update_writer.writerow(row);self.update_stream.flush();self.last_logged_update=count
@@ -137,7 +139,7 @@ def arguments():
     p.add_argument("--system",choices=[f"ctr_{i}" for i in range(4)],default="ctr_0")
     p.add_argument("--tolerance-m",type=float,default=.001)
     p.add_argument("--task-profile", choices=TASK_PROFILES, default="generalized_hold",
-                   help="generalized_hold: signed reachable goals and no success termination; legacy: reproduce the old task")
+                   help="generalized_reach: signed goals, terminate at first hit; generalized_hold: same sampling, continue after hits; legacy: old task")
     p.add_argument("--hold-steps", type=int, default=10,
                    help="Report sustained success over the final K steps; does not change rewards or terminate an episode")
     p.add_argument("--initial-rotation-span-rad", type=float, default=.15,
@@ -151,6 +153,12 @@ def arguments():
     p.add_argument("--physics-weight",type=float,default=.1)
     p.add_argument("--physics-final-weight",type=float,default=None)
     p.add_argument("--physics-anneal-steps",type=int,default=100000)
+    p.add_argument("--physics-integration",choices=["rl_priority","sum"],default="rl_priority",
+                   help="rl_priority: project conflicting auxiliary gradients and check Adam steps; sum: original weighted loss")
+    p.add_argument("--physics-max-aux-ratio",type=float,default=1.,
+                   help="Maximum weighted auxiliary / RL parameter-gradient norm in rl_priority mode")
+    p.add_argument("--actor-max-backtracks",type=int,default=6,
+                   help="Maximum halvings of each Adam trial displacement before fallback/skip")
     p.add_argument("--checkpoint-freq",type=int,default=0)
     p.add_argument("--output-dir",type=Path,default=Path("runs/simple_jacobian_seed7101"))
     a=p.parse_args()
@@ -174,6 +182,8 @@ def arguments():
     except ValueError as exc: p.error(str(exc))
     if not np.isfinite(a.learning_rate) or a.learning_rate<=0:p.error("Invalid learning rate")
     if a.physics_final_weight is None:a.physics_final_weight=a.physics_weight
+    if not np.isfinite(a.physics_max_aux_ratio) or a.physics_max_aux_ratio <= 0 or a.actor_max_backtracks < 0:
+        p.error("Auxiliary norm ratio must be positive/finite; backtracks must be nonnegative")
     if any(not np.isfinite(x) or x<0 for x in (a.physics_weight,a.physics_final_weight)) or a.physics_anneal_steps<1:
         p.error("Physics weights must be finite/nonnegative and anneal steps positive")
     return a
@@ -218,6 +228,8 @@ def main():
         "jacobian_method":"Burgner 2014 Eqs. (6)-(7); analytical variational ODE, unloaded specialization, spatial-to-tip conversion",
         "exploration":exploration,
         "physics_loss_semantics":"projected-current-actor Jacobian tracking, target recomputed for each HER goal",
+        "actor_update_semantics":a.physics_integration if physics_enabled else "ordinary_ddpg",
+        "actor_update_check_scope":"same-minibatch fixed-critic surrogate; no return or physical stability guarantee",
         "unavailable_jacobian":"mask auxiliary sample; keep transition and RL update",
         "python":platform.python_version(),"numpy":np.__version__,"scipy":scipy.__version__,
         "torch":torch.__version__,"stable_baselines3":sb3.__version__}
@@ -226,7 +238,9 @@ def main():
     (a.output_dir/"config.json").write_text(json.dumps(config,indent=2)+"\n",encoding="utf-8")
     algorithm = JacobianDDPG if physics_enabled else ExplorationDDPG
     physics_kwargs = {"physics_lengths":plant.solver.lengths.tolist(),"physics_weight":a.physics_weight,
-                      "physics_final_weight":a.physics_final_weight,"physics_anneal_steps":a.physics_anneal_steps} if physics_enabled else {}
+                      "physics_final_weight":a.physics_final_weight,"physics_anneal_steps":a.physics_anneal_steps,
+                      "physics_integration":a.physics_integration,"physics_max_aux_ratio":a.physics_max_aux_ratio,
+                      "actor_max_backtracks":a.actor_max_backtracks} if physics_enabled else {}
     model=algorithm(PaperMlpPolicy,env,seed=a.seed,device="cpu",**physics_kwargs,
         random_exploration=exploration["random_exploration"],
         learning_rate=a.learning_rate,gamma=.95,tau=.001,

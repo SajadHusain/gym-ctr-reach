@@ -13,6 +13,7 @@ from stable_baselines3.common.utils import polyak_update
 from .geometry import JointConstraints
 from .rl_replay import ExecutedActionHerReplayBuffer
 from .rl_exploration import ExplorationDDPG
+from .actor_gradients import flatten_gradients, combine_gradients, actor_step
 
 
 @dataclass
@@ -133,7 +134,8 @@ class ProjectedJacobianLoss(torch.nn.Module):
 class JacobianDDPG(ExplorationDDPG):
     """DDPG actor objective -Q(s,mu(s)) + weight * local kinematic tracking loss."""
     def __init__(self,*args,physics_lengths=None,physics_weight=.1,physics_final_weight=.01,
-                 physics_anneal_steps=100000,**kwargs):
+                 physics_anneal_steps=100000,physics_integration="sum",
+                 physics_max_aux_ratio=1.,actor_max_backtracks=6,**kwargs):
         if physics_lengths is None and kwargs.get("_init_setup_model",True):
             raise ValueError("Supply fixed tube lengths for the actor's joint projection")
         for value in (physics_weight,physics_final_weight):
@@ -143,6 +145,17 @@ class JacobianDDPG(ExplorationDDPG):
         self.physics_lengths = list(physics_lengths) if physics_lengths is not None else []
         self.physics_weight,self.physics_final_weight = float(physics_weight),float(physics_final_weight)
         self.physics_anneal_steps = physics_anneal_steps
+        if physics_integration not in ("sum", "rl_priority"):
+            raise ValueError("Unknown physics integration")
+        if not np.isfinite(physics_max_aux_ratio) or physics_max_aux_ratio <= 0:
+            raise ValueError("physics_max_aux_ratio must be finite and positive")
+        if isinstance(actor_max_backtracks, bool) or not isinstance(actor_max_backtracks, int) or actor_max_backtracks < 0:
+            raise ValueError("actor_max_backtracks must be a nonnegative integer")
+        # 'sum' is the constructor default for checkpoints predating this field;
+        # the training CLI explicitly selects rl_priority for new runs.
+        self.physics_integration = physics_integration
+        self.physics_max_aux_ratio = float(physics_max_aux_ratio)
+        self.actor_max_backtracks = actor_max_backtracks
         self.physics_update_count = 0
         self.last_physics_metrics = {}
         self._physics_loss = None
@@ -167,8 +180,16 @@ class JacobianDDPG(ExplorationDDPG):
         if self._physics_loss is None:
             self._physics_loss = ProjectedJacobianLoss(self.physics_lengths).to(self.device)
         self.policy.set_training_mode(True)
+        checked = self.physics_integration == "rl_priority"
+        if checked:
+            for module in self.policy.modules():
+                if isinstance(module, (torch.nn.modules.batchnorm._BatchNorm, torch.nn.modules.dropout._DropoutNd)):
+                    raise ValueError("RL-priority checks require deterministic MLPs without batch normalization/dropout")
+            if {id(p) for p in self.actor.parameters()} & {id(p) for p in self.critic.parameters()}:
+                raise ValueError("RL-priority checks require separate actor/critic parameters")
         self._update_learning_rate([self.actor.optimizer,self.critic.optimizer])
         actor_values,critic_values,physics_values,physics_gradients,valid_fractions = [],[],[],[],[]
+        integration_metrics = []
         for _ in range(gradient_steps):
             self._n_updates += 1
             data = self.replay_buffer.sample(batch_size,env=self._vec_normalize_env)
@@ -190,10 +211,15 @@ class JacobianDDPG(ExplorationDDPG):
             actor_loss = rl_loss+weight*physics_loss
             if not bool(torch.isfinite(actor_loss)):raise FloatingPointError("Nonfinite actor loss")
             physics_gradient = torch.autograd.grad(physics_loss,actions,retain_graph=True)[0]
-            self.actor.optimizer.zero_grad();actor_loss.backward()
-            if any(p.grad is not None and not bool(torch.isfinite(p.grad).all()) for p in self.actor.parameters()):
-                raise FloatingPointError("Nonfinite actor gradient")
-            self.actor.optimizer.step()
+            parameters = tuple(p for p in self.actor.parameters() if p.requires_grad)
+            rl_gradient = flatten_gradients(rl_loss, parameters)
+            jacobian_gradient = flatten_gradients(physics_loss, parameters)
+            direction, metrics = combine_gradients(rl_gradient, jacobian_gradient, weight,
+                self.physics_max_aux_ratio, project=checked)
+            metrics.update(actor_step(parameters, self.actor.optimizer, rl_gradient, direction,
+                lambda: -self.critic.q1_forward(data.observations, self.actor(data.observations)).mean(),
+                checked=checked, max_backtracks=self.actor_max_backtracks))
+            integration_metrics.append(metrics)
             polyak_update(self.critic.parameters(),self.critic_target.parameters(),self.tau)
             polyak_update(self.actor.parameters(),self.actor_target.parameters(),self.tau)
             polyak_update(self.critic_batch_norm_stats,self.critic_batch_norm_stats_target,1.)
@@ -209,8 +235,14 @@ class JacobianDDPG(ExplorationDDPG):
                                      "jacobian_action_gradient_norm":float(np.mean(physics_gradients)),
                                      "jacobian_valid_fraction":float(np.mean(valid_fractions)),
                                      "extra_equilibrium_calls":0}
+        # total_actor_loss remains a reference value for the old weighted sum;
+        # rl_priority is a projected update rule, not its exact gradient.
+        self.last_physics_metrics.update({key:float(np.mean([m[key] for m in integration_metrics]))
+                                         for key in integration_metrics[0]})
         self.logger.record("train/n_updates",self._n_updates,exclude="tensorboard")
         self.logger.record("train/actor_loss",self.last_physics_metrics["total_actor_loss"])
         self.logger.record("train/critic_loss",float(np.mean(critic_values)))
         self.logger.record("physics/jacobian_loss",self.last_physics_metrics["jacobian_loss"])
         self.logger.record("physics/weight",weight)
+        for key in integration_metrics[0]:
+            self.logger.record("physics/"+key,self.last_physics_metrics[key])

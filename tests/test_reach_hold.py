@@ -16,8 +16,9 @@ from ctr_reach_envs.paper_policy import PaperMlpPolicy
 
 
 def straight_env(**kwargs):
+    profile = kwargs.pop("task_profile", "generalized_hold")
     return JointConstrainedReachEnv(tubes=[TubeParameters(.2, 0., .001, .002, 50e9, 23e9, 0.)],
-        task_profile="generalized_hold", max_episode_steps=4, **kwargs)
+        task_profile=profile, max_episode_steps=4, **kwargs)
 
 
 def batch(obs):
@@ -36,6 +37,45 @@ def test_success_does_not_end_episode_and_goal_can_be_lost():
     assert not term and trunc
     with pytest.raises(RuntimeError, match="reset"):
         env.step([0., 0.])
+
+
+def test_generalized_reach_keeps_same_tasks_and_ends_at_first_hit():
+    hold = straight_env(compute_jacobian=False)
+    reach = straight_env(compute_jacobian=False, task_profile="generalized_reach")
+    for seed in (2, 7101, 810000):
+        a, ia = hold.reset(seed=seed)
+        b, ib = reach.reset(seed=seed)
+        for key in a:
+            np.testing.assert_array_equal(a[key], b[key])
+        np.testing.assert_array_equal(ia["initial_q"], ib["initial_q"])
+        np.testing.assert_array_equal(ia["goal_joint_witness"], ib["goal_joint_witness"])
+    assert reach.goal_distribution == hold.goal_distribution
+    reach.reset(options={"joints": [-.03, 0.], "goal": [0., 0., .1712]})
+    _, reward, term, trunc, info = reach.step([.4, 0.])
+    assert term and not trunc and info["is_success"] and reward == 0
+    hold.close(); reach.close()
+
+
+@pytest.mark.parametrize("buffer_class", [ExecutedActionHerReplayBuffer, JacobianHerReplayBuffer])
+def test_generalized_reach_her_relabels_terminal_and_timeout(monkeypatch, buffer_class):
+    env = straight_env(task_profile="generalized_reach", compute_jacobian=buffer_class is JacobianHerReplayBuffer)
+    vec = DummyVecEnv([lambda: straight_env(task_profile="generalized_reach", compute_jacobian=False)])
+    replay = buffer_class(20, vec.observation_space, vec.action_space, env=vec,
+                         copy_info_dict=True, device="cpu", action_semantics="proposal")
+    obs, _ = env.reset(options={"joints": [-.03, 0.], "goal": [0., 0., .19]})
+    for _ in range(4):
+        action = np.array([.1, 0.])
+        nxt, reward, term, trunc, info = env.step(action)
+        info["TimeLimit.truncated"] = trunc
+        replay.add(batch(obs), batch(nxt), action[None], np.array([reward]), np.array([term or trunc]), [info])
+        obs = nxt
+    indices, env_indices = np.arange(4), np.zeros(4, dtype=int)
+    monkeypatch.setattr(replay, "_sample_goals", lambda b, e: replay.next_observations["achieved_goal"][b,e].copy())
+    virtual = replay._get_virtual_samples(indices, env_indices)
+    assert torch.all(virtual.dones == 1) and torch.all(virtual.rewards == 0)
+    real = replay._get_real_samples(indices, env_indices)
+    assert torch.count_nonzero(real.dones) == 0  # Timeout bootstraps for the real, missed goal.
+    env.close(); vec.close()
 
 
 def test_success_at_timeout_still_bootstraps():
