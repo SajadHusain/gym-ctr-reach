@@ -1,0 +1,54 @@
+{
+  "scope": "Integration smoke tests, not learning-performance evidence",
+  "platform": "Linux, Python 3.12; Windows CI configured but not yet verified",
+  "training_runs": [
+    {
+      "arm": "ddpg",
+      "complete": true,
+      "environment_transitions": 32,
+      "gradient_updates": 16,
+      "actor_parameters_changed": true,
+      "critic_parameters_changed": true,
+      "finite_parameters": true,
+      "replay_error": 0.0,
+      "sensitivity_calls": 0
+    },
+    {
+      "arm": "jacobian",
+      "complete": true,
+      "environment_transitions": 32,
+      "gradient_updates": 16,
+      "actor_parameters_changed": true,
+      "critic_parameters_changed": true,
+      "finite_parameters": true,
+      "replay_error": 0.0,
+      "sensitivity_calls": 16
+    },
+    {
+      "arm": "mechanics_only",
+      "complete": true,
+      "environment_transitions": 32,
+      "gradient_updates": 16,
+      "actor_parameters_changed": true,
+      "critic_parameters_changed": true,
+      "finite_parameters": true,
+      "replay_error": 0.0,
+      "sensitivity_calls": 32
+    },
+    {
+      "arm": "rl_only_checked",
+      "complete": true,
+      "environment_transitions": 32,
+      "gradient_updates": 16,
+      "actor_parameters_changed": true,
+      "critic_parameters_changed": true,
+      "finite_parameters": true,
+      "replay_error": 0.0,
+      "sensitivity_calls": 0
+    }
+  ],
+  "development_report_complete": true,
+  "ordinary_actor_evaluation_sensitivity_calls": 0,
+  "actor_diagnostic_trajectory_check": "16 actor transitions were exactly unchanged when diagnostic Jacobian/controller computation was enabled",
+  "classical_controller": "2-episode evaluation completed, including a successful reach; not a performance estimate"
+}

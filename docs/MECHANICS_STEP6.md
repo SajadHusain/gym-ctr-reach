@@ -1,3 +1,5 @@
+> Historical implementation notes. For current training commands and defaults, use [clean_experiment.md](clean_experiment.md). The old root training entry points have been consolidated.
+
 # Step 6: finite observation bounds and a Jacobian actor objective
 
 The submitted Step 5 run passed its integration checks: 64 transitions, 48

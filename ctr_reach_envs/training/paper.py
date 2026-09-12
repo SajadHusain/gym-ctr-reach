@@ -18,7 +18,7 @@ from ctr_reach_envs.her_replay_buffer import GoalTerminationHerReplayBuffer
 from ctr_reach_envs.paper_config import PAPER_PROFILE, paper_configuration
 from ctr_reach_envs.paper_policy import PaperDDPG, PaperMlpPolicy, PaperStateExtractor
 from rl_utils import make_env
-from train_ddpg_her import GoalToleranceCurriculumCallback
+from ctr_reach_envs.training.curriculum import GoalToleranceCurriculumCallback
 
 
 def build_model(env, spec, *, seed=0, device="cpu", tensorboard_log=None, verbose=1):
@@ -54,7 +54,7 @@ def build_model(env, spec, *, seed=0, device="cpu", tensorboard_log=None, verbos
     return model
 
 
-def parse_args():
+def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--output-dir", type=Path, default=Path("runs/paper_2024_seed0"))
@@ -66,11 +66,11 @@ def parse_args():
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--torch-threads", type=int, default=1)
     parser.add_argument("--dry-run", action="store_true", help="Print the resolved configuration and exit")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
-def main():
-    args = parse_args()
+def main(argv=None):
+    args = parse_args(argv)
     spec = paper_configuration()
     if args.total_timesteps is not None:
         if args.total_timesteps <= 0:

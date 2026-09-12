@@ -1,3 +1,5 @@
+> Historical implementation notes. For current training commands and defaults, use [clean_experiment.md](clean_experiment.md). The old root training entry points have been consolidated.
+
 # Generalized reaching and sustained precision
 
 The `generalized_hold` task addresses two limitations exposed by the goal-input

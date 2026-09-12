@@ -1,114 +1,93 @@
-# CTR reaching with DDPG and HER
+# CTR reaching: DDPG+HER and analytical Jacobian guidance
 
-The `simple-jacobian-rl` branch provides the current simplified experiment:
-**DDPG + HER, joint constraints, and an optional Jacobian actor loss**.
-Use [the joint-only training and evaluation instructions](docs/simple_jacobian_rl.md).
-This path has no branch tracker, elastic acceptance test, reverse solve,
-controller wrapper, or action backtracking. Train a fresh checkpoint because
-its observation vector contains no branch torsion features.
+There are two supported training entry points:
 
-For the **ICRA 2021 author-archive reproduction**, use the separate
-[legacy TensorFlow/MPI implementation and Windows instructions](icra2021/README.md).
-It exposes Gymnasium while retaining the author's learner and archived robot.
-The [source audit](docs/icra_2021_audit.md) records conflicts with the printed paper;
-the user selected the archived implementation as the reference.
+| Command | Purpose |
+|---|---|
+| `python train_ddpg_her.py --profile paper` | Preserved documented paper reproduction; the default profile |
+| `python train_ddpg_her.py --profile mechanics` | Ordinary DDPG+HER on the equilibrium plant, for a matched comparison |
+| `python train_jacobian_ddpg_her.py` | Same equilibrium experiment with analytical task-space actor guidance |
 
-For the documented 2024 paper configuration, use
-[the paper reproduction instructions](docs/paper_reproduction.md) and
-`train_paper_ddpg_her.py`. That profile uses 3 million training steps, an
-egocentric decay curriculum over 1.5 million steps, and the saved system-0
-free-rotation settings. It includes the legacy critic structure and a
-HER-safe reconstruction of the paper's goal-error input. The instructions
-separate verified settings from remaining software-stack differences.
+The paper and equilibrium plants are different. Use the **mechanics baseline**
+to measure the effect of Jacobian guidance. The paper profile preserves the
+existing reproduction; its provenance and software differences are documented
+in [paper_reproduction.md](docs/paper_reproduction.md).
 
-The `modern-ddpg-her` branch turns the original quasi-static CTR code into a Gymnasium goal environment and adds:
+The guided actor uses mechanical sensitivities from the analytical variational
+ODE and implicit equilibrium derivative. It receives no inverse-Jacobian
+controller action labels. Rewards and HER critic targets remain unchanged.
+The default update prioritizes the RL surrogate and fades the auxiliary weight
+to zero halfway through training. Frozen-actor evaluation uses no Jacobian.
 
-- DDPG with a `MultiInputPolicy`
-- hindsight experience replay (HER), using the `future` strategy and four relabelled goals
-- goal-dependent terminal flags recomputed alongside HER rewards
-- egocentric trigonometric joint observations
-- a linear goal-tolerance curriculum from 20 mm to 1 mm over 200,000 transitions
-- deterministic final evaluation over 1,000 independently seeded episodes
-- Cartesian path following by passing consecutive waypoints to the same reaching policy
+A task-space tracking loss is still locally related to differential inverse
+kinematics. It does not prove that RL adds value, improves smoothness, or provides
+physical stability. The experiment includes mechanics-only and checked-RL actor
+ablations, plus an evaluation-only constrained Jacobian controller.
 
-It deliberately uses the active simplified `Model`/`Segment`/`Tube` path. It does not import the broken experimental `CTR_Model.py`.
+## Setup and tests
 
-The previous standard-HER baseline and the terminal-label correction are described
-in [docs/her_termination_fix.md](docs/her_termination_fix.md). That page includes
-fresh-run comparison commands and optional per-step trajectory diagnostics for
-existing checkpoints. The correction has not yet been evaluated for learning
-performance; it should not be assumed to remove all precision errors.
-
-## Important design boundary
-
-HER and waypoint progression should not share an episode-level waypoint index. HER replaces a transition's desired goal, but it cannot reconstruct what the later path index should have been. This implementation therefore trains one goal-conditioned reaching policy and advances waypoints only during path execution.
-
-The curriculum implemented here is a success-tolerance curriculum because that is the curriculum mechanism present in the supplied files. If “goal-based curriculum” instead means expanding the sampled goal radius, add that as a separate experiment; do not silently combine both curricula in the baseline.
-
-## Environment corrections
-
-The original environment could not be passed directly to current Stable-Baselines3. This bundle corrects the following blockers:
-
-- uses the Gymnasium reset and five-return step API
-- separates task success (`terminated`) from time/solver limits (`truncated`)
-- returns `float32` observations matching the declared spaces
-- uses local seeded random generators rather than global NumPy state
-- makes `compute_reward()` vectorized for HER
-- stores each transition's tolerance in `info`, so HER recomputes historical rewards consistently
-- removes the goal-error vector from the `observation` key; otherwise HER would change `desired_goal` while leaving the old goal embedded in the state
-- fixes length-weighted system sampling and makes `close()` safe
-- raises on invalid tube parameters and handles ODE failure explicitly
-
-The observation dictionary is:
-
-- `observation`: nine egocentric joint features (`cos`, `sin`, extension for each tube), followed by the current tolerance and, for multi-system runs, the system index
-- `achieved_goal`: current 3D tip position in metres
-- `desired_goal`: target 3D tip position in metres
-
-The internal joint vector remains `[beta_0, beta_1, beta_2, alpha_0, alpha_1, alpha_2]`, with metres and radians.
-
-## Install
-
-Use Python 3.10 or newer in a fresh virtual environment. On Windows PowerShell:
+From the repository root in your activated Python environment:
 
 ```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -e ".[train,test,render]"
-python -m pytest
+python -m pip install -e ".[train,test]"
+python -m pytest tests/test_clean_training.py tests/test_actor_gradients.py tests/test_solver_recovery.py -q
 ```
 
-## Train
+## Matched training
+
+Use fresh directories. These commands share the same task and DDPG settings:
 
 ```powershell
-python train_ddpg_her.py --total-timesteps 300000 --seed 0 --output-dir runs/ddpg_her_seed0
+python train_ddpg_her.py --profile mechanics --total-timesteps 10000 --seed 7101 --output-dir runs/clean_ddpg7101
+python train_jacobian_ddpg_her.py --total-timesteps 10000 --seed 7101 --output-dir runs/clean_guided7101
 ```
 
-Periodic evaluation uses 25 episodes at the final 1 mm tolerance. Running 1,000 episodes at every checkpoint would dominate training time, so the requested 1,000-episode evaluation is a separate final command.
-
-The supplied solver is slow enough that training will take hours. Start with a short integration run such as `--total-timesteps 12000`, verify that the replay buffer begins updating after 10,000 transitions, and only then launch the full run.
-
-## Final 1,000-episode evaluation
+The 10,000-step default is a development budget, not a promise of convergence.
+The mechanics task uses fixed 1-mm first-hit reaching; holding is not required.
+The paper profile retains its original tolerance curriculum and 3M-step default:
 
 ```powershell
-python evaluate.py runs/ddpg_her_seed0/final_model.zip --episodes 1000 --seed 100000 --output-dir runs/ddpg_her_seed0/final_evaluation
+python train_ddpg_her.py --profile paper --dry-run
+python train_ddpg_her.py --profile paper --seed 0 --output-dir runs/paper_2024_seed0
 ```
 
-The evaluator writes a per-episode CSV and a JSON summary containing success rate, a Wilson 95% interval, final-position errors, step count, and solver failures. Evaluation is deterministic and always uses the final 1 mm tolerance.
+## Evaluation
 
-## Follow a path
-
-Waypoint files must have an `x,y,z` header and use metres:
+For each mechanics checkpoint, use the same evaluation seed block and horizon:
 
 ```powershell
-python follow_path.py runs/ddpg_her_seed0/final_model.zip paths/example_path.csv --output runs/ddpg_her_seed0/path_result.csv
+python evaluate_physics_ddpg_her.py runs/clean_guided7101/final_model.zip --episodes 1000 --seed 910000 --output-dir runs/clean_guided7101/final_1000
 ```
 
-The robot starts from zero joints, attempts each waypoint for at most 150 policy steps, and preserves its joint state when moving to the next waypoint. It stops at the first failed waypoint unless `--continue-on-failure` is passed. Rendering is optional via `--render`.
+Use `--modes jacobian` in a separate output directory for the classical control
+comparison. `--controller-audit` adds diagnostic controller calls at actor states
+without changing actor actions; its timing includes those extra calls.
+For the paper checkpoint, use `evaluate.py --profile paper-2024` instead.
 
-## What this baseline does not establish
+[The experiment guide](docs/clean_experiment.md) contains the exact objectives,
+gradient derivation, assumptions, loss parameters, ablation commands, multi-seed
+study commands, smoothness metrics, cost accounting, and interpretation rules.
 
-This is DDPG because that was requested, but DDPG is sensitive to seeds and hyperparameters. Report results over multiple training seeds, not only 1,000 evaluation rollouts from one trained seed. TD3 should be the first algorithmic comparison because it directly addresses common DDPG failure modes.
+## Repository organization
 
-The model is quasi-static and unloaded. It supports a position-reaching baseline, not claims about dynamic motion, contact, force control, or hardware fidelity. Noise remains disabled because the supplied noise values were stored but never physically applied. Add each physics or noise mechanism only with a corresponding validation test.
+- `ctr_reach_envs/training/`: shared trainer and callback implementation.
+- `ctr_reach_envs/mechanics/`: equilibrium solver, analytical sensitivities, actor losses and joint constraints.
+- `evaluate_physics_ddpg_her.py`: frozen actor and classical controller evaluation.
+- `run_physics_study.py`: frozen multi-seed plans and paired reports.
+- `evaluate.py`, `follow_path.py`: preserved paper/original-plant evaluation tools.
+- `tools/legacy/`: the earlier generic trainer, retained for provenance.
+- `docs/`: current guide plus clearly marked historical implementation notes.
+- `icra2021/`, saved policies and original utilities: author archive, retained.
+
+The former root scripts `train_paper_ddpg_her.py` and `train_physics_ddpg_her.py`
+have moved into the training package. Use the two entry points above for new runs.
+The old mechanics invocation remains available for historical configurations as
+`python -m ctr_reach_envs.training.mechanics`; it is not the new matched protocol.
+Existing policy-class import paths remain available for checkpoint loading.
+Do not resume a frozen study across this cleanup or pool its results with the
+new protocol: the mechanics comparison now adopts the documented paper's
+100-rollout/50-update cadence and uses a decaying guidance weight.
+
+The simulator is unloaded and quasi-static. Numerical equilibrium recovery does
+not establish physical stability or uniqueness, and none of these scripts
+certifies global convergence, hardware fidelity, or publication novelty.

@@ -1,3 +1,5 @@
+> Historical implementation notes. For current training commands and defaults, use [clean_experiment.md](clean_experiment.md). The old root training entry points have been consolidated.
+
 # Step 7: matched experiments and command smoothness
 
 This stage tests hypotheses. It does not establish better sample efficiency,

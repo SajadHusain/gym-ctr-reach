@@ -88,13 +88,18 @@ class ProjectedJacobianLoss(torch.nn.Module):
     It does not differentiate branch rejection/backtracking or certify a finite
     nonlinear decrease for the actor's current proposal.
     """
-    def __init__(self,lengths,minimum_deployed=.001,cartesian_scale=.002,gain=.5):
+    def __init__(self,lengths,minimum_deployed=.001,cartesian_scale=.002,gain=.5,
+                 max_tip_step=None):
         super().__init__()
         if not np.isfinite(cartesian_scale) or cartesian_scale<=0 or not np.isfinite(gain) or gain<=0:
             raise ValueError("Cartesian scale and gain must be positive and finite")
         constraint = JointConstraints(lengths,minimum_deployed)
         self.n = constraint.n
         self.cartesian_scale,self.gain = float(cartesian_scale),float(gain)
+        # None retains the historical 2-mm target cap for old checkpoints.
+        self.max_tip_step = self.cartesian_scale if max_tip_step is None else float(max_tip_step)
+        if not np.isfinite(self.max_tip_step) or self.max_tip_step <= 0:
+            raise ValueError("Maximum desired tip step must be positive and finite")
         for key,value in (("faces",constraint._projections),("offsets",constraint._offsets),
                           ("inequalities",constraint.A),("limits",constraint.b)):
             self.register_buffer(key,torch.as_tensor(value,dtype=torch.float64))
@@ -121,7 +126,7 @@ class ProjectedJacobianLoss(torch.nn.Module):
         predicted = torch.bmm(sample.jacobian.detach().double(),dq[:,:,None]).squeeze(-1)/self.cartesian_scale
         desired = self.gain*(sample.observations["desired_goal"]-sample.observations["achieved_goal"]).detach().double()
         norm = torch.linalg.vector_norm(desired,dim=1,keepdim=True)
-        desired = desired/torch.clamp(norm/self.cartesian_scale,min=1.)/self.cartesian_scale
+        desired = desired/torch.clamp(norm/self.max_tip_step,min=1.)/self.cartesian_scale
         errors = ((predicted-desired)**2).sum(1)
         if sample.jacobian_valid is None:
             return errors.mean()
@@ -135,7 +140,9 @@ class JacobianDDPG(ExplorationDDPG):
     """DDPG actor objective -Q(s,mu(s)) + weight * local kinematic tracking loss."""
     def __init__(self,*args,physics_lengths=None,physics_weight=.1,physics_final_weight=.01,
                  physics_anneal_steps=100000,physics_integration="sum",
-                 physics_max_aux_ratio=1.,actor_max_backtracks=6,**kwargs):
+                 physics_max_aux_ratio=1.,actor_max_backtracks=6,
+                 physics_gain=.5,physics_cartesian_scale=.002,physics_max_tip_step=.002,
+                 actor_objective="hybrid",wait_for_completed_batch=False,**kwargs):
         if physics_lengths is None and kwargs.get("_init_setup_model",True):
             raise ValueError("Supply fixed tube lengths for the actor's joint projection")
         for value in (physics_weight,physics_final_weight):
@@ -159,7 +166,18 @@ class JacobianDDPG(ExplorationDDPG):
         self.physics_update_count = 0
         self.last_physics_metrics = {}
         self._physics_loss = None
-        super().__init__(*args,**kwargs)
+        if actor_objective not in ("hybrid", "mechanics_only", "rl_only_checked"):
+            raise ValueError("Unknown actor objective")
+        for value in (physics_gain, physics_cartesian_scale, physics_max_tip_step):
+            if not np.isfinite(value) or value <= 0:
+                raise ValueError("Physics gain, scale and target cap must be positive and finite")
+        if actor_objective == "mechanics_only" and min(physics_weight, physics_final_weight) <= 0:
+            raise ValueError("Mechanics-only ablation requires positive weights throughout training")
+        self.actor_objective = actor_objective
+        self.physics_gain = float(physics_gain)
+        self.physics_cartesian_scale = float(physics_cartesian_scale)
+        self.physics_max_tip_step = float(physics_max_tip_step)
+        super().__init__(*args,wait_for_completed_batch=wait_for_completed_batch,**kwargs)
 
     def _excluded_save_params(self):
         return super()._excluded_save_params()+["_physics_loss"]
@@ -170,17 +188,22 @@ class JacobianDDPG(ExplorationDDPG):
         return (1-fraction)*self.physics_weight+fraction*self.physics_final_weight
 
     def train(self,gradient_steps,batch_size=100):
+        if self.wait_for_completed_batch and np.count_nonzero(self.replay_buffer.ep_length) < batch_size:
+            return
         weight = self.current_physics_weight
-        if weight == 0:
+        if weight == 0 and self.actor_objective != "rl_only_checked":
             # Preserve the SB3 update exactly for the zero-weight ablation.
             self.last_physics_metrics = {"weight":0.,"jacobian_loss":0.,"extra_equilibrium_calls":0}
             return super().train(gradient_steps,batch_size)
         if not isinstance(self.replay_buffer,JacobianHerReplayBuffer):
             raise ValueError("JacobianDDPG requires JacobianHerReplayBuffer")
         if self._physics_loss is None:
-            self._physics_loss = ProjectedJacobianLoss(self.physics_lengths).to(self.device)
+            self._physics_loss = ProjectedJacobianLoss(self.physics_lengths,
+                cartesian_scale=self.physics_cartesian_scale, gain=self.physics_gain,
+                max_tip_step=self.physics_max_tip_step).to(self.device)
         self.policy.set_training_mode(True)
-        checked = self.physics_integration == "rl_priority"
+        checked = self.actor_objective == "rl_only_checked" or (
+            self.actor_objective == "hybrid" and self.physics_integration == "rl_priority")
         if checked:
             for module in self.policy.modules():
                 if isinstance(module, (torch.nn.modules.batchnorm._BatchNorm, torch.nn.modules.dropout._DropoutNd)):
@@ -207,8 +230,9 @@ class JacobianDDPG(ExplorationDDPG):
             self.critic.optimizer.step()
             actions = self.actor(data.observations)
             rl_loss = -self.critic.q1_forward(data.observations,actions).mean()
-            physics_loss = self._physics_loss(actions,data)
-            actor_loss = rl_loss+weight*physics_loss
+            physics_loss = (self._physics_loss(actions,data) if self.actor_objective != "rl_only_checked"
+                            else actions.sum()*0.)
+            actor_loss = weight*physics_loss if self.actor_objective == "mechanics_only" else rl_loss+weight*physics_loss
             if not bool(torch.isfinite(actor_loss)):raise FloatingPointError("Nonfinite actor loss")
             physics_gradient = torch.autograd.grad(physics_loss,actions,retain_graph=True)[0]
             parameters = tuple(p for p in self.actor.parameters() if p.requires_grad)
@@ -216,6 +240,10 @@ class JacobianDDPG(ExplorationDDPG):
             jacobian_gradient = flatten_gradients(physics_loss, parameters)
             direction, metrics = combine_gradients(rl_gradient, jacobian_gradient, weight,
                 self.physics_max_aux_ratio, project=checked)
+            if self.actor_objective == "mechanics_only":
+                # No Q term, Q filter, teacher actions or Q-based acceptance.
+                # The critic is still fitted to rewards for matched diagnostics.
+                direction = weight*jacobian_gradient
             metrics.update(actor_step(parameters, self.actor.optimizer, rl_gradient, direction,
                 lambda: -self.critic.q1_forward(data.observations, self.actor(data.observations)).mean(),
                 checked=checked, max_backtracks=self.actor_max_backtracks))
@@ -225,12 +253,13 @@ class JacobianDDPG(ExplorationDDPG):
             polyak_update(self.critic_batch_norm_stats,self.critic_batch_norm_stats_target,1.)
             polyak_update(self.actor_batch_norm_stats,self.actor_batch_norm_stats_target,1.)
             actor_values.append(float(rl_loss.detach()));critic_values.append(float(critic_loss.detach()))
-            physics_values.append(float(physics_loss.detach()));self.physics_update_count += 1
+            physics_values.append(float(physics_loss.detach()))
+            self.physics_update_count += int(self.actor_objective != "rl_only_checked")
             physics_gradients.append(float(torch.linalg.vector_norm(physics_gradient.detach())))
             valid_fractions.append(1. if data.jacobian_valid is None else float(data.jacobian_valid.float().mean()))
         self.last_physics_metrics = {"weight":weight,"jacobian_loss":float(np.mean(physics_values)),
                                      "rl_actor_loss":float(np.mean(actor_values)),
-                                     "total_actor_loss":float(np.mean(actor_values)+weight*np.mean(physics_values)),
+                                     "total_actor_loss":float((0. if self.actor_objective == "mechanics_only" else np.mean(actor_values))+weight*np.mean(physics_values)),
                                      "critic_loss":float(np.mean(critic_values)),
                                      "jacobian_action_gradient_norm":float(np.mean(physics_gradients)),
                                      "jacobian_valid_fraction":float(np.mean(valid_fractions)),

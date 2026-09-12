@@ -6,7 +6,7 @@ from ctr_reach_envs.envs.goal_tolerance import GoalTolerance
 from ctr_reach_envs.paper_config import env_kwargs_for_profile, paper_configuration
 from ctr_reach_envs.paper_policy import LateActionQ, PaperDDPG, PaperStateExtractor
 from rl_utils import load_policy, make_env
-from train_paper_ddpg_her import build_model
+from ctr_reach_envs.training.paper import build_model
 
 
 def test_paper_curriculum_and_evaluation_are_distinct():

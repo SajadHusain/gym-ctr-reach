@@ -1,3 +1,5 @@
+> Historical implementation notes. For current training commands and defaults, use [clean_experiment.md](clean_experiment.md). The old root training entry points have been consolidated.
+
 # Step 5: equilibrium DDPG/HER integration
 
 The Step 4 Windows results support testing RL integration. They do not show that

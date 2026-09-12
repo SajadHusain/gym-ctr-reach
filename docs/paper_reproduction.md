@@ -1,6 +1,6 @@
 # Reproducing the documented 2024 experiment
 
-Use `train_paper_ddpg_her.py` for the system-0, free-rotation, egocentric-decay
+Use `train_ddpg_her.py --profile paper` for the system-0, free-rotation, egocentric-decay
 experiment in Table II of *Deep Reinforcement Learning for Concentric Tube Robot
 Path Following* (2024). This is a modern reproduction of the documented settings,
 not an exact rerun of the historical software stack. It does not guarantee the
@@ -69,21 +69,21 @@ From the repository root with your existing virtual environment active:
 ```powershell
 git pull --ff-only
 python -m pytest -q
-python train_paper_ddpg_her.py --dry-run
-python train_paper_ddpg_her.py --total-timesteps 1000 --seed 0 --output-dir runs/paper_smoke_seed0
+python train_ddpg_her.py --profile paper --dry-run
+python train_ddpg_her.py --profile paper --total-timesteps 1000 --seed 0 --output-dir runs/paper_smoke_seed0
 ```
 
 The smoke run checks collection, HER learning, and saving. Its success rate is not
 a performance test. After it finishes, start a **fresh** full run:
 
 ```powershell
-python train_paper_ddpg_her.py --seed 0 --output-dir runs/paper_2024_seed0
+python train_ddpg_her.py --profile paper --seed 0 --output-dir runs/paper_2024_seed0
 ```
 
 This command defaults to 3,000,000 steps. Do not resume an old baseline checkpoint:
 the state encoder and critic structure have changed. Existing output directories
-must be empty to prevent overwriting previous experiments. The older
-`train_ddpg_her.py` still runs the previous baseline.
+must be empty to prevent overwriting previous experiments. The previous early baseline is archived under `tools/legacy/`; the default
+`train_ddpg_her.py` command now selects this paper profile.
 
 The saved metadata contains the complete configuration, dependency versions,
 seed, and declared reproduction differences. Periodic evaluation uses 25 episodes

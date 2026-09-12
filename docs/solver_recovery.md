@@ -1,3 +1,5 @@
+> Historical implementation notes. For current training commands and defaults, use [clean_experiment.md](clean_experiment.md). The old root training entry points have been consolidated.
+
 # Recovering failed equilibrium shooting solves
 
 The seed-7101 ordinary DDPG run stopped at 3,663 completed transitions with

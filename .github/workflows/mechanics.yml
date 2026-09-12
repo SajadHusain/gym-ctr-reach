@@ -2,7 +2,7 @@ name: Equilibrium mechanics
 
 on:
   push:
-    branches: [physics-equilibrium-step1]
+    branches: [physics-equilibrium-step1, simple-jacobian-rl]
     paths:
       - 'ctr_reach_envs/mechanics/**'
       - 'tests/test_mechanics.py'
@@ -13,7 +13,12 @@ on:
       - 'tests/test_mechanics_jacobian.py'
       - 'tests/test_mechanics_study.py'
       - 'run_physics_study.py'
-      - 'train_physics_ddpg_her.py'
+      - 'train_ddpg_her.py'
+      - 'train_jacobian_ddpg_her.py'
+      - 'ctr_reach_envs/training/**'
+      - 'tests/test_clean_training.py'
+      - 'tests/test_actor_gradients.py'
+      - 'tests/test_solver_recovery.py'
       - 'evaluate_physics_ddpg_her.py'
       - 'pyproject.toml'
       - 'validate_mechanics.py'
@@ -69,12 +74,12 @@ jobs:
           python-version: '3.11'
       - run: python -m pip install torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
       - run: python -m pip install -e ".[physics-train,test]"
-      - run: python -m pytest tests/test_mechanics_rl.py tests/test_mechanics_jacobian.py tests/test_mechanics_study.py -q -W error::RuntimeWarning
-      - run: python train_physics_ddpg_her.py --total-timesteps 12 --learning-starts 4 --episode-steps 4 --hidden-width 32 --batch-size 8 --progress-every 2 --output-dir runs/mechanics_step5_ci
+      - run: python -m pytest tests/test_mechanics_rl.py tests/test_mechanics_jacobian.py tests/test_mechanics_study.py tests/test_clean_training.py tests/test_actor_gradients.py tests/test_solver_recovery.py -q -W error::RuntimeWarning
+      - run: python train_ddpg_her.py --profile mechanics --train-freq 1 --gradient-steps 1 --total-timesteps 12 --learning-starts 4 --episode-steps 4 --hidden-width 32 --batch-size 8 --progress-every 2 --output-dir runs/mechanics_step5_ci
       - run: python evaluate_physics_ddpg_her.py runs/mechanics_step5_ci/final_model.zip --episodes 1 --max-steps 2 --output-dir runs/mechanics_step5_eval_ci
-      - run: python train_physics_ddpg_her.py --physics-weight 0.1 --total-timesteps 12 --learning-starts 4 --episode-steps 4 --hidden-width 32 --batch-size 8 --progress-every 4 --output-dir runs/mechanics_step6_ci
+      - run: python train_jacobian_ddpg_her.py --train-freq 1 --gradient-steps 1 --physics-weight 0.1 --total-timesteps 12 --learning-starts 4 --episode-steps 4 --hidden-width 32 --batch-size 8 --progress-every 4 --output-dir runs/mechanics_step6_ci
       - run: python evaluate_physics_ddpg_her.py runs/mechanics_step6_ci/final_model.zip --episodes 1 --max-steps 2 --output-dir runs/mechanics_step6_eval_ci
-      - run: python run_physics_study.py --stage all --seeds 7009 --total-timesteps 4 --learning-starts 2 --episode-steps 2 --checkpoint-freq 4 --hidden-width 16 --layers 2 --batch-size 4 --buffer-size 32 --eval-episodes 1 --eval-steps 2 --output-dir runs/mechanics_step7_ci
+      - run: python run_physics_study.py --stage all --train-freq 1 --gradient-steps 1 --seeds 7009 --total-timesteps 4 --learning-starts 2 --episode-steps 2 --checkpoint-freq 4 --hidden-width 16 --layers 2 --batch-size 4 --buffer-size 32 --eval-episodes 1 --eval-steps 2 --output-dir runs/mechanics_step7_ci
       - uses: actions/upload-artifact@v4
         if: always()
         with:

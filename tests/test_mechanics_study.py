@@ -71,7 +71,7 @@ def test_jacobian_tracking_does_not_penalize_nullspace_action_oscillation():
 def test_study_has_only_joint_constrained_unassisted_arms():
     assert ARMS["ddpg"]=={"guidance":"none","physics_weight":0.}
     assert ARMS["jacobian"]["guidance"]=="none"
-    assert set(ARMS)=={"ddpg","jacobian"}
+    assert set(ARMS)=={"ddpg","jacobian","mechanics_only","rl_only_checked"}
     validate_config(DEFAULTS)
     assert checkpoints({**DEFAULTS,"total_timesteps":1100,"checkpoint_freq":500})==[0,500,1000,1100]
     with pytest.raises(ValueError,match="distinct"):
@@ -103,7 +103,7 @@ def fixture_evaluation(folder,arm,seed,fp="same"):
 
 
 def test_report_checks_paired_tasks_and_marks_missing_runs(tmp_path):
-    c={**DEFAULTS,"seeds":[1,2],"total_timesteps":2,"final_episodes":1,"task_profile":"legacy"}
+    c={**DEFAULTS,"seeds":[1,2],"total_timesteps":2,"final_episodes":1,"task_profile":"legacy","eval_steps":60}
     fixture_evaluation(tmp_path,"ddpg",1)
     fixture_evaluation(tmp_path,"jacobian",1)
     value=report({"config":c},tmp_path,final=True)
@@ -115,7 +115,7 @@ def test_report_checks_paired_tasks_and_marks_missing_runs(tmp_path):
 
 
 def test_report_rejects_legacy_results_for_a_generalized_hold_study(tmp_path):
-    c={**DEFAULTS,"seeds":[1],"total_timesteps":2,"final_episodes":1}
+    c={**DEFAULTS,"seeds":[1],"total_timesteps":2,"final_episodes":1,"eval_steps":60}
     fixture_evaluation(tmp_path,"ddpg",1)
     with pytest.raises(ValueError,match="task profile"):
         report({"config":c},tmp_path,final=True)
@@ -123,7 +123,7 @@ def test_report_rejects_legacy_results_for_a_generalized_hold_study(tmp_path):
 
 def test_generalized_study_window_validation():
     with pytest.raises(ValueError,match="Holding window"):
-        validate_config({**DEFAULTS,"hold_steps":61})
+        validate_config({**DEFAULTS,"task_profile":"generalized_hold","hold_steps":201})
     with pytest.raises(ValueError,match="goal step"):
         validate_config({**DEFAULTS,"goal_steps_min":10,"goal_steps_max":3})
     with pytest.raises(ValueError,match="Shooting evaluation"):

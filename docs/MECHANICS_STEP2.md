@@ -1,3 +1,5 @@
+> Historical implementation notes. For current training commands and defaults, use [clean_experiment.md](clean_experiment.md). The old root training entry points have been consolidated.
+
 # Step 2: local equilibrium sensitivity and elastic second variation
 
 This stage adds analysis to `unloaded_equilibrium_bvp_v1`. It does not change

@@ -1,3 +1,5 @@
+> Historical implementation notes. For current training commands and defaults, use [clean_experiment.md](clean_experiment.md). The old root training entry points have been consolidated.
+
 # Joint-constrained DDPG + HER with a Jacobian actor loss
 
 The training and evaluation entry points now use `JointConstrainedReachEnv`.

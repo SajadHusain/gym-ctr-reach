@@ -1,3 +1,5 @@
+> Historical implementation notes. For current training commands and defaults, use [clean_experiment.md](clean_experiment.md). The old root training entry points have been consolidated.
+
 # Step 4: goal-directed equilibrium control
 
 Step 4 adds a Jacobian controller and a check on proposed policy actions to the

@@ -1,3 +1,5 @@
+> Historical implementation notes. For current training commands and defaults, use [clean_experiment.md](clean_experiment.md). The old root training entry points have been consolidated.
+
 # Step 3: explicit branch continuation and finite-action validation
 
 `BranchTracker` is a separate mechanics component. It does not change DDPG,

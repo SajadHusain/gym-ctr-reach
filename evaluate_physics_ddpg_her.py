@@ -12,23 +12,29 @@ from stable_baselines3 import DDPG
 from ctr_reach_envs.mechanics.simple_rl_env import JointConstrainedReachEnv, TASK_PROFILES, make_reach_env
 from ctr_reach_envs.mechanics.rl_jacobian import JacobianDDPG
 from ctr_reach_envs.mechanics.rl_metrics import EpisodeMotion, ReachHoldMetrics, summarize_motion
+from ctr_reach_envs.mechanics.classical import constrained_jacobian_action
 
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("model",type=Path)
-    p.add_argument("--episodes",type=int,default=10)
+    p.add_argument("--episodes",type=int,default=1000)
     p.add_argument("--seed",type=int,default=800000)
-    p.add_argument("--modes",nargs="+",choices=["actor"],default=["actor"])
-    p.add_argument("--max-steps",type=int,default=60)
+    p.add_argument("--modes",nargs="+",choices=["actor", "jacobian"],default=["actor"])
+    p.add_argument("--max-steps",type=int,default=None,help="Defaults to the checkpoint horizon")
+    p.add_argument("--controller-audit",action="store_true",
+                   help="Extra diagnostic Jacobian/QP calls at actor states; does not replace actor actions")
+    p.add_argument("--controller-damping",type=float,default=.05)
     p.add_argument("--task-profile",choices=("checkpoint",)+TASK_PROFILES,default="checkpoint",
                    help="Defaults to saved task; old checkpoints retain legacy behaviour")
     p.add_argument("--hold-steps",type=int,default=None)
     p.add_argument("--record-trajectories",action="store_true")
     p.add_argument("--output-dir",type=Path,default=Path("runs/simple_jacobian_evaluation"))
     a=p.parse_args()
-    if a.episodes<1 or a.max_steps<1 or a.seed<0 or len(set(a.modes))!=len(a.modes):p.error("Invalid episode, seed, step or mode selection")
+    if a.episodes<1 or (a.max_steps is not None and a.max_steps<1) or a.seed<0 or len(set(a.modes))!=len(a.modes):p.error("Invalid episode, seed, step or mode selection")
+    if not np.isfinite(a.controller_damping) or a.controller_damping <= 0:p.error("Damping must be positive and finite")
     config=json.loads((a.model.parent/"config.json").read_text())
+    if a.max_steps is None:a.max_steps=config.get("episode_steps",60)
     task_profile = config.get("task_profile", "legacy") if a.task_profile == "checkpoint" else a.task_profile
     hold_steps = config.get("hold_steps", 10) if a.hold_steps is None else a.hold_steps
     if hold_steps < 1 or (task_profile == "generalized_hold" and hold_steps > a.max_steps):
@@ -48,7 +54,7 @@ def main():
         trajectory_writer=None
         writer=None
         for mode in a.modes:
-            plant=make_reach_env(config, max_episode_steps=a.max_steps, compute_jacobian=False,
+            plant=make_reach_env(config, max_episode_steps=a.max_steps, compute_jacobian=mode=="jacobian" or a.controller_audit,
                                  task_profile=task_profile)
             if plant.solver.model_fingerprint!=config["model_fingerprint"]:
                 raise ValueError("Checkpoint and evaluator model parameters differ")
@@ -61,6 +67,9 @@ def main():
                 reaching=ReachHoldMetrics(plant.tolerance_m,hold_steps)
                 episode_complete=False
                 path_length=0.
+                controller_differences=[]; taskspace_differences=[]
+                controller_audit_failures=0
+                action_selection_seconds=0.
                 row={"mode":mode,"episode":episode,"seed":a.seed+episode,"success":False,
                      "failure":"","steps":0,"error_m":None,"trivial_goal":False,
                      "initial_error_m":None,"task_fingerprint":None,
@@ -78,7 +87,31 @@ def main():
                     initial_tip=obs["achieved_goal"].astype(float)
                     previous_tip=initial_tip.copy();path_length=0.
                     for step in range(a.max_steps):
-                        action=model.predict(obs,deterministic=True)[0]
+                        selection_started=time.perf_counter()
+                        action=model.predict(obs,deterministic=True)[0] if mode=="actor" else None
+                        if mode=="actor":action_selection_seconds+=time.perf_counter()-selection_started
+                        if mode=="jacobian" or a.controller_audit:
+                            context=plant._physics_context()
+                            try:
+                                if not context["jacobian_valid"]:
+                                    raise RuntimeError("Analytical Jacobian unavailable: "+context["jacobian_reason"])
+                                control=constrained_jacobian_action(context["jacobian"],context["joints"],
+                                    context["action_scales"],plant.solver.constraints,
+                                    obs["desired_goal"]-obs["achieved_goal"],
+                                    gain=config.get("physics_gain",.5), max_tip_step=config.get("max_tip_step_m",.002),
+                                    cartesian_scale=config.get("cartesian_scale_m",.002),damping=a.controller_damping)
+                                if mode=="jacobian":
+                                    action=control
+                                    action_selection_seconds+=time.perf_counter()-selection_started
+                                else:
+                                    actor_dq=plant.projected_delta(context["joints"],action)
+                                    control_dq=plant.projected_delta(context["joints"],control)
+                                    diff=actor_dq-control_dq
+                                    controller_differences.append(float(np.mean((diff/plant.action_scales)**2)))
+                                    taskspace_differences.append(float(np.sum((context["jacobian"]@diff)**2)))
+                            except (RuntimeError, ValueError, np.linalg.LinAlgError):
+                                if mode=="jacobian":raise
+                                controller_audit_failures+=1
                         obs,reward,term,trunc,info=env.step(action)
                         tip=obs["achieved_goal"].astype(float)
                         path_length+=float(np.linalg.norm(tip-previous_tip));previous_tip=tip.copy()
@@ -111,6 +144,11 @@ def main():
                 for key in plant.costs:
                     row[key]=plant.costs[key]-costs[key]
                 row["seconds"]=time.perf_counter()-t
+                row["action_selection_seconds"]=action_selection_seconds
+                row["controller_audit_samples"]=len(controller_differences)
+                row["controller_audit_failures"]=controller_audit_failures
+                row["controller_action_difference_rms"]=float(np.sqrt(np.mean(controller_differences))) if controller_differences else None
+                row["controller_tip_displacement_difference_rms_m"]=float(np.sqrt(np.mean(taskspace_differences))) if taskspace_differences else None
                 row.update(motion.summary())
                 row.update(reaching.summary(episode_complete=episode_complete))
                 row["episode_complete"]=episode_complete
@@ -128,6 +166,12 @@ def main():
              "episodes_per_mode":a.episodes,"first_seed":a.seed,"max_steps":a.max_steps,
              "plant":config["plant"],
              "tolerance_m":config["tolerance_m"],"checkpoint":str(a.model),"checkpoint_timesteps":checkpoint_timesteps,
+             "checkpoint_sha256":hashlib.sha256(a.model.read_bytes()).hexdigest(),
+             "controller_audit":a.controller_audit,"controller_damping":a.controller_damping,
+             "action_selection_timing":"actor predict only, or analytical Jacobian plus QP for classical control; excludes plant FK and optional actor audit",
+             "actor_uses_jacobian_at_inference":False,
+             "jacobian_calls_during_actor_mode":"diagnostics only" if a.controller_audit else "none",
+             "classical_controller":"constrained damped least squares in normalized action coordinates; analytical sensitivity",
              "goal_distribution":plant.goal_distribution,"task_settings":plant.task_settings,
              "task_profile":task_profile,"training_task_profile":config.get("task_profile","legacy"),
              "success_definition":"first_hit" if plant.terminate_on_success else "final_hold_window",
@@ -158,6 +202,14 @@ def main():
             "replaced_actions":sum(r["replaced_actions"] for r in subset),
             "jacobian_fallbacks":sum(r["jacobian_fallbacks"] for r in subset),
             "steps":sum(r["steps"] for r in subset)}
+        summary["modes"][mode]["controller_agreement"]={
+            "samples":sum(r["controller_audit_samples"] for r in subset),
+            "failures":sum(r["controller_audit_failures"] for r in subset),
+            "action_difference_rms":float(np.sqrt(sum(r["controller_audit_samples"]*r["controller_action_difference_rms"]**2
+                for r in subset if r["controller_audit_samples"])/sum(r["controller_audit_samples"] for r in subset)))
+                if any(r["controller_audit_samples"] for r in subset) else None,
+            "interpretation":"agreement is descriptive; critic contribution requires the mechanics-only training ablation"}
+        summary["modes"][mode]["action_selection_seconds"]=sum(r["action_selection_seconds"] for r in subset)
     (a.output_dir/"summary.json").write_text(json.dumps(summary,indent=2,allow_nan=False)+"\n",encoding="utf-8")
     print(json.dumps({**summary,"modes":{mode:{k:v for k,v in values.items() if not k.startswith("motion_")}
                                           for mode,values in summary["modes"].items()}},indent=2))

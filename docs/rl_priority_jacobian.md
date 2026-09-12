@@ -1,3 +1,5 @@
+> Historical implementation notes. For current training commands and defaults, use [clean_experiment.md](clean_experiment.md). The old root training entry points have been consolidated.
+
 # RL-priority Jacobian actor updates
 
 This implementation tests whether local mechanics can assist reward-based

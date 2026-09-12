@@ -65,6 +65,11 @@ class AuditCallback(BaseCallback):
         # SB3 has finished the previous optimizer update here. The final step
         # is saved after learn(), so all arms include identical update counts.
         self.save_checkpoint()
+        if self.config.get("training_protocol") == "mechanics-comparison-v1":
+            enabled = (getattr(self.model, "current_physics_weight", 0.) > 0
+                       and getattr(self.model, "actor_objective", "hybrid") != "rl_only_checked")
+            self.plant.compute_jacobian = enabled
+            self.plant._physics_cache = None
 
     def record_update(self):
         if not hasattr(self,"model"):return
@@ -118,7 +123,7 @@ class AuditCallback(BaseCallback):
         return True
 
 
-def arguments():
+def arguments(argv=None, defaults=None, baseline=False):
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("--total-timesteps",type=int,default=10000)
     p.add_argument("--learning-starts",type=int,default=200)
@@ -128,6 +133,13 @@ def arguments():
     p.add_argument("--hidden-width",type=int,default=256)
     p.add_argument("--layers",type=int,default=3)
     p.add_argument("--learning-rate",type=float,default=.0005)
+    p.add_argument("--train-freq",type=int,default=1)
+    p.add_argument("--gradient-steps",type=int,default=1)
+    p.add_argument("--ablation", choices=["none", "mechanics-only", "rl-only-checked"], default="none")
+    p.add_argument("--physics-gain",type=float,default=.5)
+    p.add_argument("--cartesian-scale-m",type=float,default=.002)
+    p.add_argument("--max-tip-step-m",type=float,default=.002)
+    p.add_argument("--dry-run",action="store_true")
     p.add_argument("--exploration-profile",choices=["paper","gaussian"],default="paper",
                    help="paper: the earlier DDPG+HER noise and uniform-action mixture; gaussian: previous simple-run exploration")
     p.add_argument("--noise-std",type=float,default=None,
@@ -163,15 +175,35 @@ def arguments():
                    help="Maximum halvings of each Adam trial displacement before fallback/skip")
     p.add_argument("--checkpoint-freq",type=int,default=0)
     p.add_argument("--output-dir",type=Path,default=Path("runs/simple_jacobian_seed7101"))
-    a=p.parse_args()
-    for name in ("total_timesteps","learning_starts","episode_steps","buffer_size","batch_size","hidden_width","layers","progress_every"):
+    p.set_defaults(wait_for_completed_batch=False, training_protocol="legacy-mechanics")
+    if defaults:
+        p.set_defaults(**defaults)
+    a=p.parse_args(argv)
+    if baseline:
+        if a.ablation != "none" or a.physics_weight != 0 or a.physics_final_weight not in (None, 0.):
+            p.error("The baseline cannot use physics guidance or an ablation; use train_jacobian_ddpg_her.py")
+        a.physics_weight = a.physics_final_weight = 0.
+    if a.ablation == "rl-only-checked":
+        a.physics_weight = a.physics_final_weight = 0.
+    if a.ablation == "mechanics-only":
+        # The control ablation must not turn into RL halfway through training.
+        a.physics_final_weight = a.physics_weight
+    if a.physics_anneal_steps is None:
+        a.physics_anneal_steps = max(1, a.total_timesteps//2)
+    for name in ("total_timesteps","episode_steps","buffer_size","batch_size","hidden_width","layers","progress_every", "train_freq", "gradient_steps"):
         if getattr(a,name)<1:p.error(f"{name} must be positive")
     if a.layers<2:p.error("Late-action critic requires at least two hidden layers")
     if a.checkpoint_freq<0:p.error("checkpoint-freq cannot be negative")
-    if a.learning_starts<a.episode_steps:p.error("learning-starts must cover one complete episode")
+    if a.learning_starts < 0:p.error("learning-starts cannot be negative")
+    if not a.wait_for_completed_batch and a.learning_starts<a.episode_steps:p.error("learning-starts must cover one complete episode")
     if a.total_timesteps<=a.learning_starts:p.error("Run beyond learning-starts to test actual updates")
     if a.buffer_size<=2*a.episode_steps:p.error("buffer-size must exceed two episode lengths")
     if a.seed<0:p.error("Invalid seed")
+    if a.training_protocol == "mechanics-comparison-v1" and (a.total_timesteps % a.train_freq or
+            (a.checkpoint_freq and a.checkpoint_freq % a.train_freq)):
+        p.error("Budgets and checkpoint frequency must be multiples of train-freq for matched update counts")
+    for name in ("physics_gain", "cartesian_scale_m", "max_tip_step_m", "tolerance_m"):
+        if not np.isfinite(getattr(a, name)) or getattr(a, name) <= 0:p.error(f"{name} must be positive and finite")
     if a.hold_steps < 1 or (a.task_profile == "generalized_hold" and a.hold_steps > a.episode_steps):
         p.error("Holding window must be positive and fit the generalized episode")
     if not np.isfinite(a.initial_rotation_span_rad) or a.initial_rotation_span_rad < 0:
@@ -191,13 +223,18 @@ def arguments():
     return a
 
 
-def main():
-    a=arguments()
+def main(argv=None, defaults=None, baseline=False):
+    a=arguments(argv, defaults, baseline)
+    if a.dry_run:
+        print(json.dumps({**vars(a), "output_dir":str(a.output_dir)}, indent=2))
+        return
     if a.output_dir.exists() and any(a.output_dir.iterdir()):
         raise SystemExit("Output directory is not empty; choose a new run directory")
     a.output_dir.mkdir(parents=True,exist_ok=True)
     torch.set_num_threads(1)
     physics_enabled = max(a.physics_weight,a.physics_final_weight)>0
+    custom_actor = physics_enabled or a.ablation == "rl-only-checked"
+    actor_objective = {"none":"hybrid", "mechanics-only":"mechanics_only", "rl-only-checked":"rl_only_checked"}[a.ablation]
     solver_options = SolverOptions(max_shooting_evaluations=a.max_shooting_evaluations,
                                    shooting_strategy=a.shooting_strategy)
     plant=JointConstrainedReachEnv(a.system,tolerance_m=a.tolerance_m,
@@ -208,8 +245,11 @@ def main():
     env=plant
     replay_action_semantics = "proposal"
     exploration = exploration_settings(a.exploration_profile,a.noise_std,a.random_exploration,plant.n*2)
-    config={**vars(a),"output_dir":str(a.output_dir),"algorithm":"JacobianDDPG" if physics_enabled else "DDPG",
-        "gamma":.95,"tau":.001,"train_freq":1,"gradient_steps":1,
+    config={**vars(a),"output_dir":str(a.output_dir),"algorithm":"JacobianDDPG" if custom_actor else "DDPG",
+        "gamma":.95,"tau":.001,"train_freq":a.train_freq,"gradient_steps":a.gradient_steps,
+        "actor_objective":actor_objective if custom_actor else "ordinary_ddpg",
+        "actor_uses_critic":actor_objective != "mechanics_only",
+        "critic_uses_environment_rewards_only":True,
         "n_sampled_goal":4,"goal_selection_strategy":"future",
         "replay_action_semantics":replay_action_semantics,
         "plant":plant.plant_version,"action_contract_version":3,
@@ -231,7 +271,7 @@ def main():
         "jacobian_method":"Burgner 2014 Eqs. (6)-(7); analytical variational ODE, unloaded specialization, spatial-to-tip conversion",
         "exploration":exploration,
         "physics_loss_semantics":"projected-current-actor Jacobian tracking, target recomputed for each HER goal",
-        "actor_update_semantics":a.physics_integration if physics_enabled else "ordinary_ddpg",
+        "actor_update_semantics":("mechanics_only" if actor_objective == "mechanics_only" else a.physics_integration) if custom_actor else "ordinary_ddpg",
         "actor_update_check_scope":"same-minibatch fixed-critic surrogate; no return or physical stability guarantee",
         "unavailable_jacobian":"mask auxiliary sample; keep transition and RL update",
         "python":platform.python_version(),"numpy":np.__version__,"scipy":scipy.__version__,
@@ -239,21 +279,24 @@ def main():
     try: config["git_commit"]=subprocess.check_output(["git","rev-parse","HEAD"],text=True,stderr=subprocess.DEVNULL).strip()
     except (OSError,subprocess.CalledProcessError): config["git_commit"]=None
     (a.output_dir/"config.json").write_text(json.dumps(config,indent=2)+"\n",encoding="utf-8")
-    algorithm = JacobianDDPG if physics_enabled else ExplorationDDPG
+    algorithm = JacobianDDPG if custom_actor else ExplorationDDPG
     physics_kwargs = {"physics_lengths":plant.solver.lengths.tolist(),"physics_weight":a.physics_weight,
                       "physics_final_weight":a.physics_final_weight,"physics_anneal_steps":a.physics_anneal_steps,
                       "physics_integration":a.physics_integration,"physics_max_aux_ratio":a.physics_max_aux_ratio,
-                      "actor_max_backtracks":a.actor_max_backtracks} if physics_enabled else {}
+                      "actor_max_backtracks":a.actor_max_backtracks,"actor_objective":actor_objective,
+                      "physics_gain":a.physics_gain,"physics_cartesian_scale":a.cartesian_scale_m,
+                      "physics_max_tip_step":a.max_tip_step_m} if custom_actor else {}
     model=algorithm(PaperMlpPolicy,env,seed=a.seed,device="cpu",**physics_kwargs,
         random_exploration=exploration["random_exploration"],
+        wait_for_completed_batch=a.wait_for_completed_batch,
         learning_rate=a.learning_rate,gamma=.95,tau=.001,
         learning_starts=a.learning_starts,buffer_size=a.buffer_size,batch_size=a.batch_size,
-        train_freq=1,gradient_steps=1,
+        train_freq=a.train_freq,gradient_steps=a.gradient_steps,
         action_noise=NormalActionNoise(np.zeros(plant.n*2),np.asarray(exploration["normalized_action_noise_std"])),
         policy_kwargs={"net_arch":[a.hidden_width]*a.layers,
                        "features_extractor_class":EquilibriumStateExtractor,
                        "features_extractor_kwargs":{"length_scale":plant.length}},
-        replay_buffer_class=JacobianHerReplayBuffer if physics_enabled else ExecutedActionHerReplayBuffer,
+        replay_buffer_class=JacobianHerReplayBuffer if custom_actor else ExecutedActionHerReplayBuffer,
         replay_buffer_kwargs={"copy_info_dict":True,"n_sampled_goal":4,"goal_selection_strategy":"future",
                               "action_semantics":replay_action_semantics},verbose=0)
     actor=[p.detach().clone() for p in model.actor.parameters()]

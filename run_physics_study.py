@@ -21,18 +21,22 @@ ROOT = Path(__file__).resolve().parent
 ARMS = {
     "ddpg": {"guidance": "none", "physics_weight": 0.},
     "jacobian": {"guidance": "none", "physics_weight": .1},
+    "mechanics_only": {"guidance": "none", "physics_weight": .1, "ablation":"mechanics-only"},
+    "rl_only_checked": {"guidance": "none", "physics_weight": 0., "ablation":"rl-only-checked"},
 }
 DEFAULTS = dict(seeds=[7100,7101,7102,7103,7104], arms=["ddpg","jacobian"],
-                total_timesteps=10000, learning_starts=200, episode_steps=60,
-                checkpoint_freq=500, buffer_size=20000, batch_size=128,
+                total_timesteps=10000, learning_starts=0, episode_steps=200,
+                train_freq=100, gradient_steps=50,
+                checkpoint_freq=1000, buffer_size=500000, batch_size=256,
                 hidden_width=256, layers=3, learning_rate=.0005, noise_std=None,
                 exploration_profile="paper", random_exploration=None,
-                task_profile="generalized_hold", hold_steps=10,
+                task_profile="generalized_reach", hold_steps=10,
                 initial_rotation_span_rad=.15, goal_steps_min=2, goal_steps_max=8,
                 max_shooting_evaluations=500, shooting_strategy="hybr_restarts",
-                physics_weight=.1, physics_final_weight=.1, physics_anneal_steps=10000,
+                physics_weight=.1, physics_final_weight=0., physics_anneal_steps=5000,
+                physics_gain=.5, cartesian_scale_m=.002, max_tip_step_m=.002,
                 physics_integration="rl_priority", physics_max_aux_ratio=1., actor_max_backtracks=6,
-                system="ctr_0", tolerance_m=.001, eval_episodes=20, eval_steps=60,
+                system="ctr_0", tolerance_m=.001, eval_episodes=20, eval_steps=200,
                 eval_seed=810000, final_seed=910000, final_episodes=1000)
 
 
@@ -46,7 +50,8 @@ def write_json(path, value):
 
 def source_hashes():
     files = list((ROOT/"ctr_reach_envs"/"mechanics").glob("*.py"))
-    files += [ROOT/name for name in ("train_physics_ddpg_her.py", "evaluate_physics_ddpg_her.py",
+    files += list((ROOT/"ctr_reach_envs"/"training").glob("*.py"))
+    files += [ROOT/name for name in ("train_ddpg_her.py", "train_jacobian_ddpg_her.py", "evaluate_physics_ddpg_her.py",
              "run_physics_study.py", "ctr_reach_envs/paper_policy.py", "ctr_reach_envs/her_replay_buffer.py",
              "ctr_reach_envs/config.py", "ctr_reach_envs/paper_config.py")]
     return {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(files)}
@@ -62,12 +67,16 @@ def validate_config(c):
         raise ValueError("Training seeds must be unique, nonnegative and nonempty")
     if len(set(c["arms"])) != len(c["arms"]) or not c["arms"] or any(x not in ARMS for x in c["arms"]):
         raise ValueError("Unknown or duplicate arm")
-    positive = ("total_timesteps", "learning_starts", "episode_steps", "checkpoint_freq", "buffer_size",
+    positive = ("total_timesteps", "episode_steps", "checkpoint_freq", "buffer_size",
                 "batch_size", "hidden_width", "layers", "physics_anneal_steps", "eval_episodes", "eval_steps", "final_episodes")
     if any(c[k] < 1 for k in positive):
         raise ValueError("Budgets and network dimensions must be positive")
-    if c["layers"] < 2 or not c["total_timesteps"] > c["learning_starts"] >= c["episode_steps"]:
-        raise ValueError("Need layers >= 2 and total_timesteps > learning_starts >= episode_steps")
+    if c["layers"] < 2 or not c["total_timesteps"] > c["learning_starts"] >= 0:
+        raise ValueError("Need layers >= 2 and total_timesteps > learning_starts >= 0")
+    for key in ("train_freq", "gradient_steps"):
+        if c.get(key,1) < 1:raise ValueError("Update cadence must be positive")
+    if c["total_timesteps"]%c.get("train_freq",1) or c["checkpoint_freq"]%c.get("train_freq",1):
+        raise ValueError("Budgets and checkpoints must be multiples of train_freq")
     if c["buffer_size"] <= 2*c["episode_steps"]:
         raise ValueError("Buffer must exceed two episode lengths")
     for key in ("learning_rate", "tolerance_m", "physics_weight"):
@@ -147,8 +156,11 @@ def train(plan, folder):
             # Old frozen plans must retain their original weighted-sum update.
             params["physics_integration"] = c.get("physics_integration", "sum")
             params["shooting_strategy"] = c.get("shooting_strategy", "legacy")
+            params["train_freq"] = c.get("train_freq",1)
+            params["gradient_steps"] = c.get("gradient_steps",1)
             for key in ("hold_steps","initial_rotation_span_rad","goal_steps_min","goal_steps_max",
-                        "max_shooting_evaluations","physics_max_aux_ratio","actor_max_backtracks"):
+                        "max_shooting_evaluations","physics_max_aux_ratio","actor_max_backtracks",
+                        "physics_gain","cartesian_scale_m","max_tip_step_m"):
                 if key in c: params[key] = c[key]
             for key in ("noise_std","random_exploration"):
                 if c.get(key) is not None: params[key] = c[key]
@@ -156,7 +168,14 @@ def train(plan, folder):
                           physics_weight=c["physics_weight"] if ARMS[arm]["physics_weight"] else 0.,
                           physics_final_weight=c["physics_final_weight"] if ARMS[arm]["physics_weight"] else 0.,
                           progress_every=min(100,c["total_timesteps"]), output_dir=out)
-            ok = run_command(command("train_physics_ddpg_her.py", params), out) and ok
+            if arm == "ddpg":
+                script="train_ddpg_her.py"
+                params["profile"]="mechanics"
+            else:
+                script="train_jacobian_ddpg_her.py"
+                params["ablation"]=ARMS[arm].get("ablation","none")
+                if arm=="mechanics_only":params["physics_final_weight"]=params["physics_weight"]
+            ok = run_command(command(script, params), out) and ok
     return ok
 
 
@@ -258,7 +277,8 @@ def report(plan, folder, final=False):
         with (folder/f"{prefix}_learning_curves.csv").open("w",newline="",encoding="utf-8") as stream:
             writer=csv.DictWriter(stream,fieldnames=list(rows[0]));writer.writeheader();writer.writerows(rows)
     contrasts={}
-    for base, guided in (("ddpg","jacobian"),):
+    for base, guided in (("ddpg","jacobian"), ("mechanics_only","jacobian"),
+                         ("rl_only_checked","jacobian"), ("ddpg","rl_only_checked")):
         if base not in c["arms"] or guided not in c["arms"]:continue
         by_key={(r["arm"],r["training_seed"],r["timesteps"],r["mode"]):r for r in rows}
         per_metric={}

@@ -38,10 +38,11 @@ class ExplorationDDPG(DDPG):
     SB3 DDPG. Counts describe proposals before joint projection. They cannot
     establish coverage of all reachable robot states.
     """
-    def __init__(self, *args, random_exploration=0., **kwargs):
+    def __init__(self, *args, random_exploration=0., wait_for_completed_batch=False, **kwargs):
         if not np.isfinite(random_exploration) or not 0 <= random_exploration <= 1:
             raise ValueError("random_exploration must be in [0, 1]")
         self.random_exploration = float(random_exploration)
+        self.wait_for_completed_batch = bool(wait_for_completed_batch)
         self.exploration_counts = dict(warmup_uniform=0, mixture_uniform=0, policy_with_noise=0)
         super().__init__(*args, **kwargs)
 
@@ -60,3 +61,8 @@ class ExplorationDDPG(DDPG):
         self.exploration_counts["mixture_uniform"] += int(mask.sum())
         self.exploration_counts["policy_with_noise"] += int(n_envs-mask.sum())
         return action, buffer_action
+
+    def train(self, gradient_steps, batch_size=100):
+        if self.wait_for_completed_batch and np.count_nonzero(self.replay_buffer.ep_length) < batch_size:
+            return
+        return super().train(gradient_steps, batch_size)
