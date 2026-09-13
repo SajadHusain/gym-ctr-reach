@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DDPG+HER: --profile paper (default), or mechanics for a matched comparison."""
+"""DDPG+HER: paper reproduction, original-IVP comparison, or equilibrium mechanics."""
 from ctr_reach_envs.training.cli import baseline_main
 
 if __name__ == "__main__":

@@ -1,5 +1,12 @@
 # CTR reaching: DDPG+HER and analytical Jacobian guidance
 
+For the matched comparison using the **original IVP model without equilibrium
+shooting**, use `--profile original` in both training commands. The
+[original-IVP guide](docs/original_ivp_training.md) explains the explicit legacy
+and continuous segment options, analytical derivatives, curriculum, and
+frozen-actor evaluation. Start fresh runs; equilibrium checkpoints belong to
+a different plant.
+
 There are two supported training entry points:
 
 | Command | Purpose |

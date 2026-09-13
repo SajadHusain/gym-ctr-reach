@@ -198,9 +198,7 @@ class JacobianDDPG(ExplorationDDPG):
         if not isinstance(self.replay_buffer,JacobianHerReplayBuffer):
             raise ValueError("JacobianDDPG requires JacobianHerReplayBuffer")
         if self._physics_loss is None:
-            self._physics_loss = ProjectedJacobianLoss(self.physics_lengths,
-                cartesian_scale=self.physics_cartesian_scale, gain=self.physics_gain,
-                max_tip_step=self.physics_max_tip_step).to(self.device)
+            self._physics_loss = self._make_physics_loss().to(self.device)
         self.policy.set_training_mode(True)
         checked = self.actor_objective == "rl_only_checked" or (
             self.actor_objective == "hybrid" and self.physics_integration == "rl_priority")
@@ -275,3 +273,8 @@ class JacobianDDPG(ExplorationDDPG):
         self.logger.record("physics/weight",weight)
         for key in integration_metrics[0]:
             self.logger.record("physics/"+key,self.last_physics_metrics[key])
+
+    def _make_physics_loss(self):
+        return ProjectedJacobianLoss(self.physics_lengths,
+            cartesian_scale=self.physics_cartesian_scale, gain=self.physics_gain,
+            max_tip_step=self.physics_max_tip_step)

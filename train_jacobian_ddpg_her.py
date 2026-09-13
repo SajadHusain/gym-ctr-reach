@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analytical Jacobian guidance of DDPG+HER on the mechanical equilibrium plant."""
+"""Analytical Jacobian guidance: select --profile original for the original IVP."""
 from ctr_reach_envs.training.cli import guided_main
 
 if __name__ == "__main__":

@@ -23,19 +23,29 @@ def mechanics_defaults(baseline=False):
 def baseline_main(argv=None):
     argv = sys.argv[1:] if argv is None else list(argv)
     if any(x in argv for x in ("-h", "--help")) and not any(x.startswith("--profile") for x in argv):
-        print("Profiles: --profile paper (default, preserved reproduction); --profile mechanics (matched equilibrium baseline).\n"
-              "Use --profile mechanics --help for the comparison settings.\n")
+        print("Profiles: --profile paper (preserved reproduction); --profile mechanics (equilibrium); "
+              "--profile original (matched original-IVP comparison).\nUse --profile original --help for its settings.\n")
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--profile", choices=["paper", "mechanics"], default="paper")
+    parser.add_argument("--profile", choices=["paper", "mechanics", "original"], default="paper")
     args, remaining = parser.parse_known_args(argv)
     if args.profile == "paper":
         from .paper import main
         main(remaining)
+    elif args.profile == "original":
+        from .original import main
+        main(remaining, baseline=True)
     else:
         from .mechanics import main
         main(remaining, defaults=mechanics_defaults(True), baseline=True)
 
 
 def guided_main(argv=None):
-    from .mechanics import main
-    main(argv, defaults=mechanics_defaults(False))
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--profile", choices=["mechanics", "original"], default="mechanics")
+    args, remaining = parser.parse_known_args(sys.argv[1:] if argv is None else list(argv))
+    if args.profile == "original":
+        from .original import main
+        main(remaining, baseline=False)
+    else:
+        from .mechanics import main
+        main(remaining, defaults=mechanics_defaults(False))

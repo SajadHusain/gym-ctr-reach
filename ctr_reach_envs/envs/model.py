@@ -10,7 +10,11 @@ from ctr_reach_envs.envs.model_utils import sample_parameters
 class Model:
     """Simplified, unloaded quasi-static forward model from the supplied project."""
 
-    def __init__(self, system_parameters):
+    def __init__(self, system_parameters, *, segment_mode="legacy", integration_options=None):
+        if segment_mode not in ("legacy", "continuous"):
+            raise ValueError("segment_mode must be legacy or continuous")
+        self.segment_mode = segment_mode
+        self.integration_options = dict(integration_options or {})
         self.system_parameters = deepcopy(system_parameters)
         self.current_sys_parameters = deepcopy(system_parameters)
         self.r = np.empty((0, 3))
@@ -30,7 +34,8 @@ class Model:
             raise ValueError("joint must be a finite six-element vector")
 
         beta = joint[:3]
-        segment = Segment(*self.current_sys_parameters[system], beta)
+        segment = Segment(*self.current_sys_parameters[system], beta,
+                          quantize=self.segment_mode == "legacy")
         r_0 = np.zeros((3, 1))
         alpha_1_0 = joint[3]
         R_0 = np.array(
@@ -123,6 +128,7 @@ class Model:
                 t_span=(start, end),
                 y0=y_0,
                 t_eval=s_eval,
+                **self.integration_options,
             )
             if not solution.success:
                 raise RuntimeError(f"CTR ODE solve failed: {solution.message}")
@@ -149,4 +155,3 @@ class Model:
             tips[index] = sample
             u_z_end[index] = u_z[sample, index]
         return r, u_z_end, tips
-

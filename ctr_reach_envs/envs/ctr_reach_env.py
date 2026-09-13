@@ -37,6 +37,7 @@ class CtrReachEnv(gym.Env):
         length_based_sample=False,
         domain_rand=0.0,
         render_mode=None,
+        model_options=None,
     ):
         super().__init__()
         if render_mode not in {None, "human"}:
@@ -85,7 +86,7 @@ class CtrReachEnv(gym.Env):
         # normalized action is converted to metres/radians before it reaches the robot.
         self.action_space = gym.spaces.Box(-1.0, 1.0, shape=(2 * NUM_TUBES,), dtype=np.float32)
 
-        self.model = Model(self.ctr_system_parameters)
+        self.model = Model(self.ctr_system_parameters, **(model_options or {}))
         self.visualization = None
         self.t = 0
         self.system = 0

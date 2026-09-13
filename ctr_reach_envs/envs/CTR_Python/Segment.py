@@ -4,7 +4,7 @@ import numpy as np
 class Segment:
     """Segment three overlapping tubes into intervals of constant properties."""
 
-    def __init__(self, t1, t2, t3, base):
+    def __init__(self, t1, t2, t3, base, *, quantize=True):
         stiffness = np.array([t1.E, t2.E, t3.E])
         torsion = np.array([t1.G, t2.G, t3.G])
         curve_x = np.array([t1.U_x, t2.U_x, t3.U_x])
@@ -14,7 +14,19 @@ class Segment:
         d_c = d_tip - np.array([t1.L_c, t2.L_c, t3.L_c])
         points = np.hstack((0.0, base, d_c, d_tip))
         index = np.argsort(points)
-        segment_length = 1e-5 * np.floor(1e5 * np.diff(np.sort(points)))
+        raw_length = np.diff(np.sort(points))
+        segment_length = 1e-5 * np.floor(1e5 * raw_length) if quantize else raw_length
+        # Derivatives within a fixed event ordering. The legacy floor has zero
+        # derivative inside each cell; it cannot use the continuous derivative.
+        point_gradients = np.vstack((np.zeros((1, 3)), np.tile(np.eye(3), (3, 1))))
+        raw_gradients = np.diff(point_gradients[index], axis=0)
+        moving = np.any(raw_gradients != 0, axis=1)
+        length_gradients = np.zeros_like(raw_gradients) if quantize else raw_gradients
+        self.derivative_valid = not np.any(moving & (raw_length < 1e-9))
+        self.derivative_reason = "" if self.derivative_valid else "moving segment boundary"
+        if quantize and np.any(moving & (abs(raw_length / 1e-5 - np.round(raw_length / 1e-5)) * 1e-5 < 1e-9)):
+            self.derivative_valid = False
+            self.derivative_reason = "legacy rounding boundary"
 
         e = np.zeros((3, segment_length.size))
         g = np.zeros((3, segment_length.size))
@@ -47,6 +59,12 @@ class Segment:
         length_sum = np.cumsum(length)
         keep = length_sum + min(base) > 0
         self.S = length_sum[keep] + min(base)
+        endpoint_gradients = np.cumsum(length_gradients[nonzero], axis=0) + np.eye(3)[np.argmin(base)]
+        endpoints = length_sum + min(base)
+        if np.any((abs(endpoints) < 1e-9) & np.any(endpoint_gradients != 0, axis=1)):
+            self.derivative_valid = False
+            self.derivative_reason = "template crossing"
+        self.S_beta = endpoint_gradients[keep]
 
         e_t = ee[:, keep]
         g_t = gg[:, keep]
