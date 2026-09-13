@@ -98,3 +98,44 @@ Report deterministic success, mean/median/p95 error, steps, action-change RMS,
 second-difference RMS, constraint alterations, solver failures and elapsed
 physics cost. Changing tolerance during training does not itself demonstrate
 sample-efficiency improvement. Independent training seeds are still required.
+
+## Sampling a goal outside a larger initial tolerance
+
+The witness generator repeats a signed, bounded joint command for a sampled
+number of steps. `--goal-steps-max` defaults to 8. A distance floor of 9 mm can
+exhaust its 32 proposals for a given start: for a straight tube, eight 1 mm
+translations cannot displace the tip by 9 mm, regardless of rotation. This is
+a reset sampling limitation, not an optimizer failure. Exhausting a random
+budget alone does not prove that no qualifying goal exists.
+
+The following explicit settings support experiments with an 8.5 mm initial
+tolerance and a 9 mm goal floor:
+
+```powershell
+--goal-steps-max 20 --max-goal-sampling-attempts 32 --max-reset-sampling-attempts 8
+```
+
+Use these settings in both training arms. They are saved in `task_settings`,
+and fixed-tolerance evaluation restores them automatically. The default reset
+budget remains 1 for compatibility with existing configurations/checkpoints.
+For a budget greater than 1, an exhausted endpoint distance budget rejects the
+start and samples another start, up to the configured limit. A solver error
+still propagates immediately. Explicitly supplied initial joints are never
+replaced. The distance floor is never relaxed and retries create no replay
+transitions. Every equilibrium solve, rejected endpoint and rejected start is
+counted, including in evaluation. An impossible or unlucky task can still
+exhaust the total budget; it raises a diagnostic error rather than hanging.
+
+This defines a conditional start/goal distribution: starts from which the
+configured witness sampler rarely finds a qualifying endpoint are less likely
+to be accepted. A longer witness range also changes the goal distribution.
+Compare newly trained arms with identical settings and evaluation seeds; do not
+pool them with the earlier 2..8-command, single-start protocol. Report rejection
+counts and reset computation costs alongside policy performance. Endpoint
+reachability is not a certificate of intermediate equilibrium stability.
+
+For a 150,000-transition run with decay_steps=50,000, the episode tolerance is
+8.5 mm initially, approximately 2.915 mm at 25,000 transitions, and 1 mm for
+episodes starting at or after 50,000 transitions. It stays fixed within an
+episode. Use a fresh output directory; the trainer does not resume a checkpoint
+merely because its output directory already exists.

@@ -178,6 +178,10 @@ def arguments(argv=None, defaults=None, baseline=False):
                    help="Independent tube-angle offsets about a common angle sampled uniformly from [-pi, pi]")
     p.add_argument("--goal-steps-min", type=int, default=2)
     p.add_argument("--goal-steps-max", type=int, default=8)
+    p.add_argument("--max-goal-sampling-attempts", type=int, default=32,
+                   help="Maximum endpoint proposals for each initial configuration")
+    p.add_argument("--max-reset-sampling-attempts", type=int, default=1,
+                   help="Maximum initial configurations per reset; retries only distance-budget exhaustion")
     p.add_argument("--max-shooting-evaluations", type=int, default=500,
                    help="Per-equilibrium nonlinear shooting budget; stored in every checkpoint config")
     p.add_argument("--shooting-strategy", choices=["legacy", "hybr_restarts"], default="hybr_restarts",
@@ -245,6 +249,8 @@ def arguments(argv=None, defaults=None, baseline=False):
         p.error("Initial rotation span must be finite and nonnegative")
     if not 1 <= a.goal_steps_min <= a.goal_steps_max:
         p.error("Need 1 <= goal-steps-min <= goal-steps-max")
+    if a.max_goal_sampling_attempts < 1 or a.max_reset_sampling_attempts < 1:
+        p.error("Goal and reset sampling budgets must be positive")
     if a.max_shooting_evaluations < 1:
         p.error("Shooting evaluation budget must be positive")
     try: exploration_settings(a.exploration_profile,a.noise_std,a.random_exploration)
@@ -277,6 +283,8 @@ def main(argv=None, defaults=None, baseline=False):
         task_profile=a.task_profile, initial_rotation_span_rad=a.initial_rotation_span_rad,
         goal_steps_min=a.goal_steps_min, goal_steps_max=a.goal_steps_max,
         minimum_goal_distance_m=a.minimum_goal_distance_m,
+        max_goal_sampling_attempts=a.max_goal_sampling_attempts,
+        max_reset_sampling_attempts=a.max_reset_sampling_attempts,
         tolerance_curriculum=ToleranceCurriculum(**a.curriculum) if a.curriculum else None,
         solver_options=solver_options)
     env=plant
@@ -300,6 +308,7 @@ def main(argv=None, defaults=None, baseline=False):
         "evaluation_tolerance_m":a.tolerance_m,
         "curriculum_semantics":"exponential in collected transitions; sampled at reset and fixed within each episode" if a.curriculum else "constant",
         "goal_sampling_semantics":"fixed distance floor for the complete run and evaluation",
+        "reset_sampling_semantics":"bounded retries of initial configurations only after endpoint distance-budget exhaustion; numerical failures propagate",
         "model_fingerprint":plant.solver.model_fingerprint,
         "goal_distribution":plant.goal_distribution,"task_settings":plant.task_settings,
         "task_semantics_version":1,
@@ -380,6 +389,8 @@ def main(argv=None, defaults=None, baseline=False):
             "physics_actor_updates":getattr(model,"physics_update_count",0),
             "last_physics_metrics":getattr(model,"last_physics_metrics",{}),
             "reset_attempts":plant.reset_attempts,"failed_resets":plant.failed_resets,
+            "goal_sampling_exhaustions":plant.goal_sampling_exhaustions,
+            "resampled_initial_states":plant.resampled_initial_states,
             "rejected_trivial_goals":plant.rejected_trivial_goals,
             "last_failed_solve_q":plant.last_failed_solve_q,
             "physics_costs_including_resets_and_witnesses":plant.costs,

@@ -70,6 +70,8 @@ def main():
             checkpoint_timesteps=model.num_timesteps
             for episode in range(a.episodes):
                 costs=dict(plant.costs);t=time.perf_counter()
+                sampling_counts={k:getattr(plant,k) for k in
+                    ("goal_sampling_exhaustions", "resampled_initial_states", "rejected_trivial_goals")}
                 motion=EpisodeMotion(plant.n)
                 reaching=ReachHoldMetrics(plant.tolerance_m,hold_steps)
                 episode_complete=False
@@ -152,6 +154,8 @@ def main():
                     row["failed_solve_q"]=json.dumps(plant.last_failed_solve_q)
                 for key in plant.costs:
                     row[key]=plant.costs[key]-costs[key]
+                for key, value in sampling_counts.items():
+                    row[key]=getattr(plant,key)-value
                 row["seconds"]=time.perf_counter()-t
                 row["action_selection_seconds"]=action_selection_seconds
                 row["controller_audit_samples"]=len(controller_differences)
@@ -206,6 +210,8 @@ def main():
             "p95_final_error_m":float(np.quantile(errors,.95)) if errors else None,
             "equilibrium_calls":sum(r["equilibrium_calls"] for r in subset),
             "physics_costs_including_resets":{k:sum(r[k] for r in subset) for k in plant.costs},
+            "reset_sampling_counts":{k:sum(r[k] for r in subset) for k in
+                ("goal_sampling_exhaustions", "resampled_initial_states", "rejected_trivial_goals")},
             "mean_initial_error_m":float(np.mean([r["initial_error_m"] for r in subset if r["initial_error_m"] is not None])) if any(r["initial_error_m"] is not None for r in subset) else None,
             "motion_all_episodes":summarize_motion(subset),
             "motion_successful_episodes":summarize_motion([r for r in subset if r["success"]]),

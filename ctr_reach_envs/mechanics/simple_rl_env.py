@@ -20,6 +20,10 @@ from .curriculum import ToleranceCurriculum
 TASK_PROFILES = ("legacy", "generalized_reach", "generalized_hold")
 
 
+class GoalSamplingError(RuntimeError):
+    """The configured witness proposals did not meet the distance floor."""
+
+
 def make_reach_env(config, *, max_episode_steps=None, compute_jacobian=False, task_profile=None,
                    tolerance_m=None):
     """Restore task semantics and evaluate curriculum checkpoints at one fixed tolerance."""
@@ -47,6 +51,7 @@ class JointConstrainedReachEnv(gym.Env):
                  rotation_step_rad=.05, task_profile="legacy",
                  initial_rotation_span_rad=.15, goal_steps_min=2, goal_steps_max=8,
                  minimum_goal_distance_m=None, max_goal_sampling_attempts=32,
+                 max_reset_sampling_attempts=1,
                  solver_options=None, tolerance_curriculum=None,
                  observation_tolerance_bound_m=None):
         super().__init__()
@@ -79,7 +84,7 @@ class JointConstrainedReachEnv(gym.Env):
         self.observation_tolerance_bound_m = float(observation_tolerance_bound_m)
         if not np.isfinite(initial_rotation_span_rad) or initial_rotation_span_rad < 0:
             raise ValueError("Initial rotation span must be finite and nonnegative")
-        for value in (goal_steps_min, goal_steps_max, max_goal_sampling_attempts):
+        for value in (goal_steps_min, goal_steps_max, max_goal_sampling_attempts, max_reset_sampling_attempts):
             if isinstance(value, bool) or not isinstance(value, int) or value < 1:
                 raise ValueError("Goal sampling counts must be positive integers")
         if goal_steps_min > goal_steps_max:
@@ -93,11 +98,14 @@ class JointConstrainedReachEnv(gym.Env):
         self.task_settings = dict(initial_rotation_span_rad=float(initial_rotation_span_rad),
             goal_steps_min=goal_steps_min, goal_steps_max=goal_steps_max,
             minimum_goal_distance_m=float(minimum_goal_distance_m),
-            max_goal_sampling_attempts=max_goal_sampling_attempts)
+            max_goal_sampling_attempts=max_goal_sampling_attempts,
+            max_reset_sampling_attempts=max_reset_sampling_attempts)
         self.goal_distribution = ("seeded aligned starts; goals from four joint-constrained commands; fixed tolerance"
             if task_profile == "legacy" else
             "uniform common rotation plus independent bounded offsets; signed independent joint directions; "
             "variable-length projected witnesses; nontrivial reachable endpoints")
+        if task_profile != "legacy" and max_reset_sampling_attempts > 1:
+            self.goal_distribution += "; bounded rejection sampling of starts after witness-budget exhaustion"
         self.system_name = system_name
         if solver_options is not None and not isinstance(solver_options, SolverOptions):
             raise ValueError("solver_options must be SolverOptions")
@@ -129,6 +137,7 @@ class JointConstrainedReachEnv(gym.Env):
                           failed_calls_without_rhs_counts=0, call_seconds=0.)
         self.reset_attempts = self.failed_resets = self.transitions = self.jacobian_failures = 0
         self.rejected_trivial_goals = 0
+        self.goal_sampling_exhaustions = self.resampled_initial_states = 0
         self.last_failed_solve_q = None
         self.equilibrium = self.goal = self._physics_cache = None
         self._finished = True
@@ -185,6 +194,7 @@ class JointConstrainedReachEnv(gym.Env):
         Endpoint reachability does not certify every intermediate equilibrium.
         """
         settings = self.task_settings
+        largest_distance = 0.
         for attempt in range(1, settings["max_goal_sampling_attempts"]+1):
             count = int(self.np_random.integers(settings["goal_steps_min"], settings["goal_steps_max"]+1))
             action = self.np_random.uniform(-1., 1., 2*self.n)
@@ -193,11 +203,56 @@ class JointConstrainedReachEnv(gym.Env):
                 target += self.projected_delta(target, action)
             goal = self._solve(target).tip
             distance = np.linalg.norm(goal.astype(np.float32).astype(float)-initial.tip.astype(np.float32).astype(float))
+            largest_distance = max(largest_distance, float(distance))
             if distance >= settings["minimum_goal_distance_m"]:
                 return goal, dict(goal_joint_witness=target.copy(), goal_witness_action=action.copy(),
                                   goal_witness_steps=count, goal_sampling_attempts=attempt)
             self.rejected_trivial_goals += 1
-        raise RuntimeError("No nontrivial reachable goal within the bounded sampling budget")
+        self.goal_sampling_exhaustions += 1
+        raise GoalSamplingError(
+            "No nontrivial reachable goal within the bounded sampling budget: "
+            f"{settings['max_goal_sampling_attempts']} proposals with "
+            f"{settings['goal_steps_min']}..{settings['goal_steps_max']} witness commands; "
+            f"largest sampled distance {largest_distance:.6g} m, "
+            f"required {settings['minimum_goal_distance_m']:.6g} m. "
+            "This is a sampling failure, not proof the requested distance is unreachable. "
+            "Consider a longer goal-steps-max or bounded max-reset-sampling-attempts; "
+            "use identical settings in both arms and evaluation.")
+
+    def _sample_reset_pair(self, options):
+        # Only an exhausted distance-rejection budget permits a different start.
+        # Solver failures and explicit user-supplied joints are never discarded.
+        budget = (self.task_settings["max_reset_sampling_attempts"]
+                  if self.task_profile != "legacy" and not options else 1)
+        for attempt in range(1, budget+1):
+            q = self.solver.constraints._array(options["joints"]).copy() if "joints" in options else self._sample_joints()
+            initial = self._solve(q)
+            goal_metadata = {}
+            if "goal" in options:
+                goal = np.asarray(options["goal"], dtype=float)
+                if goal.shape != (3,) or not np.all(np.isfinite(goal)) or np.any(abs(goal) > self.length):
+                    raise ValueError("Goal must be a finite Cartesian point within the declared bounds")
+                if self.tolerance_curriculum is not None and np.linalg.norm(
+                        goal.astype(np.float32).astype(float)-initial.tip.astype(np.float32).astype(float)
+                ) < self.task_settings["minimum_goal_distance_m"]:
+                    raise ValueError("Explicit curriculum goal is inside the minimum initial goal distance")
+            elif self.task_profile != "legacy":
+                try:
+                    goal, goal_metadata = self._sample_generalized_goal(initial)
+                except GoalSamplingError as exc:
+                    if attempt == budget:
+                        raise GoalSamplingError(f"Reset exhausted {budget} initial configuration(s). {exc}") from exc
+                    self.resampled_initial_states += 1
+                    continue
+            else:
+                target = q.copy()
+                for _ in range(self.witness_steps):
+                    command = np.r_[np.full(self.n, -.0005), .04+self.np_random.uniform(-.015, .015, self.n)]
+                    action = np.clip(command/self.action_scales, -1., 1.)
+                    target += self.projected_delta(target, action)
+                goal = self._solve(target).tip
+            goal_metadata.update(reset_sampling_attempts=attempt, rejected_reset_starts=attempt-1)
+            return initial, goal, goal_metadata
 
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
@@ -218,34 +273,17 @@ class JointConstrainedReachEnv(gym.Env):
         if self.tolerance_curriculum is not None:
             self.tolerance_m = self.tolerance_curriculum.value(self.episode_start_timestep)
         before = dict(self.costs)
+        sampling_before = dict(goal_sampling_exhaustions=self.goal_sampling_exhaustions,
+                               resampled_initial_states=self.resampled_initial_states,
+                               rejected_trivial_goals=self.rejected_trivial_goals)
         try:
-            q = self.solver.constraints._array(options["joints"]).copy() if "joints" in options else self._sample_joints()
-            initial = self._solve(q)
-            goal_metadata = {}
-            if "goal" in options:
-                goal = np.asarray(options["goal"], dtype=float)
-                if goal.shape != (3,) or not np.all(np.isfinite(goal)) or np.any(abs(goal) > self.length):
-                    raise ValueError("Goal must be a finite Cartesian point within the declared bounds")
-                if self.tolerance_curriculum is not None and np.linalg.norm(
-                        goal.astype(np.float32).astype(float)-initial.tip.astype(np.float32).astype(float)
-                ) < self.task_settings["minimum_goal_distance_m"]:
-                    raise ValueError("Explicit curriculum goal is inside the minimum initial goal distance")
-            elif self.task_profile != "legacy":
-                goal, goal_metadata = self._sample_generalized_goal(initial)
-            else:
-                # Reachable joint-space witness; only its endpoint needs an FK
-                # solve. This reset path performs no sensitivity/stability calls.
-                target = q.copy()
-                for _ in range(self.witness_steps):
-                    command = np.r_[np.full(self.n, -.0005), .04+self.np_random.uniform(-.015, .015, self.n)]
-                    action = np.clip(command/self.action_scales, -1., 1.)
-                    target += self.projected_delta(target, action)
-                goal = self._solve(target).tip
+            initial, goal, goal_metadata = self._sample_reset_pair(options)
             self.equilibrium, self.goal, self.steps = initial, goal.copy(), 0
             self._finished = False
             obs = self._observation()
             info = self._task_info(obs)
-            info.update(initial_q=q.copy(), trivial_goal=info["is_success"],
+            info.update(initial_q=initial.joints.copy(), trivial_goal=info["is_success"],
+                        reset_sampling_counts={k: getattr(self, k)-v for k, v in sampling_before.items()},
                         reset_costs={k: self.costs[k]-before[k] for k in self.costs}, **goal_metadata)
             return obs, info
         except Exception:
