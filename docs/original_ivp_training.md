@@ -212,7 +212,7 @@ python train_jacobian_ddpg_her.py @ctrIvpArgs --physics-weight 0.1 --physics-fin
 ```
 
 Guidance decays linearly to zero by 200k in this example. After that both arms
-optimize the ordinary RL objective. To study persistent guidance, explicitly
+optimize the ordinary RL objective, and unused Jacobian collection stops. To study persistent guidance, explicitly
 set `--physics-final-weight 0.1` in a separately named ablation.
 
 First compare checkpoints with 100 development episodes at seed 810000. Once

@@ -109,6 +109,11 @@ class AuditCallback(BaseCallback):
             self.actions, self.deltas, self.episode_reward = [], [], 0.
         # Preserve the historical paper callback timing, including tolerance in HER infos.
         self.plant.update_goal_tolerance(self.num_timesteps)
+        physics = self.config["physics"]
+        if physics["final_weight"] == 0 and self.num_timesteps >= physics["anneal_steps"]:
+            # Future updates no longer use guidance. Do not pay for unused
+            # derivatives; older source-state derivatives remain in replay.
+            self.plant.compute_jacobian = False
         self.record_updates()
         if self.checkpoint_freq and self.num_timesteps % self.checkpoint_freq == 0:
             folder = self.output / "checkpoints" / f"step_{self.num_timesteps:09d}"

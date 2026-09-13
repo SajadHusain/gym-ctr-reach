@@ -210,3 +210,19 @@ def test_original_gymnasium_contract():
     check_env(env, skip_render_check=True)
     sb3_check(env)
     env.close()
+
+
+def test_zero_final_weight_stops_unused_derivative_collection(tmp_path):
+    from ctr_reach_envs.training.original import AuditCallback
+    cfg = configuration()
+    cfg["physics"].update(final_weight=0., anneal_steps=16)
+    env = make_env(cfg, compute_jacobian=True)
+    model = build_model(env, cfg)
+    audit = AuditCallback(env, cfg, tmp_path, checkpoint_freq=0, progress_every=100)
+    try:
+        model.learn(32, callback=audit)
+        assert env.costs["sensitivity_calls"] == 16
+        assert env.compute_jacobian is False
+        assert model.num_timesteps == 32 and model._n_updates > 0
+    finally:
+        audit.close(); env.close()
