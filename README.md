@@ -35,6 +35,12 @@ python -m pytest tests/test_clean_training.py tests/test_actor_gradients.py test
 
 ## Matched training
 
+For the opt-in 50,000-interaction tolerance-curriculum comparison, follow
+[the mechanics curriculum guide](docs/mechanics_curriculum.md). Both arms start
+at 5 mm, decay exponentially to 1 mm over 25,000 interactions, and use a fixed
+6-mm minimum goal distance. The guided arm keeps its Jacobian weight at 0.1.
+The fixed-1-mm commands below remain available for the earlier comparison.
+
 Use fresh directories. These commands share the same task and DDPG settings:
 
 ```powershell

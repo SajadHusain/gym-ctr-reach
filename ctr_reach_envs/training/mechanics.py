@@ -24,6 +24,7 @@ from ctr_reach_envs.mechanics.rl_jacobian import JacobianDDPG, JacobianHerReplay
 from ctr_reach_envs.mechanics.actor_gradients import STEP_METRICS
 from ctr_reach_envs.mechanics.rl_exploration import ExplorationDDPG, exploration_settings
 from ctr_reach_envs.mechanics.rl_metrics import EpisodeMotion, ReachHoldMetrics
+from ctr_reach_envs.mechanics.curriculum import ToleranceCurriculum
 
 
 class AuditCallback(BaseCallback):
@@ -53,6 +54,7 @@ class AuditCallback(BaseCallback):
         self.model.save(folder/"model.zip")
         (folder/"config.json").write_text(json.dumps(self.config,indent=2)+"\n",encoding="utf-8")
         budget={"timesteps":step,"gradient_updates":self.model._n_updates,
+                "training_position_tolerance_m":self.plant.tolerance_m,
                 "exploration_proposal_counts":dict(self.model.exploration_counts),
                 "training_seconds":time.perf_counter()-self.started,
                 "physics_costs_including_resets_and_witnesses":dict(self.plant.costs),
@@ -78,6 +80,7 @@ class AuditCallback(BaseCallback):
         if count<1 or count==self.last_logged_update or self.update_stream is None:return
         logged=self.model.logger.name_to_value
         row={"timesteps":self.model.num_timesteps,"gradient_updates":count,
+             "collection_tolerance_m":self.plant.tolerance_m,
              "weight":metrics.get("weight",0.),"jacobian_loss":metrics.get("jacobian_loss",0.),
              "rl_actor_loss":metrics.get("rl_actor_loss",logged.get("train/actor_loss")),
              "total_actor_loss":metrics.get("total_actor_loss",logged.get("train/actor_loss")),
@@ -93,6 +96,11 @@ class AuditCallback(BaseCallback):
     def _on_step(self):
         self.record_update()
         info = self.locals["infos"][0]
+        if not self.motion.executed:
+            self.reaching = ReachHoldMetrics(info["position_tolerance"], self.hold_steps)
+        elif self.reaching.tolerance_m != info["position_tolerance"]:
+            raise RuntimeError("Tolerance changed inside an episode")
+        self.logger.record("curriculum/position_tolerance_m", info["position_tolerance"])
         # Only actions are used here; terminal-observation resets cannot leak
         # into action-difference statistics.
         self.motion.add(info)
@@ -103,6 +111,8 @@ class AuditCallback(BaseCallback):
         if self.locals["dones"][0]:
             row = {"episode": len(self.rows), "timesteps": self.num_timesteps,
                    "success": info["is_success"], "error_m": info["error"],
+                   "position_tolerance_m":info["position_tolerance"],
+                   "episode_start_timestep":info["episode_start_timestep"],
                    "truncated": info.get("TimeLimit.truncated",False),
                    "cumulative_equilibrium_calls": self.plant.costs["equilibrium_calls"]}
             row.update(self.motion.summary())
@@ -118,6 +128,7 @@ class AuditCallback(BaseCallback):
         if self.num_timesteps % self.progress_every == 0:
             print(f"Step {self.num_timesteps}: completed episodes={len(self.rows)}, "
                   f"error={info['error']*1000:.3f} mm, "
+                  f"tolerance={info['position_tolerance']*1000:.3f} mm, "
                   f"equilibrium calls={self.plant.costs['equilibrium_calls']}, "
                   f"elapsed={time.perf_counter()-self.started:.0f} s", flush=True)
         return True
@@ -149,7 +160,16 @@ def arguments(argv=None, defaults=None, baseline=False):
     p.add_argument("--guidance",choices=["none"],default="none",
                    help="Compatibility option; this trainer uses the actor without a controller wrapper")
     p.add_argument("--system",choices=[f"ctr_{i}" for i in range(4)],default="ctr_0")
-    p.add_argument("--tolerance-m",type=float,default=.001)
+    p.add_argument("--tolerance-m",type=float,default=.001,
+                   help="Final training and evaluation tolerance")
+    p.add_argument("--tolerance-curriculum",choices=["constant", "exponential"],default="constant",
+                   help="Use an episode-level predetermined tolerance curriculum")
+    p.add_argument("--initial-tolerance-m",type=float,default=None,
+                   help="Curriculum start; defaults to 0.005 m for exponential scheduling")
+    p.add_argument("--curriculum-steps",type=int,default=25000,
+                   help="Collected transitions until newly started episodes use final tolerance")
+    p.add_argument("--minimum-goal-distance-m",type=float,default=None,
+                   help="Goal distance floor for the complete run; defaults to 1.2*initial tolerance")
     p.add_argument("--task-profile", choices=TASK_PROFILES, default="generalized_hold",
                    help="generalized_reach: signed goals, terminate at first hit; generalized_hold: same sampling, continue after hits; legacy: old task")
     p.add_argument("--hold-steps", type=int, default=10,
@@ -204,6 +224,21 @@ def arguments(argv=None, defaults=None, baseline=False):
         p.error("Budgets and checkpoint frequency must be multiples of train-freq for matched update counts")
     for name in ("physics_gain", "cartesian_scale_m", "max_tip_step_m", "tolerance_m"):
         if not np.isfinite(getattr(a, name)) or getattr(a, name) <= 0:p.error(f"{name} must be positive and finite")
+    if a.initial_tolerance_m is None:
+        a.initial_tolerance_m = .005 if a.tolerance_curriculum == "exponential" else a.tolerance_m
+    try:
+        schedule = ToleranceCurriculum(a.initial_tolerance_m, a.tolerance_m, a.curriculum_steps)
+    except ValueError as exc:
+        p.error(str(exc))
+    if a.tolerance_curriculum == "constant" and not np.isclose(a.initial_tolerance_m, a.tolerance_m, rtol=0, atol=1e-15):
+        p.error("Select --tolerance-curriculum exponential for a different initial tolerance")
+    if a.tolerance_curriculum != "constant" and a.task_profile == "legacy":
+        p.error("Tolerance curriculum requires generalized_reach or generalized_hold")
+    a.curriculum = asdict(schedule) if a.tolerance_curriculum == "exponential" else None
+    if a.minimum_goal_distance_m is None:
+        a.minimum_goal_distance_m = max(2*a.tolerance_m, 1.2*a.initial_tolerance_m)
+    if not np.isfinite(a.minimum_goal_distance_m) or a.minimum_goal_distance_m <= a.initial_tolerance_m:
+        p.error("Minimum goal distance must be greater than the initial tolerance")
     if a.hold_steps < 1 or (a.task_profile == "generalized_hold" and a.hold_steps > a.episode_steps):
         p.error("Holding window must be positive and fit the generalized episode")
     if not np.isfinite(a.initial_rotation_span_rad) or a.initial_rotation_span_rad < 0:
@@ -241,6 +276,8 @@ def main(argv=None, defaults=None, baseline=False):
         max_episode_steps=a.episode_steps,compute_jacobian=physics_enabled,
         task_profile=a.task_profile, initial_rotation_span_rad=a.initial_rotation_span_rad,
         goal_steps_min=a.goal_steps_min, goal_steps_max=a.goal_steps_max,
+        minimum_goal_distance_m=a.minimum_goal_distance_m,
+        tolerance_curriculum=ToleranceCurriculum(**a.curriculum) if a.curriculum else None,
         solver_options=solver_options)
     env=plant
     replay_action_semantics = "proposal"
@@ -259,6 +296,10 @@ def main(argv=None, defaults=None, baseline=False):
         "equilibrium_initialization":"deterministic default; no previous torsion",
         "solver_options":asdict(plant.solver.options),"integrator":"scale_safe_dop853_v1",
         "observation_bounds_version":plant.observation_bounds_version,
+        "observation_tolerance_bound_m":plant.observation_tolerance_bound_m,
+        "evaluation_tolerance_m":a.tolerance_m,
+        "curriculum_semantics":"exponential in collected transitions; sampled at reset and fixed within each episode" if a.curriculum else "constant",
+        "goal_sampling_semantics":"fixed distance floor for the complete run and evaluation",
         "model_fingerprint":plant.solver.model_fingerprint,
         "goal_distribution":plant.goal_distribution,"task_settings":plant.task_settings,
         "task_semantics_version":1,
@@ -318,6 +359,10 @@ def main(argv=None, defaults=None, baseline=False):
         replay_errors=[float(np.max(abs(buffer.actions[i,0]-buffer.infos[i,0][action_key]))) for i in indices]
         execution_differences=[float(np.max(abs(buffer.actions[i,0]-buffer.infos[i,0]["executed_action"]))) for i in indices]
         summary={"complete":complete,"failure":failure,"timesteps":model.num_timesteps,
+            "curriculum":a.curriculum,"evaluation_tolerance_m":a.tolerance_m,
+            "training_position_tolerance_m":plant.tolerance_m,
+            "completed_episodes_at_final_tolerance":int(sum(bool(np.isclose(r["position_tolerance_m"], a.tolerance_m, rtol=0, atol=1e-15)) for r in callback.rows)),
+            "rollout_successes_at_final_tolerance":int(sum(bool(r["success"] and np.isclose(r["position_tolerance_m"], a.tolerance_m, rtol=0, atol=1e-15)) for r in callback.rows)),
             "exploration":exploration,"exploration_proposal_counts":dict(model.exploration_counts),
             "gradient_updates":model._n_updates,"completed_episodes":len(callback.rows),
             "rollout_successes":sum(r["success"] for r in callback.rows),

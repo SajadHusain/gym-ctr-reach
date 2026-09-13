@@ -14,19 +14,23 @@ from ctr_reach_envs.config import CTR_SYSTEMS_PARAMETERS
 from .geometry import TubeParameters
 from .solver import EquilibriumError, EquilibriumSolver, SolverOptions
 from .sensitivity import equilibrium_sensitivity
+from .curriculum import ToleranceCurriculum
 
 
 TASK_PROFILES = ("legacy", "generalized_reach", "generalized_hold")
 
 
-def make_reach_env(config, *, max_episode_steps=None, compute_jacobian=False, task_profile=None):
-    """Restore task semantics; checkpoints predating profiles remain legacy."""
+def make_reach_env(config, *, max_episode_steps=None, compute_jacobian=False, task_profile=None,
+                   tolerance_m=None):
+    """Restore task semantics and evaluate curriculum checkpoints at one fixed tolerance."""
     settings = dict(config.get("task_settings", {}))
     settings["task_profile"] = config.get("task_profile", "legacy") if task_profile is None else task_profile
     scales = config.get("action_scales", [.001]*3+[.05]*3)
     solver_options = SolverOptions(**config["solver_options"]) if "solver_options" in config else None
+    tolerance = config.get("evaluation_tolerance_m", config.get("tolerance_m", .001)) if tolerance_m is None else tolerance_m
+    tolerance_bound = config.get("observation_tolerance_bound_m", config.get("tolerance_m", .001))
     return JointConstrainedReachEnv(config.get("system", "ctr_0"),
-        tolerance_m=config.get("tolerance_m", .001),
+        tolerance_m=tolerance, observation_tolerance_bound_m=tolerance_bound,
         max_episode_steps=config.get("episode_steps", 60) if max_episode_steps is None else max_episode_steps,
         compute_jacobian=compute_jacobian, solver_options=solver_options,
         translation_step_m=scales[0], rotation_step_rad=scales[len(scales)//2], **settings)
@@ -43,7 +47,8 @@ class JointConstrainedReachEnv(gym.Env):
                  rotation_step_rad=.05, task_profile="legacy",
                  initial_rotation_span_rad=.15, goal_steps_min=2, goal_steps_max=8,
                  minimum_goal_distance_m=None, max_goal_sampling_attempts=32,
-                 solver_options=None):
+                 solver_options=None, tolerance_curriculum=None,
+                 observation_tolerance_bound_m=None):
         super().__init__()
         if system_name not in CTR_SYSTEMS_PARAMETERS:
             raise ValueError("Unknown CTR system")
@@ -56,6 +61,22 @@ class JointConstrainedReachEnv(gym.Env):
                 raise ValueError("Episode and witness counts must be positive integers")
         if task_profile not in TASK_PROFILES:
             raise ValueError("Unknown task profile")
+        if tolerance_curriculum is not None:
+            if not isinstance(tolerance_curriculum, ToleranceCurriculum):
+                raise ValueError("tolerance_curriculum must be ToleranceCurriculum")
+            if task_profile == "legacy":
+                raise ValueError("Tolerance curriculum requires a generalized task")
+            if not np.isclose(tolerance_curriculum.final_m, tolerance_m, rtol=0, atol=1e-15):
+                raise ValueError("tolerance_m must equal the curriculum final tolerance")
+        self.tolerance_curriculum = tolerance_curriculum
+        maximum_tolerance = tolerance_m if tolerance_curriculum is None else tolerance_curriculum.initial_m
+        if observation_tolerance_bound_m is None:
+            observation_tolerance_bound_m = maximum_tolerance
+        if (isinstance(observation_tolerance_bound_m, bool) or
+                not np.isfinite(observation_tolerance_bound_m) or
+                observation_tolerance_bound_m < maximum_tolerance):
+            raise ValueError("Observation tolerance bound must cover all episode tolerances")
+        self.observation_tolerance_bound_m = float(observation_tolerance_bound_m)
         if not np.isfinite(initial_rotation_span_rad) or initial_rotation_span_rad < 0:
             raise ValueError("Initial rotation span must be finite and nonnegative")
         for value in (goal_steps_min, goal_steps_max, max_goal_sampling_attempts):
@@ -64,9 +85,9 @@ class JointConstrainedReachEnv(gym.Env):
         if goal_steps_min > goal_steps_max:
             raise ValueError("Goal step minimum exceeds maximum")
         if minimum_goal_distance_m is None:
-            minimum_goal_distance_m = 2*tolerance_m
-        if not np.isfinite(minimum_goal_distance_m) or minimum_goal_distance_m <= tolerance_m:
-            raise ValueError("Minimum goal distance must be finite and exceed tolerance")
+            minimum_goal_distance_m = max(2*tolerance_m, 1.2*maximum_tolerance)
+        if not np.isfinite(minimum_goal_distance_m) or minimum_goal_distance_m <= maximum_tolerance:
+            raise ValueError("Minimum goal distance must be finite and exceed the maximum tolerance")
         self.task_profile = task_profile
         self.terminate_on_success = task_profile != "generalized_hold"
         self.task_settings = dict(initial_rotation_span_rad=float(initial_rotation_span_rad),
@@ -84,12 +105,14 @@ class JointConstrainedReachEnv(gym.Env):
             [TubeParameters(**t) for t in CTR_SYSTEMS_PARAMETERS[system_name].values()],
             options=solver_options)
         self.n, self.length = self.solver.n, self.solver.scale
-        self.tolerance_m = float(tolerance_m)
+        self.tolerance_m = float(maximum_tolerance)
+        self.episode_start_timestep = 0
+        self._curriculum_origin_transitions = 0
         self.max_episode_steps, self.witness_steps = max_episode_steps, witness_steps
         self.compute_jacobian = bool(compute_jacobian)
         self.action_scales = np.r_[np.full(self.n, translation_step_m), np.full(self.n, rotation_step_rad)]
         self.action_space = spaces.Box(-1., 1., (2*self.n,), dtype=np.float32)
-        tolerance_bound = np.nextafter(np.float32(self.tolerance_m/self.length), np.float32(np.inf))
+        tolerance_bound = np.nextafter(np.float32(self.observation_tolerance_bound_m/self.length), np.float32(np.inf))
         if not np.isfinite(tolerance_bound):
             raise ValueError("Tolerance exceeds supported observation range")
         self.observation_space = spaces.Dict({
@@ -187,6 +210,13 @@ class JointConstrainedReachEnv(gym.Env):
         self.equilibrium = self._physics_cache = None
         self.last_failed_solve_q = None
         self.reset_attempts += 1
+        # Explicit seeded resets start a reproducible curriculum clock; SB3's
+        # later automatic resets use the continuously collected transition count.
+        if seed is not None:
+            self._curriculum_origin_transitions = self.transitions
+        self.episode_start_timestep = self.transitions-self._curriculum_origin_transitions
+        if self.tolerance_curriculum is not None:
+            self.tolerance_m = self.tolerance_curriculum.value(self.episode_start_timestep)
         before = dict(self.costs)
         try:
             q = self.solver.constraints._array(options["joints"]).copy() if "joints" in options else self._sample_joints()
@@ -196,6 +226,10 @@ class JointConstrainedReachEnv(gym.Env):
                 goal = np.asarray(options["goal"], dtype=float)
                 if goal.shape != (3,) or not np.all(np.isfinite(goal)) or np.any(abs(goal) > self.length):
                     raise ValueError("Goal must be a finite Cartesian point within the declared bounds")
+                if self.tolerance_curriculum is not None and np.linalg.norm(
+                        goal.astype(np.float32).astype(float)-initial.tip.astype(np.float32).astype(float)
+                ) < self.task_settings["minimum_goal_distance_m"]:
+                    raise ValueError("Explicit curriculum goal is inside the minimum initial goal distance")
             elif self.task_profile != "legacy":
                 goal, goal_metadata = self._sample_generalized_goal(initial)
             else:
@@ -251,7 +285,8 @@ class JointConstrainedReachEnv(gym.Env):
         return -np.asarray(~np.asarray(self.compute_success(achieved_goal, desired_goal, info)), dtype=np.float32)
 
     def _task_info(self, obs):
-        info = {"position_tolerance": self.tolerance_m}
+        info = {"position_tolerance": self.tolerance_m,
+                "episode_start_timestep": self.episode_start_timestep}
         info["is_success"] = bool(self.compute_success(obs["achieved_goal"], obs["desired_goal"], info))
         info["error"] = float(np.linalg.norm(obs["achieved_goal"].astype(float)-obs["desired_goal"].astype(float)))
         return info

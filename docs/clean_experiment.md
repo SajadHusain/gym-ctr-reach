@@ -1,5 +1,10 @@
 # DDPG+HER and mechanical task-space guidance
 
+The mechanics commands on this page use fixed 1-mm training. The opt-in matched
+tolerance curriculum is documented separately in
+[mechanics_curriculum.md](mechanics_curriculum.md); do not pool its results with
+the fixed-tolerance runs.
+
 ## Two training entry points
 
 `train_ddpg_her.py` trains ordinary DDPG+HER. Its default `--profile paper`

@@ -22,6 +22,8 @@ def main():
     p.add_argument("--seed",type=int,default=800000)
     p.add_argument("--modes",nargs="+",choices=["actor", "jacobian"],default=["actor"])
     p.add_argument("--max-steps",type=int,default=None,help="Defaults to the checkpoint horizon")
+    p.add_argument("--tolerance-m",type=float,default=None,
+                   help="Fixed evaluation tolerance; defaults to checkpoint final tolerance")
     p.add_argument("--controller-audit",action="store_true",
                    help="Extra diagnostic Jacobian/QP calls at actor states; does not replace actor actions")
     p.add_argument("--controller-damping",type=float,default=.05)
@@ -34,6 +36,11 @@ def main():
     if a.episodes<1 or (a.max_steps is not None and a.max_steps<1) or a.seed<0 or len(set(a.modes))!=len(a.modes):p.error("Invalid episode, seed, step or mode selection")
     if not np.isfinite(a.controller_damping) or a.controller_damping <= 0:p.error("Damping must be positive and finite")
     config=json.loads((a.model.parent/"config.json").read_text())
+    evaluation_tolerance = config.get("evaluation_tolerance_m", config.get("tolerance_m", .001)) if a.tolerance_m is None else a.tolerance_m
+    if not np.isfinite(evaluation_tolerance) or evaluation_tolerance <= 0:
+        p.error("Evaluation tolerance must be positive and finite")
+    if evaluation_tolerance > config.get("observation_tolerance_bound_m", config.get("tolerance_m", .001)):
+        p.error("Evaluation tolerance exceeds checkpoint observation bounds")
     if a.max_steps is None:a.max_steps=config.get("episode_steps",60)
     task_profile = config.get("task_profile", "legacy") if a.task_profile == "checkpoint" else a.task_profile
     hold_steps = config.get("hold_steps", 10) if a.hold_steps is None else a.hold_steps
@@ -55,7 +62,7 @@ def main():
         writer=None
         for mode in a.modes:
             plant=make_reach_env(config, max_episode_steps=a.max_steps, compute_jacobian=mode=="jacobian" or a.controller_audit,
-                                 task_profile=task_profile)
+                                 task_profile=task_profile, tolerance_m=evaluation_tolerance)
             if plant.solver.model_fingerprint!=config["model_fingerprint"]:
                 raise ValueError("Checkpoint and evaluator model parameters differ")
             env=plant
@@ -73,6 +80,7 @@ def main():
                 row={"mode":mode,"episode":episode,"seed":a.seed+episode,"success":False,
                      "failure":"","steps":0,"error_m":None,"trivial_goal":False,
                      "initial_error_m":None,"task_fingerprint":None,
+                     "position_tolerance_m":evaluation_tolerance,
                      "task_profile":task_profile,"episode_complete":False,"failed_solve_q":None,
                      "replaced_actions":0,"jacobian_fallbacks":0,"numerical_decrease_checks":0,
                      "equilibrium_calls":0,"sensitivity_calls":0,"stability_calls":0,
@@ -120,6 +128,7 @@ def main():
                         if trajectory_stream is not None:
                             trace={"mode":mode,"episode":episode,"seed":a.seed+episode,"step":step+1,
                                    "error_m":info["error"],"action_source":info["action_source"],
+                                   "position_tolerance_m":info["position_tolerance"],
                                    "is_success":info["is_success"],"terminated":term,"truncated":trunc,
                                    "mechanics_reason":info.get("reason","")}
                             for name,values in (("proposed",info["proposed_action"]),("executed",info["executed_action"]),
@@ -165,7 +174,8 @@ def main():
     summary={"complete":all(r["episode_complete"] and not r["failure"] for r in rows),
              "episodes_per_mode":a.episodes,"first_seed":a.seed,"max_steps":a.max_steps,
              "plant":config["plant"],
-             "tolerance_m":config["tolerance_m"],"checkpoint":str(a.model),"checkpoint_timesteps":checkpoint_timesteps,
+             "tolerance_m":evaluation_tolerance,"checkpoint":str(a.model),"checkpoint_timesteps":checkpoint_timesteps,
+             "evaluation_curriculum_enabled":False,"training_curriculum":config.get("curriculum"),
              "checkpoint_sha256":hashlib.sha256(a.model.read_bytes()).hexdigest(),
              "controller_audit":a.controller_audit,"controller_damping":a.controller_damping,
              "action_selection_timing":"actor predict only, or analytical Jacobian plus QP for classical control; excludes plant FK and optional actor audit",
