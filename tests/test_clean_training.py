@@ -28,13 +28,27 @@ def test_two_commands_resolve_matched_mechanics_settings_and_preserve_paper(caps
     guided_main(["--dry-run"])
     guided=json.loads(capsys.readouterr().out)
     differences={key for key in base if base[key]!=guided[key]}
-    assert differences=={"physics_weight","output_dir"}
+    assert differences=={"physics_weight","physics_final_weight","output_dir"}
     spec=paper_configuration()
     assert base["batch_size"]==spec["batch_size"]==256
     assert base["train_freq"]==100 and base["gradient_steps"]==50
     assert base["learning_starts"]==0 and base["wait_for_completed_batch"]
     assert base["task_profile"]=="generalized_reach"
-    assert guided["physics_anneal_steps"]==5000 and guided["physics_final_weight"]==0
+    assert guided["physics_anneal_steps"]==5000 and guided["physics_final_weight"]==.01
+    assert guided["physics_max_aux_ratio"]==.1
+    assert base["physics_weight"]==base["physics_final_weight"]==0
+
+
+@pytest.mark.parametrize("weight,expected", [(0.,0.),(.005,.005),(.1,.01)])
+def test_mechanics_final_weight_default_never_enables_zero_guidance(weight,expected):
+    a=arguments(["--physics-weight",str(weight)],mechanics_defaults())
+    assert a.physics_final_weight==expected
+
+
+@pytest.mark.parametrize("final", [0.,.005,.1])
+def test_mechanics_explicit_guidance_settings_are_preserved(final):
+    a=arguments(["--physics-final-weight",str(final),"--physics-max-aux-ratio","1"],mechanics_defaults())
+    assert a.physics_final_weight==final and a.physics_max_aux_ratio==1.
 
 
 def test_baseline_rejects_physics_and_partial_rollout_budgets():

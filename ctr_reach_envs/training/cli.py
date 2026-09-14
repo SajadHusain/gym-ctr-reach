@@ -15,7 +15,7 @@ def mechanics_defaults(baseline=False):
         train_freq=spec["legacy_defaults"]["rollout_steps"],
         gradient_steps=spec["legacy_defaults"]["gradient_steps"],
         exploration_profile="paper", physics_weight=0. if baseline else .1,
-        physics_final_weight=0., physics_anneal_steps=None,
+        physics_final_weight=None, physics_anneal_steps=None,
         physics_integration="rl_priority", checkpoint_freq=1000,
         output_dir="runs/ddpg_mechanics" if baseline else "runs/jacobian_mechanics")
 

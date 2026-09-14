@@ -161,6 +161,18 @@ are logged. This is an update rule, not exactly gradient descent on the nominal
 weighted sum. It ensures neither actual-return improvement nor physical
 closed-loop stability. See `rl_priority_jacobian.md` for its precise checks.
 
+New guided commands default to `--physics-max-aux-ratio 0.1`, bounding the
+weighted auxiliary parameter gradient at 10% of the RL-gradient norm before
+Adam. The omitted final weight is min(initial weight, 0.01), so default guidance
+remains nonzero after the curriculum. Zero-weight baselines and explicit
+overrides are preserved, as are settings loaded from model checkpoints.
+These are experimental defaults, not evidence of improved performance.
+The cap is not a bound on Adam's parameter displacement, and while it is
+saturated, annealing the raw weight may not reduce the effective contribution.
+The update metrics `auxiliary_norm_clipped`, `auxiliary_clip_scale` and
+`auxiliary_norm_cap` expose this behavior alongside the existing before/after
+norm ratios. They describe gradient combination, not robot-motion guarantees.
+
 The loss does not use inverse-Jacobian action labels, but it remains closely
 related to local differential kinematics. To show that RL contributes, compare
 ordinary DDPG, guided DDPG, `--actor-objective mechanics_only`, and
@@ -208,12 +220,22 @@ $ctrIvpArgs = @(
   '--seed', '7101'
 )
 python train_ddpg_her.py @ctrIvpArgs --output-dir runs/ivp_ddpg7101_v1
-python train_jacobian_ddpg_her.py @ctrIvpArgs --physics-weight 0.1 --physics-final-weight 0 --physics-anneal-steps 200000 --output-dir runs/ivp_guided7101_v1
+python train_jacobian_ddpg_her.py @ctrIvpArgs --physics-integration rl_priority --physics-max-aux-ratio 0.1 --physics-weight 0.1 --physics-final-weight 0.01 --physics-anneal-steps 200000 --output-dir runs/ivp_guided7101_v2
 ```
 
-Guidance decays linearly to zero by 200k in this example. After that both arms
-optimize the ordinary RL objective, and unused Jacobian collection stops. To study persistent guidance, explicitly
-set `--physics-final-weight 0.1` in a separately named ablation.
+The raw weight decays linearly to 0.01 by 200k and remains there during the
+1-mm stage. Sensitivity collection continues, increasing simulation cost
+relative to switching guidance off. Use a fresh output directory: these commands
+train new models, not resume old checkpoints. Compare caps 0.05 and 0.1 with
+ordinary DDPG across at least three matched training seeds (for example 7100,
+7101, 7102); keep plant, budgets and evaluation targets identical. Include the
+checked-RL-only arm to separate Jacobian effects from the update safeguard.
+
+The previous switch-off experiment remains reproducible with
+`--physics-max-aux-ratio 1 --physics-final-weight 0 --physics-anneal-steps 200000`.
+With final weight zero, ordinary RL updates and derivative shutdown at 200k
+are intentionally preserved. The local-Jacobian approximation and unavailable
+derivatives have not been changed by the new guidance defaults.
 
 First compare checkpoints with 100 development episodes at seed 810000. Once
 the protocol/checkpoint selection is fixed, use 1000 held-out episodes at seed
@@ -221,7 +243,7 @@ the protocol/checkpoint selection is fixed, use 1000 held-out episodes at seed
 
 ```powershell
 python evaluate_original_ddpg_her.py runs/ivp_ddpg7101_v1/final_model.zip --episodes 1000 --seed 910000 --tolerance-m 0.001 --progress-every 50 --output-dir runs/ivp_ddpg7101_v1/evaluation_1000
-python evaluate_original_ddpg_her.py runs/ivp_guided7101_v1/final_model.zip --episodes 1000 --seed 910000 --tolerance-m 0.001 --progress-every 50 --output-dir runs/ivp_guided7101_v1/evaluation_1000
+python evaluate_original_ddpg_her.py runs/ivp_guided7101_v2/final_model.zip --episodes 1000 --seed 910000 --tolerance-m 0.001 --progress-every 50 --output-dir runs/ivp_guided7101_v2/evaluation_1000
 ```
 
 Evaluation restores the exact saved plant, fixed final tolerance, and saved

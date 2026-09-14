@@ -189,11 +189,12 @@ def arguments(argv=None, defaults=None, baseline=False):
     p.add_argument("--seed",type=int,default=7101)
     p.add_argument("--progress-every",type=int,default=100)
     p.add_argument("--physics-weight",type=float,default=.1)
-    p.add_argument("--physics-final-weight",type=float,default=None)
+    p.add_argument("--physics-final-weight",type=float,default=None,
+                   help="Defaults to min(initial weight, 0.01); set 0 explicitly to end guidance")
     p.add_argument("--physics-anneal-steps",type=int,default=100000)
     p.add_argument("--physics-integration",choices=["rl_priority","sum"],default="rl_priority",
                    help="rl_priority: project conflicting auxiliary gradients and check Adam steps; sum: original weighted loss")
-    p.add_argument("--physics-max-aux-ratio",type=float,default=1.,
+    p.add_argument("--physics-max-aux-ratio",type=float,default=.1,
                    help="Maximum weighted auxiliary / RL parameter-gradient norm in rl_priority mode")
     p.add_argument("--actor-max-backtracks",type=int,default=6,
                    help="Maximum halvings of each Adam trial displacement before fallback/skip")
@@ -256,7 +257,7 @@ def arguments(argv=None, defaults=None, baseline=False):
     try: exploration_settings(a.exploration_profile,a.noise_std,a.random_exploration)
     except ValueError as exc: p.error(str(exc))
     if not np.isfinite(a.learning_rate) or a.learning_rate<=0:p.error("Invalid learning rate")
-    if a.physics_final_weight is None:a.physics_final_weight=a.physics_weight
+    if a.physics_final_weight is None:a.physics_final_weight=min(a.physics_weight,.01)
     if not np.isfinite(a.physics_max_aux_ratio) or a.physics_max_aux_ratio <= 0 or a.actor_max_backtracks < 0:
         p.error("Auxiliary norm ratio must be positive/finite; backtracks must be nonnegative")
     if any(not np.isfinite(x) or x<0 for x in (a.physics_weight,a.physics_final_weight)) or a.physics_anneal_steps<1:

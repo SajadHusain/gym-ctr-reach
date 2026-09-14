@@ -1,4 +1,5 @@
 from copy import deepcopy
+import json
 from types import SimpleNamespace
 import numpy as np
 import pytest
@@ -226,3 +227,58 @@ def test_zero_final_weight_stops_unused_derivative_collection(tmp_path):
         assert model.num_timesteps == 32 and model._n_updates > 0
     finally:
         audit.close(); env.close()
+
+
+@pytest.mark.parametrize("baseline,flags,weight,final,ratio", [
+    (False,[],.1,.01,.1),
+    (True,[],0.,0.,.1),
+    (False,["--physics-weight","0"],0.,0.,.1),
+    (False,["--physics-weight",".005"],.005,.005,.1),
+    (False,["--physics-final-weight","0","--physics-max-aux-ratio","1"],.1,0.,1.),
+    (False,["--physics-final-weight",".1"],.1,.1,.1),
+])
+def test_original_guidance_defaults_and_explicit_overrides(capsys,tmp_path,baseline,flags,weight,final,ratio):
+    from ctr_reach_envs.training.original import main
+    main(["--dry-run","--output-dir",str(tmp_path),*flags],baseline=baseline)
+    physics=json.loads(capsys.readouterr().out)["physics"]
+    assert physics["weight"]==weight and physics["final_weight"]==final
+    assert physics["max_aux_ratio"]==ratio and physics["integration"]=="rl_priority"
+    assert not list(tmp_path.iterdir())
+
+
+def test_persistent_guidance_continues_after_curriculum_and_survives_save_load(tmp_path):
+    from ctr_reach_envs.training.original import AuditCallback
+    from ctr_reach_envs.ivp.rl import OriginalJacobianDDPG
+    cfg=configuration()
+    cfg["spec"].update(curriculum_steps=16,initial_tolerance_m=.02,final_tolerance_m=.001)
+    cfg["physics"].update(final_weight=.01,anneal_steps=16,max_aux_ratio=.1)
+    cfg=resolve(cfg["spec"],cfg["environment"],segment_mode="continuous",seed=7101,
+                physics=cfg["physics"],provenance="test")
+    env=make_env(cfg,compute_jacobian=True)
+    model=build_model(env,cfg)
+    audit=AuditCallback(env,cfg,tmp_path,checkpoint_freq=0,progress_every=100)
+    evaluation=None
+    try:
+        for step,expected in [(0,.1),(8,.055),(16,.01),(32,.01)]:
+            model.num_timesteps=step
+            assert model.current_physics_weight==pytest.approx(expected)
+        model.num_timesteps=0
+        model.learn(32,callback=audit)
+        assert env.compute_jacobian is True and env.costs["sensitivity_calls"]==32
+        assert env.get_goal_tolerance()==pytest.approx(.001)
+        metrics=model.last_physics_metrics
+        assert metrics["weight"]==pytest.approx(.01)
+        assert metrics["jacobian_parameter_gradient_norm"]>0
+        assert metrics["jacobian_valid_fraction"]>0
+        assert metrics["weighted_aux_norm_ratio_after"]<=.1+1e-12
+        assert metrics["auxiliary_norm_cap"]==pytest.approx(.1)
+        assert metrics["rl_surrogate_change"]<=0
+        model.save(tmp_path/"persistent.zip")
+        evaluation=make_env(cfg,evaluation=True)
+        loaded=OriginalJacobianDDPG.load(tmp_path/"persistent.zip",env=evaluation)
+        assert loaded.physics_max_aux_ratio==.1
+        assert loaded.current_physics_weight==pytest.approx(.01)
+        assert evaluation.compute_jacobian is False
+    finally:
+        audit.close(); env.close()
+        if evaluation is not None:evaluation.close()

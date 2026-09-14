@@ -26,6 +26,37 @@ def test_aligned_auxiliary_is_capped_and_zero_rl_gradient_disables_it():
     assert torch.count_nonzero(direction) == 0
 
 
+@pytest.mark.parametrize("weight", [.1,.01])
+def test_small_cap_limits_conflicting_guidance_and_logs_saturation(weight):
+    r=torch.tensor([1.,0.],dtype=torch.float64)
+    j=torch.tensor([-10000.,10000.],dtype=torch.float64)
+    direction,m=combine_gradients(r,j,weight,max_aux_ratio=.1)
+    torch.testing.assert_close(direction,torch.tensor([1.,.1],dtype=r.dtype))
+    assert m["gradient_conflict"]==1.
+    assert m["weighted_aux_norm_ratio_after"]==pytest.approx(.1)
+    assert m["projected_gradient_dot"]==pytest.approx(0.,abs=1e-12)
+    assert m["auxiliary_norm_clipped"]==1.
+    assert m["auxiliary_clip_scale"]==pytest.approx(.1/(weight*10000.))
+    assert m["auxiliary_norm_cap"]==.1
+
+
+@pytest.mark.parametrize("project", [True,False])
+def test_new_diagnostics_do_not_change_uncapped_gradient(project):
+    r,j=torch.tensor([1.,0.]),torch.tensor([.01,.02])
+    direction,m=combine_gradients(r,j,.1,max_aux_ratio=.1,project=project)
+    torch.testing.assert_close(direction,r+.1*j)
+    assert m["auxiliary_norm_clipped"]==0.
+    assert m["auxiliary_clip_scale"]==1.
+    assert m["auxiliary_norm_cap"]==(.1 if project else 0.)
+
+
+def test_explicit_sum_mode_stays_uncapped_even_with_small_ratio():
+    r,j=torch.tensor([1.,0.]),torch.tensor([-100.,200.])
+    direction,m=combine_gradients(r,j,.1,max_aux_ratio=.1,project=False)
+    torch.testing.assert_close(direction,r+.1*j)
+    assert m["auxiliary_norm_clipped"]==0. and m["auxiliary_norm_cap"]==0.
+
+
 def test_positive_alignment_can_overshoot_and_backtracking_checks_finite_loss():
     p = torch.nn.Parameter(torch.tensor([.1], dtype=torch.float64))
     optimizer = torch.optim.Adam([p], lr=1.)

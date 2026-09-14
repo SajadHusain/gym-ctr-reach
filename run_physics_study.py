@@ -33,9 +33,9 @@ DEFAULTS = dict(seeds=[7100,7101,7102,7103,7104], arms=["ddpg","jacobian"],
                 task_profile="generalized_reach", hold_steps=10,
                 initial_rotation_span_rad=.15, goal_steps_min=2, goal_steps_max=8,
                 max_shooting_evaluations=500, shooting_strategy="hybr_restarts",
-                physics_weight=.1, physics_final_weight=0., physics_anneal_steps=5000,
+                physics_weight=.1, physics_final_weight=.01, physics_anneal_steps=5000,
                 physics_gain=.5, cartesian_scale_m=.002, max_tip_step_m=.002,
-                physics_integration="rl_priority", physics_max_aux_ratio=1., actor_max_backtracks=6,
+                physics_integration="rl_priority", physics_max_aux_ratio=.1, actor_max_backtracks=6,
                 system="ctr_0", tolerance_m=.001, eval_episodes=20, eval_steps=200,
                 eval_seed=810000, final_seed=910000, final_episodes=1000)
 

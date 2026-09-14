@@ -15,6 +15,7 @@ STEP_METRICS = (
     "gradient_dot", "gradient_cosine", "gradient_conflict", "rl_gradient_norm",
     "jacobian_parameter_gradient_norm", "weighted_aux_norm_ratio_before",
     "weighted_aux_norm_ratio_after", "projected_gradient_dot",
+    "auxiliary_norm_clipped", "auxiliary_clip_scale", "auxiliary_norm_cap",
     "actor_step_first_order", "rl_surrogate_before", "rl_surrogate_after",
     "rl_surrogate_change", "actor_step_scale", "actor_step_rl_only",
     "actor_step_skipped", "actor_step_rejected_trials", "actor_step_checked",
@@ -38,6 +39,7 @@ def combine_gradients(rl, auxiliary, weight, max_aux_ratio=1., project=True):
     rr, jj, dot = r.dot(r), j.dot(j), r.dot(j)
     rn, jn = rr.sqrt(), jj.sqrt()
     adjusted = j.clone()
+    clipped, clip_scale = False, 1.
     if project:
         if float(rr) == 0.:
             adjusted.zero_()  # No RL descent direction to prioritize.
@@ -45,7 +47,9 @@ def combine_gradients(rl, auxiliary, weight, max_aux_ratio=1., project=True):
             adjusted -= dot/rr*r
         norm = weight*adjusted.norm()
         if float(norm) > float(max_aux_ratio*rn):
-            adjusted *= max_aux_ratio*rn/norm
+            scale = max_aux_ratio*rn/norm
+            adjusted *= scale
+            clipped, clip_scale = True, float(scale)
     ratio_before = float(weight*jn/rn) if float(rn) else 0.
     ratio_after = float(weight*adjusted.norm()/rn) if float(rn) else 0.
     metrics = dict(gradient_dot=float(dot),
@@ -54,6 +58,8 @@ def combine_gradients(rl, auxiliary, weight, max_aux_ratio=1., project=True):
         jacobian_parameter_gradient_norm=float(jn),
         weighted_aux_norm_ratio_before=ratio_before,
         weighted_aux_norm_ratio_after=ratio_after,
+        auxiliary_norm_clipped=float(clipped), auxiliary_clip_scale=clip_scale,
+        auxiliary_norm_cap=float(max_aux_ratio) if project else 0.,
         projected_gradient_dot=float(r.dot(adjusted)))
     return (r+weight*adjusted).to(rl.dtype), metrics
 

@@ -164,14 +164,31 @@ robot action filter. It certifies neither physical stability nor generalization.
 The projected update is NOT the exact gradient of the scalar sum in the image;
 `--physics-integration sum` is the explicitly unchecked weighted-sum ablation.
 
-In new guided runs lambda decreases linearly from 0.1 to zero over the first
-half of the requested interaction budget by default. The remaining training
-uses ordinary DDPG updates and no new sensitivity calls. All schedules are saved;
-fixed-weight experiments require an explicit `--physics-final-weight` override.
-Annealing removes the permanent auxiliary objective, but cannot undo all biases
-in the learned representation or replay distribution. No return guarantee is
-claimed. `updates.csv` records alignment, norm ratio, rejected/fallback/skipped
-updates and surrogate changes; values aggregate each optimizer block.
+New guided runs use `--physics-max-aux-ratio 0.1`: the weighted, projected
+auxiliary parameter gradient is capped at 10% of the RL-gradient norm before
+Adam. This is not a bound on Adam's final parameter displacement. The checked
+update rule above remains unchanged. Lambda decreases linearly from 0.1 to 0.01
+over the first half of the requested interaction budget by default and remains
+at 0.01 thereafter, including the final-tolerance stage. If the initial weight
+is smaller, the omitted final weight resolves to min(initial weight, 0.01).
+Zero initial weight therefore remains a zero-guidance ablation. The study
+runner uses the same cap and a 0.01 final weight for its guided arm.
+
+These are conservative experimental defaults, not a demonstrated performance
+fix. Explicit `--physics-final-weight 0` still anneals to ordinary DDPG and
+stops unused sensitivity collection. Use an explicit final weight equal to the
+initial weight for a constant-weight ablation. Saved checkpoints and explicit
+settings are not rewritten. The mechanics-only ablation remains a pure
+mechanics objective and does not use the RL-relative cap.
+
+When the cap is saturated, lowering lambda alone need not reduce the auxiliary
+gradient actually combined with RL. `updates.csv` now also records
+`auxiliary_norm_clipped` (fraction of updates capped), `auxiliary_clip_scale`
+(multiplicative scaling after conflict projection, 1 when uncapped), and
+`auxiliary_norm_cap` (configured bound, 0 for uncapped modes). Existing alignment,
+norm ratio, rejected/fallback/skipped updates and surrogate changes remain.
+Values aggregate each optimizer block. Compare matched seeds and held-out
+evaluation tasks; surrogate descent alone does not establish better return.
 
 ## Does this just learn a Jacobian controller?
 

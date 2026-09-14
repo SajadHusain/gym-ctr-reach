@@ -141,10 +141,12 @@ def parse_args(argv=None, *, baseline=False):
     for flag in ("initial-tolerance-m", "tolerance-m"):
         p.add_argument("--" + flag, type=float)
     p.add_argument("--physics-weight", type=float, default=0. if baseline else .1)
-    p.add_argument("--physics-final-weight", type=float)
+    p.add_argument("--physics-final-weight", type=float,
+                   help="Defaults to min(initial weight, 0.01); set 0 explicitly to end guidance")
     p.add_argument("--physics-anneal-steps", type=int)
     p.add_argument("--physics-integration", choices=("rl_priority", "sum"), default="rl_priority")
-    p.add_argument("--physics-max-aux-ratio", type=float, default=1.)
+    p.add_argument("--physics-max-aux-ratio", type=float, default=.1,
+                   help="Maximum weighted auxiliary / RL parameter-gradient norm in rl_priority mode")
     p.add_argument("--physics-gain", type=float, default=.5)
     p.add_argument("--physics-scale-m", type=float, default=.002)
     p.add_argument("--physics-max-tip-step-m", type=float, default=.002)
@@ -177,7 +179,7 @@ def main(argv=None, *, baseline=False):
     if a.gradient_steps is not None: spec["legacy_defaults"]["gradient_steps"] = a.gradient_steps
     if min(a.torch_threads, a.progress_every) < 1 or a.checkpoint_freq < 0:
         raise ValueError("Invalid frequency or thread count")
-    physics = dict(weight=a.physics_weight, final_weight=a.physics_weight if a.physics_final_weight is None else a.physics_final_weight,
+    physics = dict(weight=a.physics_weight, final_weight=min(a.physics_weight,.01) if a.physics_final_weight is None else a.physics_final_weight,
         anneal_steps=a.physics_anneal_steps or spec["curriculum_steps"], integration=a.physics_integration,
         max_aux_ratio=a.physics_max_aux_ratio, gain=a.physics_gain, scale_m=a.physics_scale_m,
         max_tip_step_m=a.physics_max_tip_step_m, objective=a.actor_objective)

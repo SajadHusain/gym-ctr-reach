@@ -73,6 +73,8 @@ def test_study_has_only_joint_constrained_unassisted_arms():
     assert ARMS["jacobian"]["guidance"]=="none"
     assert set(ARMS)=={"ddpg","jacobian","mechanics_only","rl_only_checked"}
     validate_config(DEFAULTS)
+    assert DEFAULTS["physics_final_weight"]==.01
+    assert DEFAULTS["physics_max_aux_ratio"]==.1
     assert checkpoints({**DEFAULTS,"total_timesteps":1100,"checkpoint_freq":500})==[0,500,1000,1100]
     with pytest.raises(ValueError,match="distinct"):
         validate_config({**DEFAULTS,"final_seed":DEFAULTS["eval_seed"]})
