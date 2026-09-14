@@ -14,6 +14,8 @@ from ctr_reach_envs.her_replay_buffer import GoalTerminationHerReplayBuffer
 from ctr_reach_envs.paper_policy import PaperDDPG, PaperMlpPolicy, PaperStateExtractor
 from ctr_reach_envs.ivp.config import load_spec, resolve, make_env
 from ctr_reach_envs.ivp.rl import OriginalHerReplayBuffer, OriginalJacobianDDPG
+from ctr_reach_envs.ivp.observations import FEATURE_COUNTS, observation_settings
+from ctr_reach_envs.ivp.policy import PhysicsStateExtractor
 
 
 def build_model(env, config, *, force_guided_class=False, device="cpu", verbose=0):
@@ -37,7 +39,8 @@ def build_model(env, config, *, force_guided_class=False, device="cpu", verbose=
         random_exploration=s["random_exploration"],
         replay_buffer_class=OriginalHerReplayBuffer if guided else GoalTerminationHerReplayBuffer,
         replay_buffer_kwargs=dict(n_sampled_goal=s["n_sampled_goal"], goal_selection_strategy=s["goal_selection_strategy"], copy_info_dict=True),
-        policy_kwargs=dict(net_arch=s["hidden_layers"], features_extractor_class=PaperStateExtractor,
+        policy_kwargs=dict(net_arch=s["hidden_layers"], features_extractor_class=(
+                           PhysicsStateExtractor if "physics" in env.observation_space.spaces else PaperStateExtractor),
                            activation_fn=torch.nn.ReLU, optimizer_kwargs={"eps": 1e-8}),
         seed=config["seed"], device=device, verbose=verbose, **extra)
     model.original_ivp_config = config
@@ -110,7 +113,8 @@ class AuditCallback(BaseCallback):
         # Preserve the historical paper callback timing, including tolerance in HER infos.
         self.plant.update_goal_tolerance(self.num_timesteps)
         physics = self.config["physics"]
-        if physics["final_weight"] == 0 and self.num_timesteps >= physics["anneal_steps"]:
+        if (physics["final_weight"] == 0 and self.num_timesteps >= physics["anneal_steps"]
+                and not self.plant.observation_uses_jacobian):
             # Future updates no longer use guidance. Do not pay for unused
             # derivatives; older source-state derivatives remain in replay.
             self.plant.compute_jacobian = False
@@ -140,6 +144,10 @@ def parse_args(argv=None, *, baseline=False):
         p.add_argument("--" + flag, type=int)
     for flag in ("initial-tolerance-m", "tolerance-m"):
         p.add_argument("--" + flag, type=float)
+    p.add_argument("--physics-observation", choices=tuple(FEATURE_COUNTS),
+                   help="Actor/critic information: none (default), jacobian, jacobian_limits, or zeros control")
+    p.add_argument("--physics-observation-scale-m", type=float,
+                   help="Distance scale before bounded Jacobian encoding (default 0.002 m)")
     p.add_argument("--physics-weight", type=float, default=0. if baseline else .1)
     p.add_argument("--physics-final-weight", type=float,
                    help="Defaults to min(initial weight, 0.01); set 0 explicitly to end guidance")
@@ -167,6 +175,12 @@ def parse_args(argv=None, *, baseline=False):
 def main(argv=None, *, baseline=False):
     a = parse_args(argv, baseline=baseline)
     spec, environment, provenance = load_spec(a.config)
+    observation = observation_settings(spec.get("physics_observation"))
+    if a.physics_observation is not None:
+        observation["mode"] = a.physics_observation
+    if a.physics_observation_scale_m is not None:
+        observation["scale_m"] = a.physics_observation_scale_m
+    spec["physics_observation"] = observation_settings(observation)
     if a.tolerance_curriculum is not None:
         spec["curriculum_function"] = "decay" if a.tolerance_curriculum == "exponential" else a.tolerance_curriculum
     fields = dict(total_timesteps="total_timesteps", curriculum_steps="curriculum_steps",
@@ -231,6 +245,9 @@ def main(argv=None, *, baseline=False):
             elapsed_seconds=time.perf_counter()-started, environment_fingerprint=config["environment_fingerprint"],
             segment_mode=config["segment_mode"], equilibrium_shooting_calls=0,
             training_tolerance_m=None if plant is None else plant.get_goal_tolerance())
+        summary.update(physics_observation=config["spec"]["physics_observation"],
+                       actor_uses_jacobian=False if plant is None else plant.observation_uses_jacobian,
+                       physics_feature_count=FEATURE_COUNTS[observation["mode"]])
         write_json(output / "summary.json", summary)
         if plant is not None: plant.close()
     print(json.dumps(summary, indent=2), flush=True)

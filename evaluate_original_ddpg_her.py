@@ -101,7 +101,8 @@ def main(argv=None):
             checkpoint=str(a.model.resolve()), checkpoint_timesteps=model.num_timesteps,
             first_seed=a.seed, max_steps=env.max_steps_per_episode, tolerance_m=env.get_goal_tolerance(),
             segment_mode=config["segment_mode"], environment_fingerprint=config["environment_fingerprint"],
-            deterministic_policy=True, actor_uses_jacobian=False, costs=env.costs,
+            deterministic_policy=True, actor_uses_jacobian=env.observation_uses_jacobian,
+            physics_observation=env.physics_observation, costs=env.costs,
             elapsed_seconds=time.perf_counter()-started)
         write_json(a.output_dir / "summary.json", summary)
         env.close()

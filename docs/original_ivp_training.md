@@ -6,6 +6,12 @@ action update, sparse reward, and goal-tolerance schedule. The guided arm adds
 an analytical source-state sensitivity and an actor update objective. No
 Jacobian controller selects collection actions or evaluation actions.
 
+An optional information-only arm now supplies mechanical observations to the
+ordinary actor and critic, with no auxiliary loss. See
+[physics observations](physics_observations.md) for the feature definitions,
+zero-feature control, and matched PowerShell commands. Its checkpoint requires
+sensitivities during evaluation as well as training.
+
 This is a change of **plant**, not another increase of the shooting budget.
 Do not continue an equilibrium-model checkpoint in this environment. Keep
 previous results and start new directories. A short successful software test
@@ -247,8 +253,9 @@ python evaluate_original_ddpg_her.py runs/ivp_guided7101_v2/final_model.zip --ep
 ```
 
 Evaluation restores the exact saved plant, fixed final tolerance, and saved
-episode horizon. The policy is frozen and deterministic; sensitivity calls
-must be zero. `--record-trajectories` saves the joint proposals, applied
+episode horizon. The policy is frozen and deterministic. Sensitivity calls
+are zero when physics observations are disabled; information-enabled actors
+continue to receive their saved features. `--record-trajectories` saves the joint proposals, applied
 increments, tips, and goals. Every episode has a task fingerprint to verify
 paired start/goal configurations. Failed episodes remain in the success-rate
 denominator; initially satisfied goals are reported. Error means exclude

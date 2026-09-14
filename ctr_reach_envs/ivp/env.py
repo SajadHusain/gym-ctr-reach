@@ -1,19 +1,32 @@
-"""Training instrumentation around the original transition, never a controller."""
+"""Original transition with optional sensitivity diagnostics and observations."""
 from collections import Counter
 import time
+import gymnasium as gym
 import numpy as np
 from ctr_reach_envs.envs.ctr_reach_env import CtrReachEnv
 from .sensitivity import tip_sensitivity, IVPSensitivityError
+from .observations import FEATURE_COUNTS, observation_settings, physics_features
 
 
 class OriginalIVPEnv(CtrReachEnv):
-    def __init__(self, *args, compute_jacobian=False, **kwargs):
-        self.compute_jacobian = bool(compute_jacobian)
+    def __init__(self, *args, compute_jacobian=False, physics_observation=None, **kwargs):
+        self.physics_observation = observation_settings(physics_observation)
+        self.observation_uses_jacobian = self.physics_observation["mode"] in ("jacobian", "jacobian_limits")
+        self.compute_jacobian = bool(compute_jacobian or self.observation_uses_jacobian)
+        self._observation_physics_cache = None
         self.costs = dict(forward_calls=0, forward_seconds=0., sensitivity_calls=0,
                           sensitivity_seconds=0., sensitivity_rhs=0, invalid_jacobians=0)
         self.invalid_reasons = Counter()
         started = time.perf_counter()
         super().__init__(*args, **kwargs)
+        count = FEATURE_COUNTS[self.physics_observation["mode"]]
+        if count:
+            self.observation_space = gym.spaces.Dict({
+                **self.observation_space.spaces,
+                "physics": gym.spaces.Box(
+                    low=np.r_[np.full(18, -1.), np.zeros(count - 18)].astype(np.float32),
+                    high=np.ones(count, dtype=np.float32), dtype=np.float32),
+            })
         # Constructor performs one forward solve; time includes environment setup.
         self.costs["forward_calls"] = 1
         self.costs["forward_seconds"] = time.perf_counter() - started
@@ -29,16 +42,38 @@ class OriginalIVPEnv(CtrReachEnv):
 
         self.model.forward_kinematics = measured_forward
 
+    def reset(self, *, seed=None, options=None):
+        # Parameters are reset/randomized by the parent, even if q is unchanged.
+        self._observation_physics_cache = None
+        return super().reset(seed=seed, options=options)
+
+    def _observation(self):
+        observation = super()._observation()
+        if self.physics_observation["mode"] != "none":
+            context = self.source_physics() if self.observation_uses_jacobian else None
+            observation["physics"] = physics_features(
+                context, self.trig_obj.tube_lengths[self.system], self.n_substeps,
+                self.physics_observation)
+        return observation
+
     def source_physics(self):
         context = dict(joints=self.trig_obj.joints.copy(), action_scales=self.action_scale.copy(),
                        jacobian=np.zeros((3, 6)), jacobian_valid=False)
-        if not self.compute_jacobian:
+        if not (self.compute_jacobian or self.observation_uses_jacobian):
+            return context
+        cached = self._observation_physics_cache
+        if (self.observation_uses_jacobian and cached is not None
+                and cached[0] == self.system and np.array_equal(cached[1], context["joints"])):
+            context.update(jacobian=cached[2].copy(), jacobian_valid=cached[3])
             return context
         self.costs["sensitivity_calls"] += 1
         started = time.perf_counter()
         try:
             result = tip_sensitivity(self.model, context["joints"], self.system)
             self.costs["sensitivity_rhs"] += result.rhs_evaluations
+            if (np.shape(result.jacobian) != (3, 6) or not np.all(np.isfinite(result.jacobian))
+                    or np.shape(result.tip) != (3,) or not np.all(np.isfinite(result.tip))):
+                raise IVPSensitivityError("nonfinite or malformed sensitivity result")
             if np.linalg.norm(result.tip - self.achieved_goal) > 2e-5:
                 raise IVPSensitivityError("forward/sensitivity tip discrepancy exceeds 20 micrometres")
             context.update(jacobian=result.jacobian, jacobian_valid=True)
@@ -47,6 +82,9 @@ class OriginalIVPEnv(CtrReachEnv):
             self.invalid_reasons[str(exc)] += 1
         finally:
             self.costs["sensitivity_seconds"] += time.perf_counter() - started
+        if self.observation_uses_jacobian:
+            self._observation_physics_cache = (self.system, context["joints"].copy(),
+                                               context["jacobian"].copy(), context["jacobian_valid"])
         return context
 
     def step(self, action):

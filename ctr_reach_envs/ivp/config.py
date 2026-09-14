@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 from ctr_reach_envs.paper_config import paper_configuration, env_kwargs_for_profile, PAPER_PROFILE
 from .env import OriginalIVPEnv
+from .observations import observation_settings
 
 PROFILE = "original-ivp-comparison-v1"
 
@@ -29,6 +30,7 @@ def load_spec(path=None):
 
 def resolve(spec, environment, *, segment_mode, seed, physics, provenance):
     spec = deepcopy(spec)
+    spec["physics_observation"] = observation_settings(spec.get("physics_observation"))
     integer_fields = ("total_timesteps", "curriculum_steps", "max_steps_per_episode", "n_substeps",
                       "buffer_size", "batch_size", "n_sampled_goal")
     for key in integer_fields:
@@ -85,4 +87,5 @@ def make_env(config, *, evaluation=False, compute_jacobian=False, tolerance=None
             raise ValueError("Evaluation tolerance must be positive and within saved observation bounds")
         env["evaluation"] = True
         env["goal_tolerance_parameters"].update(function="constant", set_tol=tol)
-    return OriginalIVPEnv(**env, compute_jacobian=compute_jacobian)
+    return OriginalIVPEnv(**env, compute_jacobian=compute_jacobian,
+                          physics_observation=config["spec"].get("physics_observation"))
