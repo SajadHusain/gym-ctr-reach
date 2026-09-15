@@ -265,9 +265,16 @@ def main(argv=None):
     config = json.loads((args.model.parent/"config.json").read_text(encoding="utf-8"))
     if config.get("profile") != PROFILE:
         parser.error("Use an original-IVP checkpoint; the mechanics profile has a different plant.")
-    model = DDPG.load(args.model, device="cpu")
-    summary = run_diagnostics(model, config, args.output_dir, states=args.states, seed=args.seed,
-        rollout_steps=args.rollout_steps, action_fractions=args.action_fractions, relative_step=args.relative_step)
+    # SB3 reconstructs the saved HER replay-buffer class during load, even
+    # though this command never samples replay or resumes training. HER needs
+    # an environment for reward recomputation and its observation/action spaces.
+    loading_env = make_env(config, evaluation=True, compute_jacobian=False)
+    try:
+        model = DDPG.load(args.model, env=loading_env, device="cpu")
+        summary = run_diagnostics(model, config, args.output_dir, states=args.states, seed=args.seed,
+            rollout_steps=args.rollout_steps, action_fractions=args.action_fractions, relative_step=args.relative_step)
+    finally:
+        loading_env.close()
     summary["checkpoint"] = str(args.model.resolve())
     digest = hashlib.sha256()
     with args.model.open("rb") as stream:

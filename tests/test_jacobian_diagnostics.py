@@ -6,7 +6,7 @@ import pytest
 import torch
 from test_original_ivp import configuration
 from ctr_reach_envs.ivp.config import make_env
-from ctr_reach_envs.ivp.diagnostics import auxiliary_probe, run_diagnostics
+from ctr_reach_envs.ivp.diagnostics import auxiliary_probe, run_diagnostics, main
 from ctr_reach_envs.training.original import build_model, parse_args
 
 
@@ -75,6 +75,35 @@ def test_all_invalid_probe_is_explicit_noop():
 def test_original_cli_diagnostics_are_opt_in():
     assert not parse_args(["--output-dir", "unused"]).physics_diagnostics
     assert parse_args(["--output-dir", "unused", "--physics-diagnostics"]).physics_diagnostics
+
+
+@pytest.mark.parametrize("physics_mode", ["none", "jacobian_limits"])
+def test_cli_loads_saved_her_checkpoint_and_preserves_files(tmp_path, capsys, physics_mode):
+    """Exercise the ZIP-loading boundary missed by in-memory diagnostic tests."""
+    import hashlib
+    torch.set_num_threads(1)
+    cfg = configuration()
+    cfg["spec"]["physics_observation"]["mode"] = physics_mode
+    env = make_env(cfg, compute_jacobian=True)
+    model_path, config_path = tmp_path/"final_model.zip", tmp_path/"config.json"
+    try:
+        model = build_model(env, cfg)
+        model.learn(16)
+        model.save(model_path)
+        config_path.write_text(json.dumps(cfg), encoding="utf-8")
+    finally:
+        env.close()
+    model_bytes, config_bytes = model_path.read_bytes(), config_path.read_bytes()
+    output = tmp_path/"diagnostics"
+    main([str(model_path), "--states", "1", "--rollout-steps", "0",
+          "--action-fractions", "0.1", "1.0", "--output-dir", str(output)])
+    report = json.loads((output/"summary.json").read_text())
+    assert report["complete"] and report["checkpoint_timesteps"] == 16
+    assert report["checkpoint_sha256"] == hashlib.sha256(model_bytes).hexdigest()
+    assert report["prediction_rows"] > 0 and report["probe_rows"] > 0
+    assert model_path.read_bytes() == model_bytes
+    assert config_path.read_bytes() == config_bytes
+    capsys.readouterr()
 
 
 def test_offline_real_ivp_probe_preserves_model_and_records_failures(tmp_path):
