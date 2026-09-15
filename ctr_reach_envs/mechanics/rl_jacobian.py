@@ -142,7 +142,8 @@ class JacobianDDPG(ExplorationDDPG):
                  physics_anneal_steps=100000,physics_integration="sum",
                  physics_max_aux_ratio=1.,actor_max_backtracks=6,
                  physics_gain=.5,physics_cartesian_scale=.002,physics_max_tip_step=.002,
-                 actor_objective="hybrid",wait_for_completed_batch=False,**kwargs):
+                 actor_objective="hybrid",wait_for_completed_batch=False,
+                 physics_diagnostics=False,**kwargs):
         if physics_lengths is None and kwargs.get("_init_setup_model",True):
             raise ValueError("Supply fixed tube lengths for the actor's joint projection")
         for value in (physics_weight,physics_final_weight):
@@ -164,6 +165,7 @@ class JacobianDDPG(ExplorationDDPG):
         self.physics_max_aux_ratio = float(physics_max_aux_ratio)
         self.actor_max_backtracks = actor_max_backtracks
         self.physics_update_count = 0
+        self.physics_diagnostics = bool(physics_diagnostics)
         self.last_physics_metrics = {}
         self._physics_loss = None
         if actor_objective not in ("hybrid", "mechanics_only", "rl_only_checked"):
@@ -202,7 +204,8 @@ class JacobianDDPG(ExplorationDDPG):
         self.policy.set_training_mode(True)
         checked = self.actor_objective == "rl_only_checked" or (
             self.actor_objective == "hybrid" and self.physics_integration == "rl_priority")
-        if checked:
+        diagnostics = getattr(self, "physics_diagnostics", False) and self.actor_objective != "rl_only_checked"
+        if checked or diagnostics:
             for module in self.policy.modules():
                 if isinstance(module, (torch.nn.modules.batchnorm._BatchNorm, torch.nn.modules.dropout._DropoutNd)):
                     raise ValueError("RL-priority checks require deterministic MLPs without batch normalization/dropout")
@@ -245,6 +248,17 @@ class JacobianDDPG(ExplorationDDPG):
             metrics.update(actor_step(parameters, self.actor.optimizer, rl_gradient, direction,
                 lambda: -self.critic.q1_forward(data.observations, self.actor(data.observations)).mean(),
                 checked=checked, max_backtracks=self.actor_max_backtracks))
+            if diagnostics:
+                # Same sample, HER goal and mechanics, after the accepted step (or
+                # restored parameters if skipped). No replay sampling or RNG use.
+                with torch.no_grad():
+                    after = float(self._physics_loss(self.actor(data.observations), data))
+                before = float(physics_loss.detach())
+                if not np.isfinite(after):
+                    raise FloatingPointError("Nonfinite post-update Jacobian diagnostic")
+                metrics.update(jacobian_loss_before=before, jacobian_loss_after=after,
+                    jacobian_loss_change=after-before,
+                    jacobian_loss_decreased=float(after < before))
             integration_metrics.append(metrics)
             polyak_update(self.critic.parameters(),self.critic_target.parameters(),self.tau)
             polyak_update(self.actor.parameters(),self.actor_target.parameters(),self.tau)
@@ -264,6 +278,7 @@ class JacobianDDPG(ExplorationDDPG):
                                      "extra_equilibrium_calls":0}
         # total_actor_loss remains a reference value for the old weighted sum;
         # rl_priority is a projected update rule, not its exact gradient.
+        self.last_physics_metrics["nominal_weighted_loss"] = self.last_physics_metrics["total_actor_loss"]
         self.last_physics_metrics.update({key:float(np.mean([m[key] for m in integration_metrics]))
                                          for key in integration_metrics[0]})
         self.logger.record("train/n_updates",self._n_updates,exclude="tensorboard")
