@@ -155,7 +155,8 @@ def serializable_states(states):
 
 
 def run_diagnostics(model, config, output_dir, *, states=16, seed=910000,
-                    rollout_steps=8, action_fractions=(.1, .5, 1.), relative_step=1e-4):
+                    rollout_steps=8, action_fractions=(.1, .5, 1.), relative_step=1e-4,
+                    physics_loss=None):
     if config.get("profile") != PROFILE:
         raise ValueError("Diagnostics require original-ivp-comparison-v1, not mechanics. Use an original-IVP checkpoint.")
     if states < 1 or seed < 0 or rollout_steps < 0 or not np.isfinite(relative_step) or relative_step <= 0:
@@ -164,6 +165,10 @@ def run_diagnostics(model, config, output_dir, *, states=16, seed=910000,
         raise ValueError("Action fractions must lie in (0,1]")
     if fingerprint(getattr(model, "original_ivp_config", {})) != fingerprint(config):
         raise ValueError("Adjacent config.json does not match the checkpoint's embedded config")
+    saved_loss_kind = config["physics"].get("loss_kind", "tracking")
+    loss_kind = saved_loss_kind if physics_loss is None else physics_loss
+    if loss_kind not in ("tracking", "progress"):
+        raise ValueError("Unknown diagnostic physics loss")
     output = Path(output_dir)
     if output.exists() and any(output.iterdir()):
         raise ValueError("Diagnostic output directory must be empty")
@@ -173,13 +178,14 @@ def run_diagnostics(model, config, output_dir, *, states=16, seed=910000,
     p = config["physics"]
     env = make_env(config, evaluation=True, compute_jacobian=False)
     loss_fn = OriginalJacobianLoss(env.trig_obj.tube_lengths[0], env.n_substeps,
-        env.trig_obj.constrain_alpha, p["scale_m"], p["gain"], p["max_tip_step_m"])
+        env.trig_obj.constrain_alpha, p["scale_m"], p["gain"], p["max_tip_step_m"], loss_kind=loss_kind)
     summary = dict(complete=False, profile=PROFILE, environment_fingerprint=config["environment_fingerprint"],
         states_per_split=states, seed=seed, probe_seed=seed+states,
         checkpoint_timesteps=model.num_timesteps, action_fractions=list(action_fractions),
         heldout_selection="Independent task seeds, frozen-actor rollout states; no fit/probe overlap",
         scope="Local one-step diagnostics, not an estimate of long-horizon return or a stability certificate",
-        training_unchanged=True, prediction_rows=0, probe_rows=0)
+        training_unchanged=True, prediction_rows=0, probe_rows=0,
+        saved_physics_loss_kind=saved_loss_kind, probe_physics_loss_kind=loss_kind)
     prediction_rows, probe_rows = [], []
     try:
         fit = collect_states(env, actor, states, seed, rollout_steps)
@@ -259,6 +265,8 @@ def main(argv=None):
     parser.add_argument("--rollout-steps", type=int, default=8)
     parser.add_argument("--action-fractions", type=float, nargs="+", default=[.1, .5, 1.])
     parser.add_argument("--relative-step", type=float, default=1e-4)
+    parser.add_argument("--physics-loss", choices=("tracking", "progress"),
+                        help="Override only the copied-actor probe loss; default is the checkpoint's saved loss")
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args(argv)
     torch.set_num_threads(1)
@@ -272,7 +280,8 @@ def main(argv=None):
     try:
         model = DDPG.load(args.model, env=loading_env, device="cpu")
         summary = run_diagnostics(model, config, args.output_dir, states=args.states, seed=args.seed,
-            rollout_steps=args.rollout_steps, action_fractions=args.action_fractions, relative_step=args.relative_step)
+            rollout_steps=args.rollout_steps, action_fractions=args.action_fractions, relative_step=args.relative_step,
+            physics_loss=args.physics_loss)
     finally:
         loading_env.close()
     summary["checkpoint"] = str(args.model.resolve())

@@ -30,7 +30,8 @@ def build_model(env, config, *, force_guided_class=False, device="cpu", verbose=
             physics_anneal_steps=p["anneal_steps"], physics_integration=p["integration"],
             physics_max_aux_ratio=p["max_aux_ratio"], actor_objective=p["objective"],
             physics_gain=p["gain"], physics_cartesian_scale=p["scale_m"], physics_max_tip_step=p["max_tip_step_m"],
-            wait_for_completed_batch=True, physics_diagnostics=p.get("diagnostics", False))
+            wait_for_completed_batch=True, physics_diagnostics=p.get("diagnostics", False),
+            physics_loss_kind=p.get("loss_kind", "tracking"))
     model = cls(PaperMlpPolicy, env, learning_rate=s["actor_lr"],
         buffer_size=s["buffer_size"], learning_starts=0, batch_size=s["batch_size"],
         tau=s["legacy_defaults"]["tau"], gamma=s["gamma"],
@@ -149,6 +150,8 @@ def parse_args(argv=None, *, baseline=False):
     p.add_argument("--physics-observation-scale-m", type=float,
                    help="Distance scale before bounded Jacobian encoding (default 0.002 m)")
     p.add_argument("--physics-weight", type=float, default=0. if baseline else .1)
+    p.add_argument("--physics-loss", choices=("tracking", "progress"), default="tracking",
+                   help="Auxiliary actor loss: displacement tracking (default) or minimum predicted goal progress")
     p.add_argument("--physics-diagnostics", action="store_true",
                    help="Log same-minibatch Jacobian loss before/after accepted actor updates")
     p.add_argument("--physics-final-weight", type=float,
@@ -199,7 +202,7 @@ def main(argv=None, *, baseline=False):
         anneal_steps=a.physics_anneal_steps or spec["curriculum_steps"], integration=a.physics_integration,
         max_aux_ratio=a.physics_max_aux_ratio, gain=a.physics_gain, scale_m=a.physics_scale_m,
         max_tip_step_m=a.physics_max_tip_step_m, objective=a.actor_objective,
-        diagnostics=a.physics_diagnostics)
+        diagnostics=a.physics_diagnostics, loss_kind=a.physics_loss)
     if any(not np.isfinite(physics[k]) or physics[k] < 0 for k in ("weight", "final_weight")):
         raise ValueError("Physics weights must be finite and nonnegative")
     if any(not np.isfinite(physics[k]) or physics[k] <= 0 for k in ("anneal_steps", "max_aux_ratio", "gain", "scale_m", "max_tip_step_m")):

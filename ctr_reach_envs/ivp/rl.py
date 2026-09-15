@@ -38,10 +38,17 @@ class OriginalHerReplayBuffer(JacobianHerReplayBuffer):
 
 
 class OriginalJacobianLoss(torch.nn.Module):
-    """Differentiable transcription of Obs.set_action, including all substeps."""
+    """Tracking or minimum-progress loss through the original joint update.
+
+    The Jacobian is a detached local model. Only the actor's constrained joint
+    displacement is differentiated; goals always come from the sampled HER batch.
+    """
     def __init__(self, lengths, n_substeps=10, constrain_alpha=False,
-                 cartesian_scale=.002, gain=.5, max_tip_step=.002):
+                 cartesian_scale=.002, gain=.5, max_tip_step=.002, loss_kind="tracking"):
         super().__init__()
+        if loss_kind not in ("tracking", "progress"):
+            raise ValueError("Unknown original-IVP physics loss")
+        self.loss_kind = loss_kind
         self.register_buffer("lengths", torch.tensor(lengths, dtype=torch.float64))
         self.n_substeps, self.constrain_alpha = int(n_substeps), bool(constrain_alpha)
         self.cartesian_scale, self.gain, self.max_tip_step = cartesian_scale, gain, max_tip_step
@@ -69,9 +76,19 @@ class OriginalJacobianLoss(torch.nn.Module):
     def forward(self, actions, sample):
         dq = self.projected_delta(actions, sample.joints, sample.action_scales)
         predicted = torch.bmm(sample.jacobian.detach().double(), dq.unsqueeze(-1)).squeeze(-1)
-        desired = self.gain * (sample.observations["desired_goal"] - sample.observations["achieved_goal"]).detach().double()
-        desired = desired / (torch.linalg.vector_norm(desired, dim=1, keepdim=True) / self.max_tip_step).clamp_min(1.)
-        errors = ((predicted - desired) / self.cartesian_scale).square().sum(1)
+        error = (sample.observations["desired_goal"] - sample.observations["achieved_goal"]).detach().double()
+        if self.loss_kind == "progress":
+            distance = torch.linalg.vector_norm(error, dim=1)
+            next_distance = torch.linalg.vector_norm(error - predicted, dim=1)
+            # Never request more progress than the remaining error, even if a
+            # tracking-era configuration used a gain greater than one.
+            required = torch.minimum(self.gain * distance, distance).clamp_max(self.max_tip_step)
+            errors = torch.relu((next_distance - distance + required) / self.cartesian_scale).square()
+        else:
+            # Preserve the existing tracking objective for old checkpoints/runs.
+            desired = self.gain * error
+            desired = desired / (torch.linalg.vector_norm(desired, dim=1, keepdim=True) / self.max_tip_step).clamp_min(1.)
+            errors = ((predicted - desired) / self.cartesian_scale).square().sum(1)
         valid = (torch.ones_like(errors) if sample.jacobian_valid is None
                  else sample.jacobian_valid.detach().reshape(-1).to(errors.dtype))
         return (errors * valid).sum() / valid.sum().clamp_min(1.)
@@ -88,12 +105,21 @@ class OriginalJacobianDDPG(JacobianDDPG):
                 buffer_action[index] = self.policy.scale_action(action[index])
         return action, buffer_action
 
-    def __init__(self, *args, original_n_substeps=10, original_constrain_alpha=False, **kwargs):
+    def __init__(self, *args, original_n_substeps=10, original_constrain_alpha=False,
+                 physics_loss_kind="tracking", **kwargs):
+        if physics_loss_kind not in ("tracking", "progress"):
+            raise ValueError("Unknown original-IVP physics loss")
+        self.physics_loss_kind = physics_loss_kind
         self.original_n_substeps = int(original_n_substeps)
         self.original_constrain_alpha = bool(original_constrain_alpha)
         super().__init__(*args, **kwargs)
 
+    def train(self, gradient_steps, batch_size=100):
+        super().train(gradient_steps, batch_size)
+        self.last_physics_metrics["physics_loss_kind"] = getattr(self, "physics_loss_kind", "tracking")
+
     def _make_physics_loss(self):
         return OriginalJacobianLoss(self.physics_lengths, self.original_n_substeps,
             self.original_constrain_alpha, self.physics_cartesian_scale,
-            self.physics_gain, self.physics_max_tip_step)
+            self.physics_gain, self.physics_max_tip_step,
+            loss_kind=getattr(self, "physics_loss_kind", "tracking"))

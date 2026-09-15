@@ -1,7 +1,9 @@
-# Diagnose Jacobian guidance before changing its loss
+# Diagnose Jacobian guidance and compare progress loss
 
-This change keeps the existing displacement-matching loss and actor update rule.
-It adds two independent measurements. No progress loss is implemented yet.
+Original-IVP training now accepts `--physics-loss tracking` (the compatible
+default) or `--physics-loss progress`. Both use the same constrained action map,
+source-state Jacobian, HER goal reconstruction and actor update rule. The two
+diagnostics below can be used with either objective.
 
 ## 1. Observe accepted training updates
 
@@ -17,8 +19,9 @@ training budget is needed. The existing `updates.csv` JSON field gains:
 | `jacobian_loss_change` | After minus before; negative is an auxiliary improvement |
 | `jacobian_loss_decreased` | Fraction of actor updates with strictly lower auxiliary loss |
 | `nominal_weighted_loss` | Clearer alias of `total_actor_loss`; not the exact objective of the projected optimizer |
+| `physics_loss_kind` | `tracking` or `progress`; identifies what `jacobian_loss` and its before/after values mean |
 
-Each CSV record averages the gradient updates in that training block. Retain
+Each CSV record averages numeric metrics over the gradient updates in that training block. Retain
 `jacobian_valid_fraction`, `actor_step_skipped`, and the before/after auxiliary
 gradient ratios when interpreting these numbers. An all-invalid batch has zero
 auxiliary loss and provides no evidence of good physics. The extra evaluation
@@ -106,7 +109,109 @@ performance claim. Repeat with larger independent banks before redesigning the
 loss. Do not tune the probe step on held-out outcomes and then call the same
 outcomes an independent test.
 
-## Papers related to a future progress objective
+## Minimum-progress actor loss
+
+Let `e = desired_goal - achieved_goal` for the sampled real/HER transition and
+`dx = J(q) @ projected_delta(actor(observation))`, in metres. The optional loss is
+
+```text
+r = ||e||
+d = min(gain * r, r, max_tip_step_m)
+L_progress = mean_valid(relu((||e - dx|| - r + d) / scale_m)^2)
+```
+
+The defaults are `gain = 0.5`, `max_tip_step_m = 0.002`, and `scale_m = 0.002`.
+Thus it requests at least half the remaining distance or 2 mm of predicted
+progress, whichever is smaller. The additional `r` bound makes the target
+well-defined if a previous tracking configuration used a gain above one.
+Here `max_tip_step_m` caps the **required decrease**, not the permitted action
+or tip displacement. A predicted 20 mm improvement can have zero loss even
+when the required decrease is only 2 mm. Stalling, moving away, sideways motion,
+and overshoot that violates the required decrease receive a penalty. Mild
+overshoot that still meets the required decrease is allowed.
+
+Physics supplies the detached Jacobian and the differentiable transcription of
+the actual constrained joint update, including all substeps. The actor receives
+the gradient through its action; no gradient is needed through the ODE solver.
+The goal is read afresh from each sampled batch, so HER relabeling changes the
+progress direction. Invalid Jacobians contribute zero auxiliary loss and are
+excluded from its mean; their RL transitions are retained. Old configurations
+and checkpoints without a loss-kind field still use tracking.
+
+`rl_priority` still projects conflicting auxiliary gradients, caps their
+parameter-gradient norm relative to the RL gradient, and checks the resulting
+step against the same-batch fixed critic. `--physics-max-aux-ratio 0.1` is a
+gradient-norm cap, not a bound on the scalar loss ratio. The nominal weighted
+loss can therefore exceed 1.1 times the RL loss. Progress is a local model
+prediction, not a guarantee of improved physical motion or long-horizon return.
+Large-action Jacobian errors observed in diagnostics still matter.
+
+### Probe the new loss on the existing checkpoint
+
+The optional diagnostic `--physics-loss` overrides only the copied-actor probe;
+it never modifies the checkpoint or its adjacent config. Without that argument,
+the diagnostic selects the saved loss, falling back to tracking for old runs.
+`summary.json` records both `saved_physics_loss_kind` and
+`probe_physics_loss_kind`.
+
+```powershell
+python diagnose_original_jacobian.py `
+  runs/ivp_guided10_v4_original/final_model.zip `
+  --physics-loss progress `
+  --states 16 `
+  --seed 910000 `
+  --rollout-steps 8 `
+  --action-fractions 0.1 0.5 1.0 `
+  --relative-step 0.0001 `
+  --output-dir runs/ivp_guided10_progress_probe_v1
+```
+
+Using the same checkpoint, seeds, state count and rollout settings as the
+tracking probe produces the same fit/held-out state banks. Compare paired
+`actual_progress_change_m`, valid coverage and failures, not the raw magnitudes
+of two differently defined losses. A zero progress loss/gradient can mean all
+valid samples already meet the threshold; it does not imply broken backpropagation.
+After the pilot, use larger fresh state banks rather than repeatedly tuning on
+the same held-out tasks.
+
+### Start a matched training experiment
+
+This starts a **fresh model** and copies the experiment specification and plant
+from the previous original-IVP `config.json`. It does not resume that checkpoint.
+The total budget, seed and physics settings below are explicit overrides.
+The saved specification retains the previous tolerance, episode length,
+network, exploration and observation settings. Verify that this is the config
+of the run you intend to compare; an equilibrium/mechanics config is rejected.
+
+```powershell
+python train_jacobian_ddpg_her.py `
+  --profile original `
+  --config runs/ivp_guided10_v4_original/config.json `
+  --total-timesteps 600000 `
+  --seed 10 `
+  --physics-loss progress `
+  --physics-weight 0.1 `
+  --physics-final-weight 0.1 `
+  --physics-anneal-steps 200000 `
+  --physics-integration rl_priority `
+  --physics-max-aux-ratio 0.1 `
+  --physics-gain 0.5 `
+  --physics-scale-m 0.002 `
+  --physics-max-tip-step-m 0.002 `
+  --physics-diagnostics `
+  --output-dir runs/ivp_guided10_progress_v1
+```
+
+With equal initial/final weights there is no annealing. `--config` supplies the
+saved experiment specification and environment; physics flags must be stated
+explicitly as above. The new config has `physics.loss_kind: "progress"`, and
+update records contain `physics_loss_kind: "progress"`. The loss kind is also
+stored in the model ZIP and used when reconstructing the training loss.
+Use a new output directory for every run. Compare progress against tracking and
+ordinary DDPG on matched evaluation tasks; repeat training seeds before drawing
+sample-efficiency conclusions.
+
+## Papers related to the progress objective
 
 These papers use Lyapunov decrease conditions or related controller losses.
 They are precedents for the principle, not prior implementations of our exact

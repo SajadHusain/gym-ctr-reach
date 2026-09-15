@@ -10,11 +10,13 @@ from ctr_reach_envs.ivp.diagnostics import auxiliary_probe, run_diagnostics, mai
 from ctr_reach_envs.training.original import build_model, parse_args
 
 
-def test_diagnostics_do_not_change_training_parameters_replay_or_rng():
+@pytest.mark.parametrize("loss_kind", ["tracking", "progress"])
+def test_diagnostics_do_not_change_training_parameters_replay_or_rng(loss_kind):
     torch.set_num_threads(1)
     def train(enabled):
         cfg = configuration()
         cfg["physics"]["diagnostics"] = enabled
+        cfg["physics"]["loss_kind"] = loss_kind
         env = make_env(cfg, compute_jacobian=True)
         try:
             model = build_model(env, cfg)
@@ -32,6 +34,7 @@ def test_diagnostics_do_not_change_training_parameters_replay_or_rng():
     assert before[3][2:] == after[3][2:]
     torch.testing.assert_close(before[4], after[4], atol=0, rtol=0)
     m = after[2]
+    assert m["physics_loss_kind"] == loss_kind
     assert np.isfinite(m["jacobian_loss_after"])
     assert m["jacobian_loss_change"] == pytest.approx(m["jacobian_loss_after"]-m["jacobian_loss_before"])
     assert m["nominal_weighted_loss"] == m["total_actor_loss"]
@@ -78,17 +81,23 @@ def test_original_cli_diagnostics_are_opt_in():
 
 
 @pytest.mark.parametrize("physics_mode", ["none", "jacobian_limits"])
-def test_cli_loads_saved_her_checkpoint_and_preserves_files(tmp_path, capsys, physics_mode):
+@pytest.mark.parametrize("loss_kind", ["legacy", "progress"])
+def test_cli_loads_saved_her_checkpoint_and_preserves_files(tmp_path, capsys, physics_mode, loss_kind):
     """Exercise the ZIP-loading boundary missed by in-memory diagnostic tests."""
     import hashlib
     torch.set_num_threads(1)
     cfg = configuration()
     cfg["spec"]["physics_observation"]["mode"] = physics_mode
+    if loss_kind != "legacy":
+        cfg["physics"]["loss_kind"] = loss_kind
     env = make_env(cfg, compute_jacobian=True)
     model_path, config_path = tmp_path/"final_model.zip", tmp_path/"config.json"
     try:
         model = build_model(env, cfg)
         model.learn(16)
+        if loss_kind == "legacy":
+            # Checkpoints predating selectable losses contain no such attribute.
+            del model.physics_loss_kind
         model.save(model_path)
         config_path.write_text(json.dumps(cfg), encoding="utf-8")
     finally:
@@ -99,8 +108,23 @@ def test_cli_loads_saved_her_checkpoint_and_preserves_files(tmp_path, capsys, ph
           "--action-fractions", "0.1", "1.0", "--output-dir", str(output)])
     report = json.loads((output/"summary.json").read_text())
     assert report["complete"] and report["checkpoint_timesteps"] == 16
+    expected_loss = "tracking" if loss_kind == "legacy" else loss_kind
+    assert report["saved_physics_loss_kind"] == expected_loss
+    assert report["probe_physics_loss_kind"] == expected_loss
     assert report["checkpoint_sha256"] == hashlib.sha256(model_bytes).hexdigest()
     assert report["prediction_rows"] > 0 and report["probe_rows"] > 0
+    assert model_path.read_bytes() == model_bytes
+    assert config_path.read_bytes() == config_bytes
+    # An explicit progress probe on either ZIP must not rewrite the saved
+    # configuration or change the frozen-actor fit/held-out state banks.
+    override = tmp_path/"progress_probe"
+    main([str(model_path), "--states", "1", "--rollout-steps", "0",
+          "--action-fractions", "0.1", "1.0", "--physics-loss", "progress",
+          "--output-dir", str(override)])
+    override_report = json.loads((override/"summary.json").read_text())
+    assert override_report["probe_physics_loss_kind"] == "progress"
+    assert override_report["saved_physics_loss_kind"] == expected_loss
+    assert (override/"states.json").read_bytes() == (output/"states.json").read_bytes()
     assert model_path.read_bytes() == model_bytes
     assert config_path.read_bytes() == config_bytes
     capsys.readouterr()

@@ -130,6 +130,12 @@ originally produced \(q_t\). This is the ordinary off-policy state convention,
 and is the exact derivative of the stated *local surrogate*, not a claim to
 differentiate the nonlinear future simulator trajectory.
 
+The default `--physics-loss tracking` uses the following capped local target.
+An optional `--physics-loss progress` instead penalizes failure to achieve a
+minimum predicted decrease in goal distance. See
+[progress loss and diagnostics](jacobian_diagnostics.md#minimum-progress-actor-loss)
+for its equation, checkpoint comparison and training command.
+
 Let \(e=g-p\), and define a capped local target
 
 \[
