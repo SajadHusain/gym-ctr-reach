@@ -167,6 +167,10 @@ def run_diagnostics(model, config, output_dir, *, states=16, seed=910000,
         raise ValueError("Adjacent config.json does not match the checkpoint's embedded config")
     saved_loss_kind = config["physics"].get("loss_kind", "tracking")
     loss_kind = saved_loss_kind if physics_loss is None else physics_loss
+    if loss_kind == "short_horizon":
+        raise ValueError("This command probes one-step tracking/progress losses, not short-horizon returns. "
+                         "Use tests/test_short_horizon.py for rollout gradient checks; to compare a local "
+                         "probe explicitly supply --physics-loss progress.")
     if loss_kind not in ("tracking", "progress"):
         raise ValueError("Unknown diagnostic physics loss")
     output = Path(output_dir)

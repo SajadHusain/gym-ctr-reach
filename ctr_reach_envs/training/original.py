@@ -16,10 +16,12 @@ from ctr_reach_envs.ivp.config import load_spec, resolve, make_env
 from ctr_reach_envs.ivp.rl import OriginalHerReplayBuffer, OriginalJacobianDDPG
 from ctr_reach_envs.ivp.observations import FEATURE_COUNTS, observation_settings
 from ctr_reach_envs.ivp.policy import PhysicsStateExtractor
+from ctr_reach_envs.ivp.short_horizon import validate_short_horizon
 
 
 def build_model(env, config, *, force_guided_class=False, device="cpu", verbose=0):
     s, p = config["spec"], config["physics"]
+    validate_short_horizon(config)
     guided = force_guided_class or max(p["weight"], p["final_weight"]) > 0 or p["objective"] == "rl_only_checked"
     cls = OriginalJacobianDDPG if guided else PaperDDPG
     extra = {}
@@ -31,7 +33,11 @@ def build_model(env, config, *, force_guided_class=False, device="cpu", verbose=
             physics_max_aux_ratio=p["max_aux_ratio"], actor_objective=p["objective"],
             physics_gain=p["gain"], physics_cartesian_scale=p["scale_m"], physics_max_tip_step=p["max_tip_step_m"],
             wait_for_completed_batch=True, physics_diagnostics=p.get("diagnostics", False),
-            physics_loss_kind=p.get("loss_kind", "tracking"))
+            physics_loss_kind=p.get("loss_kind", "tracking"),
+            short_horizon_steps=p.get("short_horizon_steps", 2),
+            short_horizon_batch_size=p.get("short_horizon_batch_size", 4),
+            short_horizon_every=p.get("short_horizon_every", 20),
+            short_horizon_start_steps=p.get("short_horizon_start_steps", 10000))
     model = cls(PaperMlpPolicy, env, learning_rate=s["actor_lr"],
         buffer_size=s["buffer_size"], learning_starts=0, batch_size=s["batch_size"],
         tau=s["legacy_defaults"]["tau"], gamma=s["gamma"],
@@ -150,8 +156,16 @@ def parse_args(argv=None, *, baseline=False):
     p.add_argument("--physics-observation-scale-m", type=float,
                    help="Distance scale before bounded Jacobian encoding (default 0.002 m)")
     p.add_argument("--physics-weight", type=float, default=0. if baseline else .1)
-    p.add_argument("--physics-loss", choices=("tracking", "progress"), default="tracking",
-                   help="Auxiliary actor loss: displacement tracking (default) or minimum predicted goal progress")
+    p.add_argument("--physics-loss", choices=("tracking", "progress", "short_horizon"), default="tracking",
+                   help="Actor auxiliary: tracking (default), progress, or nonlinear short-window return")
+    p.add_argument("--short-horizon-steps", type=int, default=2,
+                   help="Imagined control steps per window (1 to 8), each retaining original n_substeps")
+    p.add_argument("--short-horizon-batch-size", type=int, default=4,
+                   help="Maximum windows drawn from each scheduled actor minibatch")
+    p.add_argument("--short-horizon-every", type=int, default=20,
+                   help="Schedule a model-window update every N gradient updates, not environment steps")
+    p.add_argument("--short-horizon-start-steps", type=int, default=10000,
+                   help="Collect/train DDPG for this many environment steps before enabling model windows")
     p.add_argument("--physics-diagnostics", action="store_true",
                    help="Log same-minibatch Jacobian loss before/after accepted actor updates")
     p.add_argument("--physics-final-weight", type=float,
@@ -203,11 +217,23 @@ def main(argv=None, *, baseline=False):
         max_aux_ratio=a.physics_max_aux_ratio, gain=a.physics_gain, scale_m=a.physics_scale_m,
         max_tip_step_m=a.physics_max_tip_step_m, objective=a.actor_objective,
         diagnostics=a.physics_diagnostics, loss_kind=a.physics_loss)
+    if a.physics_loss == "short_horizon":
+        physics.update(short_horizon_steps=a.short_horizon_steps,
+            short_horizon_batch_size=a.short_horizon_batch_size, short_horizon_every=a.short_horizon_every,
+            short_horizon_start_steps=a.short_horizon_start_steps,
+            rollout_reward="original sparse reward; fixed HER goal and source tolerance",
+            rollout_terminal_value="frozen target Q(s, target_actor(s)); input gradients retained",
+            rollout_gradient="first-order analytical IVP backward; success branches locally constant",
+            rollout_normalization="mean of valid-window negative returns divided by configured horizon",
+            rollout_source="subset of real/HER replay minibatch; no imagined critic transitions",
+            rollout_time_limit="bootstrap at window boundary; no artificial reset or terminal",
+            rollout_integration="bounded auxiliary return gradient alongside ordinary DDPG; not full SHAC")
     if any(not np.isfinite(physics[k]) or physics[k] < 0 for k in ("weight", "final_weight")):
         raise ValueError("Physics weights must be finite and nonnegative")
     if any(not np.isfinite(physics[k]) or physics[k] <= 0 for k in ("anneal_steps", "max_aux_ratio", "gain", "scale_m", "max_tip_step_m")):
         raise ValueError("Physics scales, gain, ratio and duration must be positive")
     config = resolve(spec, environment, segment_mode=a.segment_mode, seed=a.seed, physics=physics, provenance=provenance)
+    validate_short_horizon(config)
     config.update(versions={name: version(name) for name in ("stable-baselines3", "gymnasium", "torch", "numpy", "scipy")},
                   python=platform.python_version(), torch_threads=a.torch_threads, device=a.device)
     if a.dry_run:
@@ -222,7 +248,8 @@ def main(argv=None, *, baseline=False):
     plant, model, audit, failure = None, None, None, None
     complete = False
     try:
-        collect_jacobian = max(physics["weight"], physics["final_weight"]) > 0 and physics["objective"] != "rl_only_checked"
+        collect_jacobian = (max(physics["weight"], physics["final_weight"]) > 0
+                            and physics["objective"] != "rl_only_checked" and physics["loss_kind"] != "short_horizon")
         plant = make_env(config, compute_jacobian=collect_jacobian)
         model = build_model(plant, config, device=a.device)
         audit = AuditCallback(plant, config, output, a.checkpoint_freq, a.progress_every)
@@ -241,6 +268,7 @@ def main(argv=None, *, baseline=False):
             maximum_replay_proposal_error=None if audit is None else audit.maximum_replay_error,
             numerical_failures=0 if audit is None else audit.numerical_failures,
             costs={} if plant is None else plant.costs,
+            short_horizon_costs={} if model is None else getattr(model, "short_horizon_totals", {}),
             mean_linearization_error_m=(audit.linearization_sum/audit.linearization_count
                 if audit is not None and audit.linearization_count else None),
             max_linearization_error_m=(audit.linearization_max if audit is not None and audit.linearization_count else None),
@@ -255,6 +283,8 @@ def main(argv=None, *, baseline=False):
                        actor_uses_jacobian=False if plant is None else plant.observation_uses_jacobian,
                        physics_feature_count=FEATURE_COUNTS[observation["mode"]])
         write_json(output / "summary.json", summary)
+        if model is not None and hasattr(model, "close_short_horizon"):
+            model.close_short_horizon()
         if plant is not None: plant.close()
     print(json.dumps(summary, indent=2), flush=True)
     if not complete:
