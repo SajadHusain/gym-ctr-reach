@@ -231,7 +231,7 @@ class JacobianDDPG(ExplorationDDPG):
             self.critic.optimizer.step()
             actions = self.actor(data.observations)
             rl_loss = -self.critic.q1_forward(data.observations,actions).mean()
-            physics_loss = (self._physics_loss(actions,data) if self.actor_objective != "rl_only_checked"
+            physics_loss = (self._actor_auxiliary_loss(actions,data) if self.actor_objective != "rl_only_checked"
                             else actions.sum()*0.)
             actor_loss = weight*physics_loss if self.actor_objective == "mechanics_only" else rl_loss+weight*physics_loss
             if not bool(torch.isfinite(actor_loss)):raise FloatingPointError("Nonfinite actor loss")
@@ -252,7 +252,7 @@ class JacobianDDPG(ExplorationDDPG):
                 # Same sample, HER goal and mechanics, after the accepted step (or
                 # restored parameters if skipped). No replay sampling or RNG use.
                 with torch.no_grad():
-                    after = float(self._physics_loss(self.actor(data.observations), data))
+                    after = float(self._actor_auxiliary_loss(self.actor(data.observations), data))
                 before = float(physics_loss.detach())
                 if not np.isfinite(after):
                     raise FloatingPointError("Nonfinite post-update Jacobian diagnostic")
@@ -293,3 +293,6 @@ class JacobianDDPG(ExplorationDDPG):
         return ProjectedJacobianLoss(self.physics_lengths,
             cartesian_scale=self.physics_cartesian_scale, gain=self.physics_gain,
             max_tip_step=self.physics_max_tip_step)
+
+    def _actor_auxiliary_loss(self, actions, data):
+        return self._physics_loss(actions, data)

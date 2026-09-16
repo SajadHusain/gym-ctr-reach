@@ -55,8 +55,8 @@ class OriginalJacobianLoss(torch.nn.Module):
         if self.n_substeps < 1 or any(not np.isfinite(x) or x <= 0 for x in (cartesian_scale, gain, max_tip_step)):
             raise ValueError("Invalid local displacement loss parameters")
 
-    def projected_delta(self, actions, joints, scales):
-        source = joints.detach().double()
+    def projected_delta(self, actions, joints, scales, *, detach_source=True):
+        source = (joints.detach() if detach_source else joints).double()
         q = source
         increment = actions.double().clamp(-1., 1.) * scales.detach().double()
         for _ in range(self.n_substeps):
@@ -106,20 +106,88 @@ class OriginalJacobianDDPG(JacobianDDPG):
         return action, buffer_action
 
     def __init__(self, *args, original_n_substeps=10, original_constrain_alpha=False,
-                 physics_loss_kind="tracking", **kwargs):
-        if physics_loss_kind not in ("tracking", "progress"):
+                 physics_loss_kind="tracking", short_horizon_steps=2,
+                 short_horizon_batch_size=4, short_horizon_every=20,
+                 short_horizon_start_steps=10000, **kwargs):
+        if physics_loss_kind not in ("tracking", "progress", "short_horizon"):
             raise ValueError("Unknown original-IVP physics loss")
+        for value in (short_horizon_steps, short_horizon_batch_size, short_horizon_every):
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                raise ValueError("Short-horizon sizes and frequency must be positive integers")
+        if short_horizon_steps > 8:
+            raise ValueError("Initial short-horizon implementation supports at most eight steps")
+        if isinstance(short_horizon_start_steps, bool) or not isinstance(short_horizon_start_steps, int) or short_horizon_start_steps < 0:
+            raise ValueError("Short-horizon start step must be a nonnegative integer")
+        self.short_horizon_steps = short_horizon_steps
+        self.short_horizon_batch_size = short_horizon_batch_size
+        self.short_horizon_every = short_horizon_every
+        self.short_horizon_start_steps = short_horizon_start_steps
+        self._short_horizon = None
+        self.short_horizon_totals = {}
         self.physics_loss_kind = physics_loss_kind
         self.original_n_substeps = int(original_n_substeps)
         self.original_constrain_alpha = bool(original_constrain_alpha)
         super().__init__(*args, **kwargs)
 
     def train(self, gradient_steps, batch_size=100):
+        short = getattr(self, "physics_loss_kind", "tracking") == "short_horizon"
+        previous = self.physics_update_count
+        if short:
+            self._window_block = []
         super().train(gradient_steps, batch_size)
         self.last_physics_metrics["physics_loss_kind"] = getattr(self, "physics_loss_kind", "tracking")
+        if short:
+            records = self._window_block
+            self.physics_update_count = previous + sum(r["valid_windows"] > 0 for r in records)
+            # Old field names describe cached local Jacobians, not this mode.
+            self.last_physics_metrics["short_horizon_loss_all_updates_mean"] = self.last_physics_metrics.pop("jacobian_loss", 0.)
+            self.last_physics_metrics.pop("jacobian_valid_fraction", None)
+            self.last_physics_metrics.pop("jacobian_action_gradient_norm", None)
+            attempted = sum(r["attempted_windows"] for r in records)
+            valid = sum(r["valid_windows"] for r in records)
+            self.last_physics_metrics.update(
+                short_horizon_scheduled_updates=len(records),
+                short_horizon_attempted_windows=attempted,
+                short_horizon_valid_windows=valid,
+                short_horizon_invalid_windows=sum(r["invalid_windows"] for r in records),
+                short_horizon_initial_terminal_windows=sum(r["initial_terminal_windows"] for r in records),
+                short_horizon_terminal_windows=sum(r["terminal_windows"] for r in records),
+                short_horizon_valid_fraction=valid / attempted if attempted else 0.,
+                short_horizon_loss_active_mean=(float(np.mean([r["loss"] for r in records if r["valid_windows"]]))
+                    if valid else 0.),
+                short_horizon_totals=dict(self.short_horizon_totals))
+
+    def _excluded_save_params(self):
+        return super()._excluded_save_params() + ["_short_horizon", "_window_block"]
+
+    def close_short_horizon(self):
+        if self._short_horizon is not None:
+            self._short_horizon.backend.close()
+            self._short_horizon = None
+
+    def _actor_auxiliary_loss(self, actions, data):
+        if getattr(self, "physics_loss_kind", "tracking") != "short_horizon":
+            return super()._actor_auxiliary_loss(actions, data)
+        if self.num_timesteps < self.short_horizon_start_steps or self._n_updates % self.short_horizon_every:
+            return actions.sum() * 0.
+        if self._short_horizon is None:
+            from .short_horizon import IVPBackwardBackend, ShortHorizonReturn, validate_short_horizon
+            validate_short_horizon(self.original_ivp_config)
+            self._short_horizon = ShortHorizonReturn(
+                IVPBackwardBackend(self.original_ivp_config, self.short_horizon_totals),
+                self._physics_loss, self.short_horizon_steps, self.gamma)
+        # Cycle through the existing real/HER batch without another RNG draw.
+        count = min(self.short_horizon_batch_size, len(actions))
+        start = ((self._n_updates // self.short_horizon_every - 1) * count) % len(actions)
+        indices = [(start + i) % len(actions) for i in range(count)]
+        loss, record = self._short_horizon.loss(
+            self.actor, self.actor_target, self.critic_target, actions, data, indices)
+        self._window_block.append(record)
+        return loss
 
     def _make_physics_loss(self):
         return OriginalJacobianLoss(self.physics_lengths, self.original_n_substeps,
             self.original_constrain_alpha, self.physics_cartesian_scale,
             self.physics_gain, self.physics_max_tip_step,
-            loss_kind=getattr(self, "physics_loss_kind", "tracking"))
+            loss_kind=("tracking" if getattr(self, "physics_loss_kind", "tracking") == "short_horizon"
+                       else getattr(self, "physics_loss_kind", "tracking")))
