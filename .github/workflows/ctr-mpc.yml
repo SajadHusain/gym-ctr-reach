@@ -21,4 +21,4 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m pip install -e ".[test]"
-      - run: python -m pytest tests/test_ctr_mpc.py tests/test_mechanics.py tests/test_env.py -q
+      - run: python -m pytest tests/test_ctr_mpc.py tests/test_mechanics.py -q

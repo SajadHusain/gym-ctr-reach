@@ -122,6 +122,7 @@ def main(argv=None):
     run_config = dict(controller="nonlinear_mpc", version=1, source_config=config,
         source_config_path=str(a.config), plant_contract=plant_contract,
         environment_fingerprint=environment_hash, optimizer=asdict(options),
+        max_prediction_rhs=getattr(model, "max_prediction_rhs", None),
         evaluation=dict(episodes=a.episodes, first_seed=a.seed, max_steps=a.max_steps, tolerance_m=a.tolerance_m),
         joint_step_caps=caps.tolist(), action_semantics="normalized original proposal repeated n_substeps",
         paper="https://doi.org/10.1109/TRO.2020.2991651",

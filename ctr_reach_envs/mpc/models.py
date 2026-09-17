@@ -10,7 +10,7 @@ import time
 import numpy as np
 from scipy.integrate import solve_ivp
 
-from ctr_reach_envs.mechanics.geometry import JointConstraints, segment_tubes
+from ctr_reach_envs.mechanics.geometry import segment_tubes
 from ctr_reach_envs.mechanics.integration import ScaleSafeDOP853
 from ctr_reach_envs.mechanics.sensitivity import _field
 from ctr_reach_envs.mechanics.solver import EquilibriumError
@@ -50,8 +50,11 @@ class PaperIVPModel:
     paper's material-frame formulation. Ended tube strains freeze at their OWN
     distal ends, not at an offset sample or at the longest tube's tip.
     """
-    def __init__(self, solver):
+    def __init__(self, solver, max_prediction_rhs=20_000):
+        if isinstance(max_prediction_rhs, bool) or int(max_prediction_rhs) != max_prediction_rhs or max_prediction_rhs < 1:
+            raise ValueError("max_prediction_rhs must be a positive integer")
         self.solver = solver
+        self.max_prediction_rhs = min(max_prediction_rhs, solver.options.max_rhs_evaluations)
         self.torsion_count = solver.n
         self.calls, self.seconds, self.rhs_evaluations = 0, 0., 0
 
@@ -76,7 +79,7 @@ class PaperIVPModel:
                     nonlocal calls
                     calls += 1
                     self.rhs_evaluations += 1
-                    if calls > solver.options.max_rhs_evaluations:
+                    if calls > self.max_prediction_rhs:
                         raise EquilibriumError("MPC prediction exceeded its ODE budget")
                     return length * _field(solver, interval, y)
 

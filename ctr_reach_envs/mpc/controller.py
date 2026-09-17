@@ -195,6 +195,11 @@ class NonlinearMPC:
 
         status, iterations, converged = "hold", 0, False
         initial_discrepancy = None
+
+        def callback(_):
+            nonlocal iterations
+            iterations += 1
+
         try:
             current = stage(x_hold.reshape(h, width)[0])
             initial_discrepancy = float(np.linalg.norm(current[:3]-tip))
@@ -212,6 +217,7 @@ class NonlinearMPC:
             cons = [LinearConstraint(A, np.full(len(b), -np.inf), b)]
             if nt: cons.append(dict(type="eq", fun=equalities, jac=equality_jacobian))
             result = minimize(objective, initial, jac=jacobian, method="SLSQP",
+                callback=callback,
                 bounds=Bounds(np.tile(lower, h), np.tile(upper, h)), constraints=cons,
                 options=dict(maxiter=opt.max_iterations, ftol=opt.optimizer_ftol))
             objective(result.x)  # independent validation, regardless of solver status
