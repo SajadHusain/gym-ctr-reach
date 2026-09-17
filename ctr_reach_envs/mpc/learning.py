@@ -136,15 +136,21 @@ class IVPTipCallback(cs.Callback):
 def build_mpc(callback, constraints, options, name):
     """Normalized state = [q / joint_step_caps, goal / tracking_scale]."""
     horizon, caps = options.horizon, callback.caps
-    mpc = Mpc(Nlp(sym_type="MX", name=name), horizon)
-    lb = np.r_[callback.lower, np.full(3, -np.inf)].reshape(9, 1)
-    ub = np.r_[callback.upper, np.full(3, np.inf)].reshape(9, 1)
-    state, _ = mpc.state("state", 9, lb=lb, ub=ub, bound_initial=False)
+    # Joint dynamics are affine and exact. Eliminate their states rather than
+    # asking a quasi-Newton solver to also optimize equality-constrained joints
+    # and repeated goal coordinates. Nonlinear FK is still evaluated at every node.
+    mpc = Mpc(Nlp(sym_type="MX", name=name), horizon, shooting="single")
+    mpc.state("state", 9)
     action, _ = mpc.action("action", 6, lb=-1., ub=1.)
     mpc.set_affine_dynamics(np.eye(9), np.vstack((np.eye(6), np.zeros((3, 6)))))
+    state = mpc.states["state"]
     ordering = cs.DM(constraints.A) @ cs.diag(cs.DM(caps[:3]))
     mpc.constraint("extension_order", ordering @ state[:3, 1:], "<=",
                    cs.repmat(cs.DM(constraints.b), 1, horizon))
+    if constraints.constrain_alpha:
+        upper = cs.repmat(cs.DM(callback.upper[3:]), 1, horizon)
+        mpc.constraint("rotation_upper", state[3:6, 1:], "<=", upper)
+        mpc.constraint("rotation_lower", state[3:6, 1:], ">=", -upper)
     stage = mpc.parameter("stage", (3, 1))
     move = mpc.parameter("move", (2, 1))
     terminal = mpc.parameter("terminal", (3, 1))
@@ -227,12 +233,10 @@ class MPCQLearner:
         started = time.perf_counter()
         # A feasible hold is always the initial guess. This avoids stale goals and
         # invalid full-extension guesses in a fresh nonlinear CTR solve.
-        guess_state = np.repeat(state[:, None], self.options.horizon+1, axis=1)
         guess_action = np.zeros((6, self.options.horizon))
         if action is not None:
             guess_action[:, 0] = action
-            guess_state[:6, 1:] += action[:, None]
-        guess = dict(state=guess_state, action=guess_action)
+        guess = dict(action=guess_action)
         self.agent.fixed_parameters["exploration"] = np.asarray(
             np.zeros(6) if action is not None or perturbation is None else perturbation).reshape(6, 1)
         if action is None:
@@ -245,6 +249,10 @@ class MPCQLearner:
                      if key in ("inf_pr", "inf_du", "mu") and len(values)}
             raise RuntimeError(f"MPC solve failed: {sol.status}; residuals={final}; "
                                f"model_calls={self.callback.calls-self.callback._calls_at_start}")
+        mpc = self.agent.V if action is None else self.agent.Q
+        # Expose the derived single-shooting state trajectory alongside controls
+        # for independent plant validation and diagnostics.
+        sol.vals["state"] = sol.value(mpc.states["state"])
         states = np.asarray(sol.vals["state"])
         actions = np.asarray(sol.vals["action"])
         if not np.all(np.isfinite(states)) or not np.all(np.isfinite(actions)):

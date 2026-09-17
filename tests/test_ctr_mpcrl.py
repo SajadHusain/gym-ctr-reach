@@ -1,5 +1,4 @@
 """Behavioral checks for the mpcrl adapter, including the original CTR plant."""
-from dataclasses import replace
 import json
 
 import numpy as np
@@ -157,3 +156,15 @@ def test_training_checkpoint_evaluation_and_integrity(tmp_path, monkeypatch):
     damaged = json.loads((out/"checkpoint_final.json").read_text()); damaged["parameters"]["offset"] = [99.]
     (tmp_path/"bad.json").write_text(json.dumps(damaged))
     with pytest.raises(ValueError): entry.read_checkpoint(tmp_path/"bad.json")
+
+
+def test_short_training_on_sampled_ctr_task(tmp_path):
+    """Exercise actual reset sampling and nonterminal Q/V updates at horizon 2."""
+    import run_ctr_mpcrl as entry
+    config = source_config(); path = tmp_path/"source.json"
+    path.write_text(json.dumps(config))
+    result = entry.main(["train", "--config", str(path), "--steps", "3",
+        "--seed", "10", "--horizon", "2", "--output-dir", str(tmp_path/"pilot")])
+    assert result["complete"], result
+    assert result["updates"] == result["timesteps"] == 3
+    assert result["failures"] == 0
