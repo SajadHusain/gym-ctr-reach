@@ -88,7 +88,9 @@ Parameters are held fixed across the Q and next-V solves used for one update.
 `mpcrl` computes the parameter derivative from the optimized NLP Lagrangian.
 Since the learned parameters occur only in the objective, this does not require
 second derivatives of the rod ODE. IPOPT uses a limited-memory Hessian; the CTR
-callback provides bound-aware first finite differences with respect to joints.
+callback provides central differences (second-order one-sided differences at
+box bounds) for first derivatives with respect to joints. The exact affine joint
+integration is condensed, leaving only the action sequence as decision variables.
 These derivatives are recomputed at candidate horizon states. This is not the old
 actor Jacobian loss, nor propagation of one frozen current-state Jacobian.
 
@@ -123,7 +125,7 @@ python -m pip install -e ".[mpc-rl,test]"
 
 python run_ctr_mpcrl.py train `
   --config runs/ivp_short_h2_seed10_v1/config.json `
-  --steps 200 --seed 10 `
+  --steps 20 --seed 10 `
   --tolerance-m 0.0015 --max-steps 200 `
   --horizon 2 --learning-rate 0.001 `
   --exploration-strength 0.01 `
@@ -140,8 +142,9 @@ Each learning transition can need three nonlinear optimizations: exploratory
 policy, fixed-action Q, and unperturbed next-V. Each optimizer calls the CTR model
 many times. `--max-model-evaluations` bounds the number of uncached FK evaluations
 per solve; `--max-iterations` bounds IPOPT iterations. Start with the pilot rather
-than reusing a 600,000-step DDPG command. A completed 200-step run is an integration
-diagnostic, not evidence of a learning advantage.
+than reusing a 600,000-step DDPG command. A completed 20-step run is an integration
+diagnostic, not evidence of a learning advantage. Inspect solve time and failures
+before increasing to 200 or more interactions in a new output directory.
 
 ## Evaluate initial and learned policies on identical tasks
 
@@ -150,16 +153,18 @@ Both snapshots are saved automatically. Use separate output directories:
 ```powershell
 python run_ctr_mpcrl.py evaluate `
   --checkpoint runs/ctr_mpcrl_h2_pilot/checkpoint_initial.json `
-  --episodes 50 --seed 920000 `
+  --episodes 5 --seed 920000 `
   --output-dir runs/ctr_mpcrl_h2_pilot/eval_initial
 
 python run_ctr_mpcrl.py evaluate `
   --checkpoint runs/ctr_mpcrl_h2_pilot/checkpoint_final.json `
-  --episodes 50 --seed 920000 `
+  --episodes 5 --seed 920000 `
   --output-dir runs/ctr_mpcrl_h2_pilot/eval_learned
 ```
 
-Evaluation freezes parameters and disables exploration. It preserves the source
+Five tasks are an operational check only; use a larger matched task set and
+multiple training seeds to estimate performance. Evaluation freezes parameters
+and disables exploration. It preserves the source
 environment fingerprint and records each task's joint/goal hash. Keep training
 seeds separate from evaluation seeds. Compare initial versus learned MPC first:
 comparing only with the old DDPG mixes the effect of planning with that of RL.

@@ -27,8 +27,8 @@ class LearningOptions:
     max_parameter_change: float = .02
     exploration_strength: float = .01
     tracking_scale_m: float = .01
-    max_iterations: int = 40
-    max_model_evaluations: int = 1500
+    max_iterations: int = 120
+    max_model_evaluations: int = 5000
     finite_difference_step: float = 1e-4
     solver_tolerance: float = 1e-6
 
@@ -167,7 +167,8 @@ def build_mpc(callback, constraints, options, name):
     mpc.init_solver(dict(print_time=False, error_on_fail=False,
         ipopt=dict(print_level=0, sb="yes", max_iter=options.max_iterations,
                    tol=options.solver_tolerance, acceptable_iter=0,
-                   hessian_approximation="limited-memory", bound_relax_factor=0.,
+                   hessian_approximation="limited-memory", limited_memory_max_history=20,
+                   bound_relax_factor=0.,
                    honor_original_bounds="yes")), solver="ipopt")
     return mpc
 

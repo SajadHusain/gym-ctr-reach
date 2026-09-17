@@ -49,8 +49,8 @@ def parser():
     train.add_argument("--learning-rate", type=float, default=.001)
     train.add_argument("--max-parameter-change", type=float, default=.02)
     train.add_argument("--exploration-strength", type=float, default=.01)
-    train.add_argument("--max-iterations", type=int, default=40)
-    train.add_argument("--max-model-evaluations", type=int, default=1500)
+    train.add_argument("--max-iterations", type=int, default=120)
+    train.add_argument("--max-model-evaluations", type=int, default=5000)
     train.add_argument("--checkpoint-freq", type=int, default=100)
     train.add_argument("--freeze", action="store_true", help="Fixed-parameter control ablation")
     evaluate = sub.add_parser("evaluate")
@@ -202,4 +202,5 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    main()
+    result = main()
+    raise SystemExit(0 if result["complete"] else 1)

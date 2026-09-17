@@ -112,7 +112,7 @@ def test_actual_ctr_prediction_and_normalized_action_match_live_plant():
         q = np.array([-.28, -.2, -.1, .1, -.1, .05])
         goal = env.model.forward_kinematics(q+[.002, .001, .001, .03, -.02, .01], 0)
         env.reset(seed=10, options=dict(initial_joints=q, goal=goal))
-        learner = MPCQLearner.from_env(env, config, LearningOptions(horizon=1, max_iterations=60))
+        learner = MPCQLearner.from_env(env, config, LearningOptions(horizon=1))
         state = learner.state(env.trig_obj.joints, env.desired_goal)
         initial_error = np.linalg.norm(env.achieved_goal-env.desired_goal)
         action, sol, _ = learner.solve(state)
