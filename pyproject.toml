@@ -14,6 +14,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+mpc-rl = [
+  "mpcrl==1.4.1",
+  "casadi>=3.6.7,<3.8",
+  "csnlp>=1.6.8,<1.7",
+]
 physics-train = [
   "stable-baselines3>=2.9,<2.10",
   "torch>=2.3",

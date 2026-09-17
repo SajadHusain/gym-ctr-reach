@@ -1,0 +1,28 @@
+name: CTR MPC as policy RL
+on:
+  push:
+    branches: ['codex/ctr-mpcrl*']
+  pull_request:
+    paths:
+      - 'ctr_reach_envs/mpc/learning.py'
+      - 'run_ctr_mpcrl.py'
+      - 'tests/test_ctr_mpcrl.py'
+      - '.github/workflows/ctr-mpcrl.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  learning:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OMP_NUM_THREADS: 1
+      OPENBLAS_NUM_THREADS: 1
+      MKL_NUM_THREADS: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e ".[mpc-rl,test]"
+      - run: python -m pytest tests/test_ctr_mpcrl.py tests/test_ctr_mpc.py -q
