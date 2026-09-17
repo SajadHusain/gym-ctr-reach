@@ -69,11 +69,19 @@ class _TipJacobian(cs.Callback):
         jac = np.empty((3, 6))
         for j in range(6):
             step = self.parent.options.finite_difference_step
-            if q[j]+step > self.parent.upper[j]: step = -step
-            if q[j]+step < self.parent.lower[j]:
-                raise RuntimeError("No admissible finite-difference perturbation")
-            trial = q.copy(); trial[j] += step
-            jac[:, j] = (self.parent.tip(trial)-tip)/step
+            plus, minus = q.copy(), q.copy()
+            plus[j] += step; minus[j] -= step
+            if minus[j] >= self.parent.lower[j] and plus[j] <= self.parent.upper[j]:
+                # First-order one-sided differences leave a systematic gradient
+                # error that can prevent IPOPT's stationarity test converging.
+                jac[:, j] = (self.parent.tip(plus)-self.parent.tip(minus))/(2*step)
+            else:
+                if plus[j] > self.parent.upper[j]: step = -step
+                trial = q.copy(); trial[j] += step
+                second = q.copy(); second[j] += 2*step
+                if not self.parent.lower[j] <= second[j] <= self.parent.upper[j]:
+                    raise RuntimeError("No admissible finite-difference perturbation")
+                jac[:, j] = (-3*tip+4*self.parent.tip(trial)-self.parent.tip(second))/(2*step)
         return [cs.DM(jac)]
 
 
@@ -232,7 +240,11 @@ class MPCQLearner:
         else:
             sol = self.agent.action_value(state, action, vals0=guess)
         if not sol.success or not np.isfinite(sol.f):
-            raise RuntimeError(f"MPC solve failed: {sol.status}")
+            iterations = sol.stats.get("iterations", {})
+            final = {key: values[-1] for key, values in iterations.items()
+                     if key in ("inf_pr", "inf_du", "mu") and len(values)}
+            raise RuntimeError(f"MPC solve failed: {sol.status}; residuals={final}; "
+                               f"model_calls={self.callback.calls-self.callback._calls_at_start}")
         states = np.asarray(sol.vals["state"])
         actions = np.asarray(sol.vals["action"])
         if not np.all(np.isfinite(states)) or not np.all(np.isfinite(actions)):
