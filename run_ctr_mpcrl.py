@@ -51,6 +51,8 @@ def parser():
     train.add_argument("--exploration-strength", type=float, default=.01)
     train.add_argument("--max-iterations", type=int, default=120)
     train.add_argument("--max-model-evaluations", type=int, default=5000)
+    train.add_argument("--solver-tolerance", type=float, default=1e-4,
+        help="Dimensionless optimizer stationarity tolerance; not Cartesian accuracy")
     train.add_argument("--checkpoint-freq", type=int, default=100)
     train.add_argument("--freeze", action="store_true", help="Fixed-parameter control ablation")
     evaluate = sub.add_parser("evaluate")
@@ -75,7 +77,7 @@ def main(argv=None):
         options = LearningOptions(horizon=args.horizon, gamma=source["spec"]["gamma"],
             learning_rate=args.learning_rate, max_parameter_change=args.max_parameter_change,
             exploration_strength=args.exploration_strength, max_iterations=args.max_iterations,
-            max_model_evaluations=args.max_model_evaluations)
+            max_model_evaluations=args.max_model_evaluations, solver_tolerance=args.solver_tolerance)
         parameters = None
     else:
         if args.episodes < 1: p.error("episode count must be positive")

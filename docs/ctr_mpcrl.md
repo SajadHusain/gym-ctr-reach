@@ -149,6 +149,11 @@ per solve; `--max-iterations` bounds IPOPT iterations. Start with the pilot rath
 than reusing a 600,000-step DDPG command. A completed 20-step run is an integration
 diagnostic, not evidence of a learning advantage. Inspect solve time and failures
 before increasing to 200 or more interactions in a new output directory.
+The default optimizer stationarity tolerance is `1e-4`, appropriate to this
+finite-difference prototype; it is dimensionless, not a Cartesian goal tolerance.
+The constraint-violation tolerance remains `1e-9`, with independent joint and
+action checks. `--solver-tolerance` records an explicit override in checkpoints;
+requesting very tight stationarity can exhaust the iteration budget.
 
 ## Evaluate initial and learned policies on identical tasks
 

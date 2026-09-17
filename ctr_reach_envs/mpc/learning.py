@@ -30,7 +30,7 @@ class LearningOptions:
     max_iterations: int = 120
     max_model_evaluations: int = 5000
     finite_difference_step: float = 1e-4
-    solver_tolerance: float = 1e-6
+    solver_tolerance: float = 1e-4
 
     def __post_init__(self):
         for key in ("horizon", "max_iterations", "max_model_evaluations"):
@@ -167,6 +167,8 @@ def build_mpc(callback, constraints, options, name):
     mpc.init_solver(dict(print_time=False, error_on_fail=False,
         ipopt=dict(print_level=0, sb="yes", max_iter=options.max_iterations,
                    tol=options.solver_tolerance, acceptable_iter=0,
+                   constr_viol_tol=1e-9, compl_inf_tol=1e-6,
+                   dual_inf_tol=options.solver_tolerance,
                    hessian_approximation="limited-memory", limited_memory_max_history=20,
                    bound_relax_factor=0.,
                    honor_original_bounds="yes")), solver="ipopt")
