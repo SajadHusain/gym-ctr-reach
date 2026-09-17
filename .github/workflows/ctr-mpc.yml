@@ -1,0 +1,24 @@
+name: CTR nonlinear MPC
+on:
+  push:
+    branches: ['codex/ctr-mpc*']
+  pull_request:
+    paths:
+      - 'ctr_reach_envs/mpc/**'
+      - 'evaluate_ctr_mpc.py'
+      - 'tests/test_ctr_mpc.py'
+      - '.github/workflows/ctr-mpc.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mpc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e ".[test]"
+      - run: python -m pytest tests/test_ctr_mpc.py tests/test_mechanics.py -q
