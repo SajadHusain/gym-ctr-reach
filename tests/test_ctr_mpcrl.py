@@ -97,6 +97,21 @@ def test_exploration_is_constrained_and_bellman_values_are_unperturbed():
     assert qsol.f > baseline.f
 
 
+def test_update_cap_is_relative_even_for_small_effort_weights():
+    learner = linear_learner()
+    q = np.array([-.3, -.23, -.12, 0., 0., 0.])
+    state = learner.state(q, q[:3]+learner.constraints.lengths+.001)
+    action, _, _ = learner.solve(state)
+    _, sol, _ = learner.solve(state, action=action)
+    old = learner.agent.learnable_parameters.value.copy()
+    learner.learn_transition(1000., sol, terminated=True)
+    new = learner.agent.learnable_parameters.value
+    limits = learner.options.max_parameter_change*abs(old)
+    limits[-1] = learner.options.max_parameter_change
+    assert np.all(abs(new-old) <= limits+1e-9)
+    assert abs(new[3]-old[3]) == pytest.approx(limits[3], abs=1e-9)
+
+
 def test_model_budget_aborts_without_an_unvalidated_action():
     learner = linear_learner(LearningOptions(max_model_evaluations=1))
     q = np.array([-.3, -.23, -.12, 0., 0., 0.])

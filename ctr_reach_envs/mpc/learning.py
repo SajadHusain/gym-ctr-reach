@@ -178,6 +178,21 @@ def td_residual(cost, q_value, next_value, gamma, terminated):
     return float(cost + (0. if terminated else gamma*next_value)-q_value)
 
 
+class RelativeGradientDescent(GradientDescent):
+    """Preserve a true relative update limit for small positive cost weights.
+
+    mpcrl 1.4.1's base bound helper has an absolute 0.1 update floor, which
+    overwhelms our 0.001 effort weights. The value offset alone uses unit scale
+    so it can leave zero; all positive weights use their current magnitude.
+    """
+    def _get_update_bounds(self, theta, eps=None):
+        scale = abs(theta).copy()
+        scale[-1] = max(scale[-1], 1.)  # value offset is the final parameter
+        radius = self.max_percentage_update*scale
+        return (np.maximum(self.learnable_parameters.lb-theta, -radius),
+                np.minimum(self.learnable_parameters.ub-theta, radius))
+
+
 class MPCQLearner:
     """Thin CTR adapter around mpcrl's Q approximation, sensitivity and optimizer.
 
@@ -202,7 +217,7 @@ class MPCQLearner:
             for k, val in defaults.items()])
         self.agent = LstdQLearningAgent((v, q), update_strategy=1,
             discount_factor=self.options.gamma, learnable_parameters=pars,
-            optimizer=GradientDescent(learning_rate=self.options.learning_rate,
+            optimizer=RelativeGradientDescent(learning_rate=self.options.learning_rate,
                 max_percentage_update=self.options.max_parameter_change, bound_consistency=True),
             fixed_parameters={"exploration": np.zeros((6, 1))}, experience=1,
             remove_bounds_on_initial_action=True)

@@ -84,6 +84,10 @@ Here `d_t` means successful termination. A time-limit truncation retains its
 bootstrap. The library's bundled continuing-task loop always bootstraps; this
 repository therefore uses a custom episodic loop around its Q-learning components.
 Parameters are held fixed across the Q and next-V solves used for one update.
+`--max-parameter-change 0.02` limits each positive cost weight to a 2% change
+per update. The offset uses `0.02 * max(abs(offset), 1)` so it can leave zero.
+A small adapter overrides mpcrl 1.4.1's absolute 0.1 update floor, which would
+otherwise overwhelm the initial 0.001 effort weights.
 
 `mpcrl` computes the parameter derivative from the optimized NLP Lagrangian.
 Since the learned parameters occur only in the objective, this does not require
